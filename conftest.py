@@ -1,4 +1,27 @@
 import pytest
+from openai import AsyncOpenAI
+import os
+from dynaconf import settings
+from debugtalk import *
+   
+def pytest_addoption(parser):
+    parser.addoption("--env", action="store", default="default", help="指定环境")
+
+def pytest_sessionstart(session):
+    env = session.config.getoption("env")
+    settings.configure(INCLUDES_FOR_DYNACONF=['config/env_settings.toml'], FORCE_ENV_FOR_DYNACONF=env)
+    os.environ["env_setting"] = env
+
+
+    
+@pytest.fixture
+def client():
+    client = AsyncOpenAI(
+    # This is the default and can be omitted
+    api_key=os_env('API_KEY'),
+    base_url=os_env('BASE_URL')
+    )
+    return client
 
 @pytest.fixture
 def sample_regex():

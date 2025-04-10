@@ -7,22 +7,14 @@ import openai
 import allure
 import asyncio
 import ast
+from debugtalk import *
 
-def stop_text(text,stop):
-    return text.split(stop)[0]
-
-client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key="-",
-    base_url="http://10.208.130.44:2025/v1"
-)
-model = "deepseek"
 @pytest.mark.asyncio
 @allure.title("对话_判断role为user、developer...等允许的角色时，返回结果正确")
-async def test_support_role():
+async def test_support_role(client):
     # 判断stream为false时，返回为ChatCompletion类型
     developer_completion = await client.chat.completions.create(
-        model=model,
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "developer",
@@ -36,7 +28,7 @@ async def test_support_role():
     assert developer_completion.choices[0].message.role == 'assistant'
     res_developer = developer_completion.choices[0].message.content
     user_completion = await client.chat.completions.create(
-        model=model,
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "user",
@@ -50,7 +42,7 @@ async def test_support_role():
     assert user_completion.choices[0].message.role == 'assistant'
     res_user = user_completion.choices[0].message.content
     system_completion = await client.chat.completions.create(
-        model=model,
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "system",
@@ -64,7 +56,7 @@ async def test_support_role():
     assert system_completion.choices[0].message.role == 'assistant'
     res_system = system_completion.choices[0].message.content
     assistant_completion = await client.chat.completions.create(
-        model=model,
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "assistant",
@@ -82,12 +74,12 @@ async def test_support_role():
 
 @pytest.mark.asyncio
 @allure.title("对话_判断role为自定义角色时，返回结果错误")
-async def test_custom_role():
+async def test_custom_role(client):
     # Not sure how the model handles custom roles so we just check that
     # both string and complex message content are handled in the same way
     try:
         await client.chat.completions.create(
-            model=model,
+            model=os_env('MODEL'),
             messages=[{
                 "role": "my-custom-role",
                 "content": "what is 1+1?",
@@ -98,4 +90,3 @@ async def test_custom_role():
     except openai.BadRequestError as e:
         assert e.status_code == 400
         assert "('body', 'messages', 0, 'typed-dict', 'role')" in e.response.json()['message']
-# asyncio.run(test_custom_role())

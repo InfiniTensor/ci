@@ -2,13 +2,8 @@ from openai import OpenAI
 import json
 import pytest
 import allure
+from debugtalk import *
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key="-",
-    base_url="http://10.208.130.44:2025/v1"
-)
-model="deepseek"
 # Function will be used outside LLM
 def get_weather(location: str, unit: str):
     print(f"\nGetting the weather for {location} in {unit}...")
@@ -24,8 +19,9 @@ def get_weather(location: str, unit: str):
         return "unknowm city"
 
 # Tool_call procedure
+@pytest.mark.asyncio
 @allure.title("对话_判断调用tool返回结果正确，同时验证role为tool时正确处理") 
-def test_tool_call_infer() :
+async def test_tool_call_infer(client) :
     # Prepare request-1 params
     function_name="get_weather"
     tools = [{
@@ -49,24 +45,21 @@ def test_tool_call_infer() :
     chat_prompt = [{"role": "user", "content": f"What's the weather like in {city}?"}]
 
     # Request-1
-    response = client.chat.completions.create(
-        model=model,
+    response = await client.chat.completions.create(
+        model=os_env('MODEL'),
         messages=chat_prompt,
         temperature=0,
         max_tokens=200,
         tools=tools,
         tool_choice=tool_choice
     )
-    print(response)
     assert response.choices[0].message.function_call == None 
     assert response.choices[0].message.tool_calls[0].id != None
     assert response.choices[0].message.tool_calls[0].function.name == function_name
     assert response.choices[0].message.tool_calls[0].type == 'function'
     
-    
     tool_call_ret = response.choices[0].message.tool_calls[0]
   
-
     # Call function with response-1
     weather_by_func = get_weather(**json.loads(tool_call_ret.function.arguments))
 
@@ -87,11 +80,11 @@ def test_tool_call_infer() :
     chat_prompt.append(func_ret_in_prompt)
 
     # Request-2
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
             messages=chat_prompt,
             temperature=0,
             max_tokens=200,
-            model=model,
+            model=os_env('MODEL'),
             )
 
     # print("\nFinal output : \n", response.choices[0].message.content)
@@ -175,7 +168,7 @@ def test_tool_call_infer() :
 # # test streaming
 # def test_chat_streaming_of_tool_and_reasoning():
 #     stream = client.chat.completions.create(
-#         model=model,
+#         model=os_env('MODEL'),
 #         messages=MESSAGES,
 #         tools=TOOLS,
 #         temperature=0.0,
@@ -195,7 +188,7 @@ def test_tool_call_infer() :
 # # test full generate
 # async def test_chat_full_of_tool_and_reasoning():
 #     tool_calls = client.chat.completions.create(
-#         model=model,
+#         model=os_env('MODEL'),
 #         messages=MESSAGES,
 #         tools=TOOLS,
 #         temperature=0.0,

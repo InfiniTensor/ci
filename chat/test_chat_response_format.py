@@ -9,7 +9,7 @@ import json
 import jsonschema
 import ast
 import allure
-model = "deepseek"
+from debugtalk import *
 
 def eval_correctness_json(expected, actual):
     # extract json string from string using regex
@@ -42,18 +42,13 @@ except_format = {
 }
 json_schema = CarDescription.model_json_schema()
 
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key="-",
-    base_url="http://10.208.130.44:2025/v1"
-)
 
-@pytest.fixture
+@pytest.mark.asyncio
 @allure.title("对话_判断简单的对话结果返回内容类型为str")
-def test_normal_response():
+async def test_normal_response(client):
     # 判断stream为false时，返回为ChatCompletion类型
-    completion = client.chat.completions.create(
-        model=model,
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "developer",
@@ -67,16 +62,32 @@ def test_normal_response():
         temperature=0,
     )
     assert isinstance(completion, ChatCompletion) == True
-    result = completion.choices[0].message.content
-    assert eval_correctness_json(except_format,result) == False
+    assert eval_correctness_json(except_format,completion.choices[0].message.content) == False
     assert isinstance(completion.choices[0].message.content, str)
-    return result
 
+@pytest.mark.asyncio
 @allure.title("对话_判断guided_json的对话结果返回内容类型为json且格式匹配提供的模板——1") 
-def test_response_format(test_normal_response):
+async def test_response_format(client):
     # 判断stream为false时，返回为ChatCompletion类型
-    completion = client.chat.completions.create(
-        model=model,
+    completion_0 = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+        {
+            "role": "developer",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Hello!"
+        }
+        ],
+        temperature=0,
+    )
+    assert isinstance(completion_0, ChatCompletion) == True
+    result_0 = completion_0.choices[0].message.content
+    
+    completion_1 = await client.chat.completions.create(
+        model=os_env('MODEL'),
         messages=[
         {
             "role": "developer",
@@ -94,14 +105,15 @@ def test_response_format(test_normal_response):
         "ignore_eos" : False, 
         "top_k" : 1},
     )
-    assert isinstance(completion, ChatCompletion) == True
-    result = completion.choices[0].message.content
-    assert test_normal_response != result
-    eval_correctness_json(except_format,result)
-    assert eval_correctness_json(except_format,result) == True
+    assert isinstance(completion_1, ChatCompletion) == True
+    result_1 = completion_1.choices[0].message.content
+    assert result_0 != result_1
+    eval_correctness_json(except_format,result_1)
+    assert eval_correctness_json(except_format,result_1) == True
 
+@pytest.mark.asyncio
 @allure.title("对话_判断guided_json的对话结果返回内容类型为json且格式匹配提供的模板——2")     
-def test_guided_json_chat(sample_json_schema):
+async def test_guided_json_chat(sample_json_schema, client):
     messages = [
         {
         "role": "system",
@@ -114,8 +126,8 @@ def test_guided_json_chat(sample_json_schema):
         f"fits this schema: {sample_json_schema}"
         }
     ]
-    chat_completion =  client.chat.completions.create(
-        model=model,
+    chat_completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
         messages=messages,
         max_completion_tokens=1000,
         extra_body=dict(guided_json=sample_json_schema,
@@ -132,8 +144,8 @@ def test_guided_json_chat(sample_json_schema):
         "content":
         "Give me another one with a different name and age"
     })
-    chat_completion = client.chat.completions.create(
-        model=model,
+    chat_completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
         messages=messages,
         max_completion_tokens=1000,
         extra_body=dict(guided_json=sample_json_schema,
