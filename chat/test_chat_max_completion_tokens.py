@@ -168,6 +168,8 @@ async def test_max_tokens_equal_max_completion_tokens(client):
     assert completion.usage.completion_tokens == max_completion_tokens
     assert completion.choices[0].finish_reason == 'length'
 
+
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
 @pytest.mark.asyncio        
 @allure.title("对话_不设置max_completion_tokens时，使用束搜索")   
 async def test_with_beam_search_without_max_tokens(client):
@@ -191,7 +193,8 @@ async def test_with_beam_search_without_max_tokens(client):
     )
     assert completion.id != None
     assert len(completion.choices) == 5
-    
+
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
 @pytest.mark.asyncio
 @allure.title("对话_设置max_completion_tokens时，使用束搜索")       
 async def test_with_beam_search_with_max_tokens(client):

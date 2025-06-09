@@ -4,6 +4,7 @@ import pytest
 import allure
 from openai import BadRequestError
 from debugtalk import *
+import openai
 
 @pytest.mark.asyncio
 @allure.title("文本补全_判断非stream模式输出结果正确")
@@ -61,8 +62,10 @@ async def test_with_temperature(client):
     assert completion_1.id != None
     assert len(completion_1.choices) == 1
     assert completion_1.usage.completion_tokens <= 512
-    assert content_0 != completion_1.choices[0].text
-    
+    if os_env('GPU') != '910b':
+        assert content_0 != completion_1.choices[0].text
+
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
 @pytest.mark.asyncio    
 @allure.title("文本补全_不设置max_tokens，使用束搜索")    
 async def test_with_beam_search_without_max_tokens(client):
@@ -81,24 +84,40 @@ async def test_with_beam_search_without_max_tokens(client):
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断设置max_tokens，使用束搜索")    
 async def test_with_beam_search_with_max_tokens(client):
-    completion = await client.completions.create(
-        model=os_env('MODEL'),
-        prompt="How do I check if a Python object is an instance of a class?",
-        temperature=0,
-        n=5,
-        max_tokens=26,
-        extra_body={
-            "use_beam_search":True
-        }
-    )
-    assert completion.id != None
-    assert len(completion.choices) == 5
-    text_0 = completion.choices[0].text
-    text_1 = completion.choices[1].text
-    text_2 = completion.choices[2].text
-    text_3 = completion.choices[3].text
-    text_4 = completion.choices[4].text
-    assert text_0 != text_1 != text_2 != text_3 != text_4 != None
+    if os_env('GPU') == '910b':
+        try:
+            await client.completions.create(
+                model=os_env('MODEL'),
+                prompt="How do I check if a Python object is an instance of a class?",
+                temperature=0,
+                n=5,
+                max_tokens=26,
+                extra_body={
+                    "use_beam_search":True
+                }
+            )
+        except openai.BadRequestError as e:
+            assert e.status_code == 400
+            assert 'Beam search or best_of > 1 is not supported for multi-process.' in e.message 
+    else:
+        completion = await client.completions.create(
+            model=os_env('MODEL'),
+            prompt="How do I check if a Python object is an instance of a class?",
+            temperature=0,
+            n=5,
+            max_tokens=26,
+            extra_body={
+                "use_beam_search":True
+            }
+        )
+        assert completion.id != None
+        assert len(completion.choices) == 5
+        text_0 = completion.choices[0].text
+        text_1 = completion.choices[1].text
+        text_2 = completion.choices[2].text
+        text_3 = completion.choices[3].text
+        text_4 = completion.choices[4].text
+        assert text_0 != text_1 != text_2 != text_3 != text_4 != None
 
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断设置max_tokens，返回结果正确")    
@@ -158,6 +177,8 @@ async def test_completion_streaming(client):
     assert chunk.choices[0].finish_reason == "length"
     assert chunk.choices[0].text
     assert "".join(chunks) == single_output
+    
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')    
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断n=3时，parallel_streaming回结果正确")        
 async def test_parallel_streaming(client):
@@ -334,6 +355,7 @@ async def test_completion_without_stream_use_options(client):
             stream=False,
             stream_options={"continuous_usage_stats": True})
 
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
 @pytest.mark.asyncio 
 @allure.title("文本补全_prompt为文本数组和token ids数组时batch_completions返回结果正确")      
 async def test_batch_completions(client):

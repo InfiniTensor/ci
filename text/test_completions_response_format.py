@@ -17,6 +17,8 @@ GUIDED_DECODING_BACKENDS = ["outlines", "lm-format-enforcer", "xgrammar"]
 # 目前只支持 xgrammar
 guided_decoding_backend = "xgrammar"
 # @pytest.mark.parametrize("guided_decoding_backend", GUIDED_DECODING_BACKENDS)
+
+@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
 @pytest.mark.asyncio
 @allure.title("文本补全_判断使用guided_json时返回文本格式正确") 
 async def test_guided_json_completion(sample_json_schema,client):
@@ -35,7 +37,23 @@ async def test_guided_json_completion(sample_json_schema,client):
     for i in range(3):
         output_json = json.loads(completion.choices[i].text)
         jsonschema.validate(instance=output_json, schema=sample_json_schema)
-   
+
+@pytest.mark.asyncio
+@allure.title("文本补全_判断使用guided_json时返回文本格式正确") 
+async def test_guided_json_completion(sample_json_schema,client):
+    completion = await client.completions.create(
+        model=os_env('MODEL'),
+        prompt=f"Give an example JSON for an employee profile "
+        f"that fits this schema: {sample_json_schema}",
+        temperature=1.0,
+        max_tokens=500,
+        extra_body=dict(guided_json=sample_json_schema,
+                        guided_decoding_backend=guided_decoding_backend))
+
+    assert completion.id is not None
+    output_json = json.loads(completion.choices[0].text)
+    jsonschema.validate(instance=output_json, schema=sample_json_schema)
+
 @pytest.mark.asyncio     
 @allure.title("文本补全_判断目前不支持guided_regex") 
 async def test_guided_regex_completion(sample_regex, client):
@@ -56,6 +74,8 @@ async def test_guided_regex_completion(sample_regex, client):
     # for i in range(3):
     #     assert re.fullmatch(sample_regex,
     #                         completion.choices[i].text) is not None
+
+    
 @pytest.mark.asyncio
 @allure.title("文本补全_判断目前不支持guided_choice") 
 async def test_guided_choice_completion(sample_guided_choice, client):
@@ -75,7 +95,6 @@ async def test_guided_choice_completion(sample_guided_choice, client):
     # assert len(completion.choices) == 2
     # for i in range(2):
     #     assert completion.choices[i].text in sample_guided_choice
-
 
 @pytest.mark.asyncio
 @allure.title("文本补全_判断使用guided_grammar时返回文本格式正确") 

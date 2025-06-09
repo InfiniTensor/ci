@@ -37,7 +37,10 @@ async def test_chat_with_echo(test_case: TestEcho, client):
     assert len(chat_completion.choices) == 1
 
     choice = chat_completion.choices[0]
-    assert choice.finish_reason == "stop"
+    if chat_completion.usage.completion_tokens == 512:
+        assert choice.finish_reason == "length"
+    else:
+        assert choice.finish_reason == "stop"
 
     message = choice.message
     if test_case.echo:

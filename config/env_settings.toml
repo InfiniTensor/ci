@@ -2,8 +2,16 @@
 BASE_URL="http://10.208.130.44:2025/v1"
 MODEL = "deepseek"
 API_KEY = "-"
+GPU = "Nvidia"
 
 [aicc001]
-BASE_URL="http://192.168.101.45:2055/v1"
+BASE_URL="http://10.9.1.6:2055/v1"
+MODEL = "qwen3"
+API_KEY = "-"
+GPU = "910b"
+
+[local]
+BASE_URL="http://127.0.0.1:2025/v1"
 MODEL = "deepseek"
 API_KEY = "-"
+GPU = ""
