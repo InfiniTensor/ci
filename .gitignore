@@ -3,3 +3,5 @@ allure-report
 __pycache__
 .pytest_cache
 allure-result
+assets
+html
