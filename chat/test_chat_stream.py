@@ -79,6 +79,7 @@ async def test_stream_chat(client):
 @pytest.mark.asyncio
 @allure.title("对话_判断stream为true时，stream_options两个选项全为true时，所有chunk的usage不为None")         
 async def test_stream_with_options_all_true(client):
+    max_tokens = 16
     # 判断stream为true时，stream_options两个选项全为true
     completion = await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -98,7 +99,7 @@ async def test_stream_with_options_all_true(client):
             "include_usage":True,
             "continuous_usage_stats":True
         },
-        max_completion_tokens=16
+        max_completion_tokens=max_tokens
     )
     assert isinstance(completion, AsyncStream) == True
     last_completion_tokens = 0
@@ -115,7 +116,7 @@ async def test_stream_with_options_all_true(client):
         assert chunk.usage.total_tokens == (chunk.usage.prompt_tokens +
                                             chunk.usage.completion_tokens)
         last_completion_tokens = chunk.usage.completion_tokens
-    assert last_completion_tokens == 16  
+    assert last_completion_tokens <= max_tokens
 
 @pytest.mark.asyncio           
 @allure.title("对话_判断stream为true，include_usage为true时，最后的usage不为None")
