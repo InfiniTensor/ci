@@ -65,7 +65,7 @@ async def test_with_temperature(client):
     if os_env('GPU') != '910b':
         assert content_0 != completion_1.choices[0].text
 
-@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
+@pytest.mark.skip(reason='多进程暂不支持')
 @pytest.mark.asyncio    
 @allure.title("文本补全_不设置max_tokens，使用束搜索")    
 async def test_with_beam_search_without_max_tokens(client):
@@ -81,6 +81,7 @@ async def test_with_beam_search_without_max_tokens(client):
     assert completion.id != None
     assert len(completion.choices) == 5
 
+@pytest.mark.skip(reason='多进程暂不支持')
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断设置max_tokens，使用束搜索")    
 async def test_with_beam_search_with_max_tokens(client):

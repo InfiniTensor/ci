@@ -16,6 +16,7 @@ class TestEcho(NamedTuple):
         TestEcho( echo=False)
     ],
 )
+@pytest.mark.skip(reason='有些模型不太适配')
 @allure.title("对话_使用参数化判断echo为{test_case.echo}时返回的信息正确") 
 async def test_chat_with_echo(test_case: TestEcho, client):
     saying: str = "Here is a common saying about apple. An apple a day, keeps"

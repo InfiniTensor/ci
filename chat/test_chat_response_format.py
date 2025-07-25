@@ -134,15 +134,13 @@ async def test_guided_json_chat(sample_json_schema, client):
                         guided_decoding_backend='xgrammar'))
     message = chat_completion.choices[0].message
     assert message.content is not None
-    json1 = json.loads(message.content)
+    json1 = json.loads(remove_model_words(message.content))
     jsonschema.validate(instance=json1, schema=sample_json_schema)
 
-    messages.append({"role": "assistant", "content": message.content})
+    messages.append({"role": "assistant", "content": remove_model_words(message.content)})
     messages.append({
-        "role":
-        "user",
-        "content":
-        "Give me another one with a different name and age"
+        "role":"user",
+        "content":"Give me another one with a different name and age"
     })
     chat_completion = await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -152,7 +150,7 @@ async def test_guided_json_chat(sample_json_schema, client):
                         guided_decoding_backend='xgrammar'))
     message = chat_completion.choices[0].message
     assert message.content is not None
-    json2 = json.loads(message.content)
+    json2 = json.loads(remove_model_words(message.content))
     jsonschema.validate(instance=json2, schema=sample_json_schema)
     assert json1["name"] != json2["name"]
     assert json1["age"] != json2["age"]

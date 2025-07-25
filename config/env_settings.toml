@@ -4,9 +4,9 @@ MODEL = "deepseek"
 API_KEY = "-"
 GPU = "Nvidia"
 
-[aicc001]
-BASE_URL="http://10.9.1.6:2055/v1"
-MODEL = "qwen3"
+[aicc014]
+BASE_URL="http://10.9.1.62:2025/v1"
+MODEL = "deepseek"
 API_KEY = "-"
 GPU = "910b"
 

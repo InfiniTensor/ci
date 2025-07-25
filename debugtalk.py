@@ -13,4 +13,10 @@ def os_env(ekey, default=""):
 
 def stop_text(text,stop):
     return text.split(stop)[0]
+
+def remove_model_words(res):
+    if "<think>\n</think>" in res:
+        return res.split("<think>\n</think>")[1]
+    else:
+        return res
     
