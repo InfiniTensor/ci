@@ -7,41 +7,24 @@ candidate_models=$3
 job_count=$4
 version=$5
 
-full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:8 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:1 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B-FP8:4 DeepSeek-V3-0324:8 Qwen3-30B-A3B-Instruct:2)
 curr_dir=/home/s_limingge/accuracy_test_nvidia
+GPU_MODEL="H20"
 
-declare -A npu_server_list=(
-    ["10.9.1.6"]="AICC_001"
-    ["10.9.1.74"]="AICC_003"
-    ["10.9.1.34"]="AICC_004"
-    ["10.9.1.26"]="AICC_005"
-    ["10.9.1.46"]="AICC_006"
-    ["10.9.1.58"]="AICC_007"
-    ["10.9.1.30"]="AICC_008"
-    ["10.9.1.38"]="AICC_009"
-    ["10.9.1.70"]="AICC_010"
-    ["10.9.1.42"]="AICC_011"
-    ["10.9.1.66"]="AICC_012"
-    ["10.9.1.50"]="AICC_013"
-    ["10.9.1.62"]="AICC_014"
-    ["10.9.1.54"]="AICC_015"
+declare -A A800_server_list=(
+    ["A800-001"]="10.208.130.44"
 )
 
-declare -A local_ip_map=(
-    ["10.9.1.6"]="192.168.0.156"
-    ["10.9.1.74"]="192.168.0.123"
-    ["10.9.1.34"]="192.168.0.77"
-    ["10.9.1.26"]="192.168.0.247"
-    ["10.9.1.46"]="192.168.0.93"
-    ["10.9.1.58"]="192.168.0.100"
-    ["10.9.1.30"]="192.168.0.87"
-    ["10.9.1.38"]="192.168.0.236"
-    ["10.9.1.70"]="192.168.0.185"
-    ["10.9.1.42"]="192.168.0.61"
-    ["10.9.1.66"]="192.168.0.166"
-    ["10.9.1.50"]="192.168.0.127"
-    ["10.9.1.62"]="192.168.0.171"
-    ["10.9.1.54"]="192.168.0.246"
+declare -A H20_server_list=(
+    ["H20-001"]="10.9.1.14"
+)
+
+declare -A H100_server_list=(
+    ["H100-001"]="192.168.100.106"
+)
+
+declare -A L20_server_list=(
+    ["L20-001"]="192.168.100.106"
 )
 
 if [ -z $send_report ]; then
@@ -60,11 +43,12 @@ fi
 model_list=()
 
 if [ ! -z "$candidate_models" ]; then
-    for name in $candidate_models; do
+    for name in "${candidate_models[@]}"; do
         for item in "${full_model_list[@]}"; do
             model=`echo "$item" | awk -F : '{print $1}'`
             if [[ "$model" =~ ^$name$ ]]; then
                 model_list+=($item)
+                break
             fi
         done
     done
@@ -84,7 +68,9 @@ fi
 processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
 touch ${processed_models}
 
-for option in 'DynamicSplitFuseV2'; do
+schedule_policies=('DynamicSplitFuseV2')
+
+for option in "${schedule_policies[@]}"; do
     use_prefix_cache_flag=1
     for ((i=1; i<=1; i=i+1)); do
         swap_space=0
@@ -120,23 +106,22 @@ for option in 'DynamicSplitFuseV2'; do
                 if [ $use_prefix_cache_flag -eq 1 ]; then
                     if [ $swap_space -eq 0 ]; then
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option, --use-prefix-cache"
-                        filename+=${option}"_use-prefix-cache.log"
+                        filename+=${option}"_use-prefix-cache"
                     else
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option, --use-prefix-cache, --swap-space=40"
-                        filename+=${option}"_use-prefix-cache_swap-space.log"
+                        filename+=${option}"_use-prefix-cache_swap-space"
                     fi
                 else
                     if [ $swap_space -eq 0 ]; then 
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option"
-                        filename+=${option}".log"
+                        filename+=${option}""
                     else
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option, --swap-space=40"
-                        filename+=${option}"_swap-space.log"
+                        filename+=${option}"_swap-space"
                     fi
                 fi
 
                 cd $curr_dir
-                touch ${filename}
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
                 
@@ -148,16 +133,11 @@ for option in 'DynamicSplitFuseV2'; do
                     echo "启动第${seq_num}台服务器: $ip......"
 
                     if [ $ip == ${server_list[0]} ]; then
-                        local_master_ip=${local_ip_map[$ip]}
+                        local_master_ip=$ip
                     fi
 
-                    if [ $ip == "10.9.1.6" ]; then
-                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_AccuracyTest.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                        pid_map[$!]="10.9.1.6"
-                    else
-                        ssh -o ConnectionAttempts=3 s_limingge@$ip /home/s_limingge/job_executor_for_AccuracyTest.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                        pid_map[$!]=$ip
-                    fi
+                    ssh -o ConnectionAttempts=3 s_limingge@$ip /home/s_limingge/job_executor_for_AccuracyTest.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $GPU_MODEL $version &
+                    pid_map[$!]=$ip
                     
                     ((seq_num++))
                 done
@@ -202,15 +182,14 @@ for option in 'DynamicSplitFuseV2'; do
 
                 echo "开始执行模型精度测试任务......"
 
-                cd /home/s_limingge/model_accuracy
                 unset pid_map
                 declare -A pid_map
                 # 开始执行测试
-                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host ${server_list[0]} --number 10 -P 10 --dataset mmlu,ceval > evalscope_${model}_1.log 2>&1 &
+                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "./logs/${filename}_evalscope_1.log" 2>&1 &
                 pid_map[$!]="evalscope_mmlu,ceval"
-                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host ${server_list[0]} --number 200 -P 10 --dataset gsm8k,ARC_c > evalscope_${model}_2.log 2>&1 &
+                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "./logs/${filename}_evalscope_2.log" 2>&1 &
                 pid_map[$!]="evalscope_gsm8k,ARC_c"
-                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host ${server_list[0]} > SGLang_${model}_3.log 2>&1 &
+                nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "./logs/${filename}_SGLang_3.log" 2>&1 &
                 pid_map[$!]="SGLang_mmlu,gsm8k"
                 
                 # 等待所有后台测试任务结束
@@ -226,6 +205,13 @@ for option in 'DynamicSplitFuseV2'; do
 
                     ((remaining--))
                 done
+
+                touch "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
+
+                eval_res_1=$(tail -n 1 "./logs/${filename}_evalscope_1.log")
+                eval_res_2=$(tail -n 1 "./logs/${filename}_evalscope_2.log")
+                sglang_res_3=$(tail -n 5 "./logs/${filename}_SGLang_3.log")
+                echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
 
                 echo "测试完成！"
 
@@ -254,15 +240,15 @@ for option in 'DynamicSplitFuseV2'; do
 
                     if [ $use_prefix_cache_flag -eq 1 ]; then
                         if [ $swap_space -eq 0 ]; then
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                            #...
                         else
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-Space=40" "$curr_dir/$filename"
+                            #...
                         fi
                     else
                         if [ $swap_space -eq 0 ]; then
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
+                            #...
                         else
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Swap-Space=40" "$curr_dir/$filename"
+                            #...
                         fi
                     fi
                 fi

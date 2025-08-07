@@ -2,34 +2,35 @@
 
 version=$1
 
-# full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
-# full_model_list=(DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Llama-8B:1 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2)
-full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
-full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1)
+# full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:8 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:1 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B-FP8:4 DeepSeek-V3-0324:8 Qwen3-30B-A3B-Instruct:2)
+full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:1 Qwen3-235B-A22B-FP8:4 Qwen3-30B-A3B-Instruct:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
+# full_model_list=(Qwen3-235B-A22B-FP8:4 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
+
 curr_dir=/home/s_limingge/accuracy_test_nvidia
 log_name_suffix=$(date +"%Y%m%d")
+GPU_MODEL="H20"
 parallel=3
 
-declare -A npu_server_list=(
-    ["aicc001"]="10.9.1.6"
-    ["aicc003"]="10.9.1.74"
-    ["aicc004"]="10.9.1.34"
-    ["aicc005"]="10.9.1.26"
-    ["aicc006"]="10.9.1.46"
-    ["aicc007"]="10.9.1.58"
-    ["aicc008"]="10.9.1.30"
-    ["aicc009"]="10.9.1.38"
-    ["aicc010"]="10.9.1.70"
-    ["aicc011"]="10.9.1.42"
-    ["aicc012"]="10.9.1.66"
-    ["aicc013"]="10.9.1.50"
-    ["aicc014"]="10.9.1.62"
-    # ["aicc015"]="10.9.1.54"
+declare -A A800_server_list=(
+    ["A800-001"]="10.208.130.44"
+)
+
+declare -A H20_server_list=(
+    ["H20-001"]="10.9.1.14"
+)
+
+declare -A H100_server_list=(
+    ["H100-001"]="192.168.100.106"
+)
+
+declare -A L20_server_list=(
+    ["L20-001"]="192.168.100.106"
 )
 
 search_servers() {
     NPU_QUANTITY=$1
-    local -n servers_found=$2     # 传名引用
+    NPU_MODEL=$2
+    local -n servers_found=$3     # 传名引用
 
     if [ $NPU_QUANTITY -lt 8 ]; then
         SERVER_QUANTITY=1
@@ -40,78 +41,165 @@ search_servers() {
     echo "正在搜索 ${SERVER_QUANTITY} 台GPU服务器......"
     
     servers_found=()
-    for key in "${!npu_server_list[@]}"; do
-        echo "$key => ${npu_server_list[$key]}"
-        if [ $key == 'aicc001' ]; then
-            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list['aicc001']} "# 目标空闲 GPU 数量
+    if [ $NPU_MODEL == "H20" ]; then
+        for key in "${!H20_server_list[@]}"; do
+            echo "$key => ${H20_server_list[$key]}"        
+            ssh s_limingge@${H20_server_list[$key]} "# 目标空闲 GPU 数量
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
                     TARGET_FREE_GPUS=$NPU_QUANTITY
                 fi
                 echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
-                # 使用 npu-smi 获取 GPU 使用情况
-                GPU_INFO=\$(nvidia-smi | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}')
-                # 检查空闲 GPU 数量
-                FREE_COUNT=\$(echo \"\$GPU_INFO\" | wc -w)
-                # echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \$GPU_INFO\"
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT\"
+                # 使用 nvidia-smi 获取 GPU 使用情况
+                GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
+                # 检查使用中的 GPU 数量
+                USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
+                TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
+                FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
+                FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    # echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\$GPU_INFO\"
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU\"
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
                     exit 0
                 fi
                 exit 1"
             err=$?
             if [ $err -eq 0 ]; then
-                servers_found+=(${npu_server_list[$key]})
+                servers_found+=(${H20_server_list[$key]})
+                if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
+                    break
+                fi
             fi
-        else
-            ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list[$key]} "# 目标空闲 GPU 数量
+        done
+    elif [ $NPU_MODEL == "A800" ]; then
+        for key in "${!A800_server_list[@]}"; do
+            echo "$key => ${A800_server_list[$key]}"        
+            ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
                     TARGET_FREE_GPUS=$NPU_QUANTITY
                 fi
                 echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
-                # 使用 npu-smi 获取 GPU 使用情况
-                GPU_INFO=\$(nvidia-smi | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}')
-                #if [ $NPU_QUANTITY -ne 16 ]; then
-                    # 过滤掉第7块和第8块GPU卡
-                #    GPU_INFO=\$(echo \"\$GPU_INFO\" | sed -E 's/\b6\b//g' | sed -E 's/\b7\b//g' | sed -E 's/\s+/ /g' | xargs)
-                #fi
-                # 检查空闲 GPU 数量
-                FREE_COUNT=\$(echo \"\$GPU_INFO\" | wc -w)
-                # echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \$GPU_INFO\"
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT\"
+                # 使用 nvidia-smi 获取 GPU 使用情况
+                GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
+                # 检查使用中的 GPU 数量
+                USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
+                TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
+                FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
+                FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    # echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\$GPU_INFO\"
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU\"
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
                     exit 0
                 fi
                 exit 1"
             err=$?
             if [ $err -eq 0 ]; then
-                servers_found+=(${npu_server_list[$key]})
+                servers_found+=(${A800_server_list[$key]})
+                if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
+                    break
+                fi
             fi
-        fi
-
-        if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
-            break
-        fi
-    done
+        done
+    elif [ $NPU_MODEL == "H100" ]; then
+        for key in "${!A800_server_list[@]}"; do
+            echo "$key => ${A800_server_list[$key]}"        
+            ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
+                if [ $NPU_QUANTITY -eq 16 ]; then
+                    TARGET_FREE_GPUS=8
+                else
+                    TARGET_FREE_GPUS=$NPU_QUANTITY
+                fi
+                echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
+                # 使用 nvidia-smi 获取 GPU 使用情况
+                GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
+                # 过滤掉第5块和第6块L20 GPU卡, 对应ID是0, 1
+                GPU_INFO=\$(echo \"\$GPU_INFO\" | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs)
+                # 检查使用中的 GPU 数量
+                USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
+                TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
+                ((TOTAL_COUNT-=2))
+                FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
+                FREE_GPU_INFO=(\$(seq 2 \$((\$TOTAL_COUNT+1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
+                # 如果找到足够的空闲 GPU, 则返回结果并退出
+                if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                    exit 0
+                fi
+                exit 1"
+            err=$?
+            if [ $err -eq 0 ]; then
+                servers_found+=(${A800_server_list[$key]})
+                if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
+                    break
+                fi
+            fi
+        done
+    elif [ $NPU_MODEL == "L20" ]; then
+        for key in "${!A800_server_list[@]}"; do
+            echo "$key => ${A800_server_list[$key]}"        
+            ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
+                if [ $NPU_QUANTITY -eq 16 ]; then
+                    TARGET_FREE_GPUS=8
+                else
+                    TARGET_FREE_GPUS=$NPU_QUANTITY
+                fi
+                echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
+                # 使用 nvidia-smi 获取 GPU 使用情况
+                GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
+                # 过滤掉第1块到第4块H100 GPU卡, 对应ID是2, 3, 4, 5
+                GPU_INFO=\$(echo \"\$GPU_INFO\" | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs)
+                # 检查使用中的 GPU 数量
+                USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
+                TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
+                ((TOTAL_COUNT-=4))
+                FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
+                FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
+                # 如果找到足够的空闲 GPU, 则返回结果并退出
+                if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                    exit 0
+                fi
+                exit 1"
+            err=$?
+            if [ $err -eq 0 ]; then
+                servers_found+=(${A800_server_list[$key]})
+                if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
+                    break
+                fi
+            fi
+        done
+    fi    
 }
 
-for name in "${!npu_server_list[@]}"; do
-    echo "$name => ${npu_server_list[$name]}"
-    if [ $name == 'aicc001' ]; then
-        sshpass -p 's_limingge' scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${npu_server_list['aicc001']}:/home/s_limingge
-    else
-        scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
-    fi
+for name in "${!H20_server_list[@]}"; do
+    echo "$name => ${H20_server_list[$name]}"
+    scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
 done
+
+for name in "${!A800_server_list[@]}"; do
+    echo "$name => ${A800_server_list[$name]}"
+    scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
+done
+
+for name in "${!H100_server_list[@]}"; do
+    echo "$name => ${H100_server_list[$name]}"
+    scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
+done
+
+for name in "${!L20_server_list[@]}"; do
+    echo "$name => ${L20_server_list[$name]}"
+    scp "${curr_dir}/job_executor_for_AccuracyTest.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
+done
+
+
+> "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
 
 processed_models=${curr_dir}/"processed_models"_${log_name_suffix}
 touch ${processed_models}
@@ -182,7 +270,7 @@ while true; do
         model=`echo "$item" | awk -F : '{print $1}'`
         GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
         echo "当前模型: $model, GPU数量: $GPU_QUANTITY"
-        search_servers $GPU_QUANTITY servers
+        search_servers $GPU_QUANTITY $GPU_MODEL servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
@@ -200,7 +288,7 @@ while true; do
             echo "未找到足够的空闲 GPU, 无法测试模型${model}, 准备尝试测试下一个模型......"
             echo
             # 等待一段时间后重新扫描（例如 5 秒）
-            sleep 5
+            sleep 10
         fi
     done
 
