@@ -202,7 +202,7 @@ for option in 'DynamicSplitFuseV2'; do
 
                 echo "开始执行模型精度测试任务......"
 
-                cd /home/s_limingge/model_accuracy
+                cd /home/s_limingge/model_accuracy_ascend
                 unset pid_map
                 declare -A pid_map
                 # 开始执行测试

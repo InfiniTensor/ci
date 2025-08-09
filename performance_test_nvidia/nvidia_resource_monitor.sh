@@ -5,7 +5,9 @@ version=$1
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct:4:H20)
-full_model_list=(Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20)
+# full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
+full_model_list=(Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
+
 curr_dir=/home/s_limingge/performance_test_nvidia
 log_name_suffix=$(date +"%Y%m%d")
 parallel=4
@@ -42,7 +44,7 @@ search_servers() {
     servers_found=()
     if [ $NPU_MODEL == "H20" ]; then
         for key in "${!H20_server_list[@]}"; do
-            echo "$key => ${H20_server_list[$key]}"        
+            echo "$key => ${H20_server_list[$key]}"
             ssh s_limingge@${H20_server_list[$key]} "# 目标空闲 GPU 数量
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
@@ -58,10 +60,37 @@ search_servers() {
                 TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
                 FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
                 FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
-                # 如果找到足够的空闲 GPU, 则返回结果并退出
-                if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                    exit 0
+                if [ \$TARGET_FREE_GPUS -gt 4 ]; then
+                    # 如果找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                        exit 0
+                    fi
+                else
+                    if [ \$FREE_COUNT -lt \$TARGET_FREE_GPUS ]; then
+                        exit 1
+                    fi
+                    # 将空闲 GPU 按与 CPU1 和 CPU2 的通信关系分组
+                    CPU_1_GROUP=()
+                    CPU_2_GROUP=()
+                    # 遍历 FREE_GPU_INFO 数组, 分配到对应组
+                    for gpu in "\${FREE_GPU_INFO[@]}"; do
+                        if (( gpu < 4 )); then
+                            CPU_1_GROUP+=("\$gpu")  # GPU 0-3 与 CPU1 通信
+                        else
+                            CPU_2_GROUP+=("\$gpu")  # GPU 4-7 与 CPU2 通信
+                        fi
+                    done
+                    # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\${#CPU_1_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
+                        exit 0
+                    fi
+                    # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\${#CPU_2_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
+                        exit 0
+                    fi
                 fi
                 exit 1"
             err=$?
@@ -90,10 +119,37 @@ search_servers() {
                 TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
                 FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
                 FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
-                # 如果找到足够的空闲 GPU, 则返回结果并退出
-                if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                    exit 0
+                if [ \$TARGET_FREE_GPUS -gt 4 ]; then
+                    # 如果找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                        exit 0
+                    fi
+                else
+                    if [ \$FREE_COUNT -lt \$TARGET_FREE_GPUS ]; then
+                        exit 1
+                    fi
+                    # 将空闲 GPU 按与 CPU1 和 CPU2 的通信关系分组
+                    CPU_1_GROUP=()
+                    CPU_2_GROUP=()
+                    # 遍历 FREE_GPU_INFO 数组, 分配到对应组
+                    for gpu in "\${FREE_GPU_INFO[@]}"; do
+                        if (( gpu < 4 )); then
+                            CPU_1_GROUP+=("\$gpu")  # GPU 0-3 与 CPU1 通信
+                        else
+                            CPU_2_GROUP+=("\$gpu")  # GPU 4-7 与 CPU2 通信
+                        fi
+                    done
+                    # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\${#CPU_1_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
+                        exit 0
+                    fi
+                    # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
+                    if [ \"\${#CPU_2_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
+                        exit 0
+                    fi
                 fi
                 exit 1"
             err=$?
@@ -286,7 +342,7 @@ while true; do
             echo "未找到足够的空闲 GPU, 无法测试模型${model}, 准备尝试测试下一个模型......"
             echo
             # 等待一段时间后重新扫描（例如 5 秒）
-            sleep 5
+            sleep 10
         fi
     done
 

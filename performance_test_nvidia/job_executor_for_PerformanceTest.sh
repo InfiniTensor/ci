@@ -93,7 +93,7 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
-# 检查 npu-smi 命令是否存在
+# 检查 nvidia-smi 命令是否存在
 if ! command -v nvidia-smi &> /dev/null; then
     echo "错误: nvidia-smi 未找到，请确保 Nvidia GPU 驱动已安装"
     exit 1
@@ -117,7 +117,7 @@ while true; do
         GPU_INFO=$(echo "$GPU_INFO" | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs)
     elif [ $GPU_MODEL == "L20" ]; then
         # 过滤掉第1块到第4块H100 GPU卡, 对应ID是2, 3, 4, 5
-        GPU_INFO=$(echo "$GPU_INFO" | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs)
+        GPU_INFO=$(echo "$GPU_INFO" | sed -E 's/\b0\b//g' | sed -E 's/\b1\b//g' | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\s+/ /g' | xargs)
     fi
 
     # 检查使用中的 GPU 数量
@@ -126,19 +126,62 @@ while true; do
     TOTAL_COUNT=$(nvidia-smi -L | wc -l)
     if [ $GPU_MODEL == "H100" ]; then
         ((TOTAL_COUNT-=2))
+        FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
         FREE_GPU_INFO=($(seq 2 $(($TOTAL_COUNT+1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
+        # 如果找到足够的空闲 GPU, 则返回结果并退出
+        if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+            CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
+            break
+        fi
     elif [ $GPU_MODEL == "L20" ]; then
         ((TOTAL_COUNT-=4))
+        FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
         FREE_GPU_INFO=($(seq 0 $(($TOTAL_COUNT-1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
+        # 如果找到足够的空闲 GPU, 则返回结果并退出
+        if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+            CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
+            break
+        fi
     else
+        FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
         FREE_GPU_INFO=($(seq 0 $(($TOTAL_COUNT-1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
-    fi
-
-    FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
-    # 如果找到足够的空闲 GPU, 则返回结果并退出
-    if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
-        break
+        if [ $TARGET_FREE_GPUS -gt 4 ]; then
+            # 如果找到足够的空闲 GPU, 则返回结果并退出
+            if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
+                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+                CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
+                break
+            fi
+        else
+            # 如果找到足够的空闲 GPU，则需要按与 CPU1 和 CPU2 的通信关系进行分组
+            if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
+                # 将空闲 GPU 按与 CPU1 和 CPU2 的通信关系分组
+                CPU_1_GROUP=()
+                CPU_2_GROUP=()
+                # 遍历 FREE_GPU_INFO 数组, 分配到对应组
+                for gpu in "${FREE_GPU_INFO[@]}"; do
+                    if (( gpu < 4 )); then
+                        CPU_1_GROUP+=("$gpu")  # GPU 0-3 与 CPU1 通信
+                    else
+                        CPU_2_GROUP+=("$gpu")  # GPU 4-7 与 CPU2 通信
+                    fi
+                done
+                # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
+                if [ "${#CPU_1_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
+                    CUDA_VISIBLE_DEVICES=$(echo ${CPU_1_GROUP[@]} | sed -E 's/\s+/\,/g')
+                    break
+                fi
+                # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
+                if [ "${#CPU_2_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
+                    CUDA_VISIBLE_DEVICES=$(echo ${CPU_2_GROUP[@]} | sed -E 's/\s+/\,/g')
+                    break
+                fi
+            fi
+        fi
     fi
 
     # 等待一段时间后重新扫描（例如 10 秒）
@@ -146,9 +189,7 @@ while true; do
     sleep 10
 done
 
-CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
-
 LOG_NAME="server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log"
 
 EXEC_COMMAND="docker run --name=siginfer_nvidia_PerformanceTest_${JOB_COUNT} \
@@ -169,23 +210,26 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_PerformanceTest_${JOB_COUNT} \
     docker.xcoresigma.com:80/docker/siginfer-x86_64-nvidia:$LATEST_TAG"
 
 if [ $model == "DeepSeek-R1" ]; then
-    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1 --tokenizer /home/weight/DeepSeek-R1/ -ep 8 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --use-group-gemm --platform-type nvidia $USE_PREFIX_CACHE --tokens-per-prediction 2 $SWAP_SPACE_OPTION"
-    EXEC_COMMAND+=" --model DeepSeek-R1 --tokenizer /home/weight/DeepSeek-R1/ -ep 8 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --use-group-gemm --platform-type nvidia $USE_PREFIX_CACHE --tokens-per-prediction 2 $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1 --tokenizer /home/weight/DeepSeek-R1/ --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --use-group-gemm -ep 8 --attn-dp-size 8 --tokens-per-prediction 2 $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --model DeepSeek-R1 --tokenizer /home/weight/DeepSeek-R1/ --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --use-group-gemm -ep 8 --attn-dp-size 8 --tokens-per-prediction 2 $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-0528" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-0528 --tokenizer /home/weight/DeepSeek-R1-0528/ --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.99 --prometheus-port $PROMETHEUS_PORT --use-group-gemm -ep 8 --split-embedding --tokens-per-prediction 2 $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --model DeepSeek-R1-0528 --tokenizer /home/weight/DeepSeek-R1-0528/ --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.99 --prometheus-port $PROMETHEUS_PORT --use-group-gemm -ep 8 --split-embedding --tokens-per-prediction 2 $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "DeepSeek-V3-0324" ]; then
     echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-V3-0324 --tokenizer /home/weight/DeepSeek-V3-0324 -ep 8 --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 4096 --reset-max-seq-len 4096 --gpu-memory-utilization 0.98 --port $PORT --master-port $MASTER_PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
     EXEC_COMMAND+=" --model DeepSeek-V3-0324 --tokenizer /home/weight/DeepSeek-V3-0324 -ep 8 --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 4096 --reset-max-seq-len 4096 --gpu-memory-utilization 0.98 --port $PORT --master-port $MASTER_PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "Qwen3-235B-A22B-FP8" ]; then
-    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen3-235B-A22B-FP8 --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B-FP8 -ep 4 --port $PORT --platform-type nvidia $USE_PREFIX_CACHE --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $SWAP_SPACE_OPTION"
-    EXEC_COMMAND+=" --model Qwen3-235B-A22B-FP8 --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B-FP8 -ep 4 --port $PORT --platform-type nvidia $USE_PREFIX_CACHE --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen3-235B-A22B-FP8 --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B-FP8 -ep 4 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --model Qwen3-235B-A22B-FP8 --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B-FP8 -ep 4 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "DeepSeek-R1-awq" ]; then
     echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-awq --tokenizer /data/weight/DeepSeek-R1-awq/ --expert-parallel-size 8 --port $PORT --max-num-batched-tokens 2048 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE --use-marlin --use-marlin-wna16 --weight-dtype=FP16 $SWAP_SPACE_OPTION"
     EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-awq --tokenizer /data/weight/DeepSeek-R1-awq/ --expert-parallel-size 8 --port $PORT --max-num-batched-tokens 2048 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE --use-marlin --use-marlin-wna16 --weight-dtype=FP16 $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "DeepSeek-R1-Distill-Qwen-32B" ]; then
-    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 2 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
-    EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 2 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 1 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 1 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "DeepSeek-R1-Distill-Llama-70B" ]; then
-    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Llama-70B --tokenizer /shared/weights/DeepSeek-R1-Distill-Llama-70B -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --master-port $MASTER_PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
-    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Llama-70B --tokenizer /shared/weights/DeepSeek-R1-Distill-Llama-70B -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --master-port $MASTER_PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Llama-70B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-70B -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model DeepSeek-R1-Distill-Llama-70B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-70B -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 elif [ $model == "Meta-Llama-3.1-70B-Instruct" ]; then
     echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Meta-Llama-3.1-70B-Instruct --tokenizer /shared/weights/Meta-Llama-3.1-70B-Instruct -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
     EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Meta-Llama-3.1-70B-Instruct --tokenizer /shared/weights/Meta-Llama-3.1-70B-Instruct -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
@@ -204,6 +248,12 @@ elif [ $model == "QwQ-32B-AWQ" ]; then
 elif [ $model == "Qwen2.5-72B-Instruct-AWQ" ]; then
     echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Qwen2.5-72B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-72B-Instruct-AWQ -tp 1 --disable-turbomind --use-marlin --weight-dtype=FP16 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
     EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Qwen2.5-72B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-72B-Instruct-AWQ -tp 1 --disable-turbomind --use-marlin --weight-dtype=FP16 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-72B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Qwen2.5-72B-Instruct --tokenizer /home/weight/Qwen2.5-72B-Instruct -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --schedule-policy $SCHEDULE_POLICY --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --model Qwen2.5-72B-Instruct --tokenizer /home/weight/Qwen2.5-72B-Instruct -tp 4 --max-num-batched-tokens 8192 --gpu-memory-utilization 0.9 --port $PORT --prometheus-port $PROMETHEUS_PORT --platform-type nvidia $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen3-235B-A22B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen3-235B-A22B --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B -ep 8 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $USE_PREFIX_CACHE $SWAP_SPACE_OPTION"
+    EXEC_COMMAND+=" --model Qwen3-235B-A22B --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B -ep 8 --port $PORT --platform-type nvidia --schedule-policy $SCHEDULE_POLICY --max-num-batched-tokens 2048 --master-port $MASTER_PORT --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --prometheus-port $PROMETHEUS_PORT $USE_PREFIX_CACHE $SWAP_SPACE_OPTION > $LOG_NAME 2>&1 &"
 fi
 
 eval "$EXEC_COMMAND"
