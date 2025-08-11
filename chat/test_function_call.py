@@ -90,6 +90,338 @@ async def test_tool_call_infer(client) :
     # print("\nFinal output : \n", response.choices[0].message.content)
     print(response.choices[0].message) 
     
+@pytest.mark.asyncio
+@allure.title("对话_判断调用auto tool返回结果正确，非stream模式") 
+async def test_tool_call_auto(client) :
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=[
+        {
+            "type": "function",
+            "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state"
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+                },
+                "required": ["location", "format"]
+            }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+            "name": "get_stock_price",
+            "description": "Get the current stock price of a company",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock symbol"
+                },
+                "currency": {
+                    "type": "string",
+                    "enum": ["USD", "EUR", "JPY"],
+                    "description": "Currency to display price"
+                }
+                },
+                "required": ["symbol"]
+            }
+            }
+        }
+        ],
+        tool_choice="auto"
+    )
+    
+    print("\n*****test_guided_json_object*****\n", completion.choices[0].message.content)
+    for tool_call in completion.choices[0].message.tool_calls:
+        assert tool_call.function.name != None
+        assert tool_call.function.arguments != None
+        print(f"- Tool: {tool_call.function.name}")
+        print(f"  Arguments: {tool_call.function.arguments}")
+
+@pytest.mark.asyncio
+@allure.title("对话_判断调用required tool返回结果正确，非stream模式") 
+async def test_tool_call_required(client) :
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=[
+        {
+            "type": "function",
+            "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state"
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+                },
+                "required": ["location", "format"]
+            }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+            "name": "get_stock_price",
+            "description": "Get the current stock price of a company",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock symbol"
+                },
+                "currency": {
+                    "type": "string",
+                    "enum": ["USD", "EUR", "JPY"],
+                    "description": "Currency to display price"
+                }
+                },
+                "required": ["symbol"]
+            }
+            }
+        }
+        ],
+        tool_choice="required"
+    )
+    
+    print("\n*****test_guided_json_object*****\n", completion.choices[0].message.content)
+    for tool_call in completion.choices[0].message.tool_calls:
+        assert tool_call.function.name != None
+        assert tool_call.function.arguments != None
+        print(f"- Tool: {tool_call.function.name}")
+        print(f"  Arguments: {tool_call.function.arguments}")
+        
+@pytest.mark.asyncio
+@allure.title("对话_判断调用auto tool返回结果正确，stream模式") 
+async def test_tool_call_auto_stream(client) :
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        stream=True,
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=[
+        {
+            "type": "function",
+            "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state"
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+                },
+                "required": ["location", "format"]
+            }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+            "name": "get_stock_price",
+            "description": "Get the current stock price of a company",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock symbol"
+                },
+                "currency": {
+                    "type": "string",
+                    "enum": ["USD", "EUR", "JPY"],
+                    "description": "Currency to display price"
+                }
+                },
+                "required": ["symbol"]
+            }
+            }
+        }
+        ],
+        tool_choice="auto"
+    )
+    
+    tool_calls = []
+    
+    async for chunk in completion:
+        delta = chunk.choices[0].delta
+        
+        assert delta is not None
+        if delta.content:
+            print(delta.content, end="", flush=True)
+        
+        # Handle tool calls
+        elif delta.tool_calls:
+            for tool_call_chunk in delta.tool_calls:
+                # Ensure we have enough slots
+                while len(tool_calls) <= tool_call_chunk.index:
+                    tool_calls.append({
+                        "function": {
+                            "name": "",
+                            "arguments": ""
+                        }
+                    })
+                
+                # Update tool call
+                tc = tool_calls[tool_call_chunk.index]
+                
+                if tool_call_chunk.function:
+                    # Print tool name when it first appears
+                    if tool_call_chunk.function.name and not tc["function"]["name"]:
+                        tc["function"]["name"] = tool_call_chunk.function.name
+                        print(f"\nTool: {tool_call_chunk.function.name}")
+                    
+                    # Accumulate and print arguments
+                    if tool_call_chunk.function.arguments:
+                        tc["function"]["arguments"] += tool_call_chunk.function.arguments
+                        print(tool_call_chunk.function.arguments, end="", flush=True)
+    
+    print()
+    
+@pytest.mark.asyncio
+@allure.title("对话_判断调用required tool返回结果正确，stream模式") 
+async def test_tool_call_required_stream(client) :
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        stream=True,
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=[
+        {
+            "type": "function",
+            "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state"
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+                },
+                "required": ["location", "format"]
+            }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+            "name": "get_stock_price",
+            "description": "Get the current stock price of a company",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock symbol"
+                },
+                "currency": {
+                    "type": "string",
+                    "enum": ["USD", "EUR", "JPY"],
+                    "description": "Currency to display price"
+                }
+                },
+                "required": ["symbol"]
+            }
+            }
+        }
+        ],
+        tool_choice="required"
+    )
+    
+    tool_calls = []
+    
+    async for chunk in completion:
+        delta = chunk.choices[0].delta
+        
+        assert delta is not None
+        
+        if delta.content:
+            print(delta.content, end="", flush=True)
+        
+        # Handle tool calls
+        elif delta.tool_calls:
+            for tool_call_chunk in delta.tool_calls:
+                # Ensure we have enough slots
+                while len(tool_calls) <= tool_call_chunk.index:
+                    tool_calls.append({
+                        "function": {
+                            "name": "",
+                            "arguments": ""
+                        }
+                    })
+                
+                # Update tool call
+                tc = tool_calls[tool_call_chunk.index]
+                
+                
+                if tool_call_chunk.function:
+                    # Print tool name when it first appears
+                    if tool_call_chunk.function.name and not tc["function"]["name"]:
+                        tc["function"]["name"] = tool_call_chunk.function.name
+                        print(f"\nTool: {tool_call_chunk.function.name}")
+                    
+                    # Accumulate and print arguments
+                    if tool_call_chunk.function.arguments:
+                        tc["function"]["arguments"] += tool_call_chunk.function.arguments
+                        print(tool_call_chunk.function.arguments, end="", flush=True)
+    
+    print()
+
 # TOOLS = [{
 #     "type": "function",
 #     "function": {
