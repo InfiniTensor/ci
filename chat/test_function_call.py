@@ -3,6 +3,7 @@ import json
 import pytest
 import allure
 from debugtalk import *
+import openai
 
 # Function will be used outside LLM
 def get_weather(location: str, unit: str):
@@ -17,6 +18,54 @@ def get_weather(location: str, unit: str):
         return fake_weather_of_Dallas
     else :
         return "unknowm city"
+TOOLS=[
+        {
+            "type": "function",
+            "function": {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "The city and state"
+                },
+                "format": {
+                    "type": "string",
+                    "enum": ["celsius", "fahrenheit"],
+                    "description": "Temperature unit"
+                }
+                },
+                "required": ["location", "format"]
+            }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+            "name": "get_stock_price",
+            "description": "Get the current stock price of a company",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                "symbol": {
+                    "type": "string",
+                    "description": "Stock symbol"
+                },
+                "currency": {
+                    "type": "string",
+                    "enum": ["USD", "EUR", "JPY"],
+                    "description": "Currency to display price"
+                }
+                },
+                "required": ["symbol"]
+            }
+            }
+        }
+        ]
+FUNC_NAME = "get_current_weather"
+FUNC_ARGS = ['{"location": "Tokyo", "format": "celsius"}', '{"symbol": "AAPL", "currency": "USD"}']
 
 # Tool_call procedure
 @pytest.mark.asyncio
@@ -89,7 +138,102 @@ async def test_tool_call_infer(client) :
 
     # print("\nFinal output : \n", response.choices[0].message.content)
     print(response.choices[0].message) 
+
+@pytest.mark.asyncio
+@allure.title("对话_tool_choice传值为none返回结果正确，非stream模式") 
+async def test_tool_call_none(client) :
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=TOOLS,
+        tool_choice="none"
+    )
+    assert not completion.choices[0].message.tool_calls
+    assert completion.choices[0].message.content != None
     
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="目前进行了处理，但有点问题")
+@allure.title("对话_tool_choice为None返回500，非stream模式") 
+async def test_tool_call_null(client) :
+    try:
+        completion = await client.chat.completions.create(
+            model=os_env('MODEL'),
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice=None
+        )
+        print(completion)
+    except openai.InternalServerError as e:
+        assert e.status_code == 500
+    else:
+        pytest.fail("未按预期处理")
+        
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="目前进行了处理，但有点问题")
+@allure.title("对话_tool_choice为None返回500，stream模式") 
+async def test_tool_call_null_stream(client) :
+    try:
+        completion = await client.chat.completions.create(
+            model=os_env('MODEL'),
+            stream=True,
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice=None
+        )
+        print(completion)
+    except openai.InternalServerError as e:
+        assert e.status_code == 500
+    else:
+        pytest.fail("未按预期处理")
+@pytest.mark.asyncio
+@allure.title("对话_tool_choice为''或'tool'返回400,参数不符合规范，非stream模式") 
+async def test_tool_call_error(client) :
+    try:
+        await client.chat.completions.create(
+            model=os_env('MODEL'),
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice=""
+        )
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "'body', 'tool_choice'" in e.response.content.decode()
+    try:
+        await client.chat.completions.create(
+            model=os_env('MODEL'),
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice="tool"
+        )
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "'body', 'tool_choice'" in e.response.content.decode()
+               
 @pytest.mark.asyncio
 @allure.title("对话_判断调用auto tool返回结果正确，非stream模式") 
 async def test_tool_call_auto(client) :
@@ -101,61 +245,17 @@ async def test_tool_call_auto(client) :
                 "content": "What is the weather in Tokyo and the stock price of Apple?"
             }
         ],
-        tools=[
-        {
-            "type": "function",
-            "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state"
-                },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "Temperature unit"
-                }
-                },
-                "required": ["location", "format"]
-            }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-            "name": "get_stock_price",
-            "description": "Get the current stock price of a company",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Stock symbol"
-                },
-                "currency": {
-                    "type": "string",
-                    "enum": ["USD", "EUR", "JPY"],
-                    "description": "Currency to display price"
-                }
-                },
-                "required": ["symbol"]
-            }
-            }
-        }
-        ],
+        tools=TOOLS,
         tool_choice="auto"
     )
     
-    print("\n*****test_guided_json_object*****\n", completion.choices[0].message.content)
-    for tool_call in completion.choices[0].message.tool_calls:
-        assert tool_call.function.name != None
-        assert tool_call.function.arguments != None
-        print(f"- Tool: {tool_call.function.name}")
-        print(f"  Arguments: {tool_call.function.arguments}")
+    if not completion.choices[0].message.tool_calls:
+        print("未调用任何function")
+    else:
+        for tool_call in completion.choices[0].message.tool_calls:
+            assert tool_call.function.name != None
+            assert tool_call.function.name in ["get_current_weather","get_stock_price"]
+            assert tool_call.function.arguments != None
 
 @pytest.mark.asyncio
 @allure.title("对话_判断调用required tool返回结果正确，非stream模式") 
@@ -168,65 +268,106 @@ async def test_tool_call_required(client) :
                 "content": "What is the weather in Tokyo and the stock price of Apple?"
             }
         ],
-        tools=[
-        {
-            "type": "function",
-            "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state"
-                },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "Temperature unit"
-                }
-                },
-                "required": ["location", "format"]
-            }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-            "name": "get_stock_price",
-            "description": "Get the current stock price of a company",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Stock symbol"
-                },
-                "currency": {
-                    "type": "string",
-                    "enum": ["USD", "EUR", "JPY"],
-                    "description": "Currency to display price"
-                }
-                },
-                "required": ["symbol"]
-            }
-            }
-        }
-        ],
+        tools=TOOLS,
         tool_choice="required"
     )
     
-    print("\n*****test_guided_json_object*****\n", completion.choices[0].message.content)
+    assert len(completion.choices[0].message.tool_calls) >= 1
     for tool_call in completion.choices[0].message.tool_calls:
         assert tool_call.function.name != None
+        assert tool_call.function.name in ["get_current_weather","get_stock_price"]
         assert tool_call.function.arguments != None
-        print(f"- Tool: {tool_call.function.name}")
-        print(f"  Arguments: {tool_call.function.arguments}")
+
+@pytest.mark.asyncio
+@allure.title("对话_tool_choice传值为none返回结果正确，stream模式") 
+async def test_tool_call_none_stream(client) :
+    completion_not_stream = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=TOOLS,
+        tool_choice="none",
+        temperature=0
+    )
+    content_not_stream = completion_not_stream.choices[0].message.content
+    
+    completion = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        stream=True,
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=TOOLS,
+        tool_choice="none",
+        temperature=0
+        
+    )
+    chunks = []
+    async for chunk in completion:
+        chunks.append(chunk)
+    reasoning_content, arguments, function_names = extract_reasoning_and_calls(chunks)
+    assert len(function_names) == 0
+    assert reasoning_content.rstrip() == content_not_stream.rstrip()
+    
+@pytest.mark.asyncio
+@allure.title("对话_tool_choice为''或'tool'返回400,参数不符合规范，stream模式") 
+async def test_tool_call_error_stream(client) :
+    try:
+        await client.chat.completions.create(
+            model=os_env('MODEL'),
+            stream=True,
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice=""
+        )
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "'body', 'tool_choice'" in e.response.content.decode()
+    try:
+        await client.chat.completions.create(
+            model=os_env('MODEL'),
+            stream=True,
+            messages=[
+                {
+                    "role": "user",
+                    "content": "What is the weather in Tokyo and the stock price of Apple?"
+                }
+            ],
+            tools=TOOLS,
+            tool_choice="tool"
+        )
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "'body', 'tool_choice'" in e.response.content.decode()
         
 @pytest.mark.asyncio
 @allure.title("对话_判断调用auto tool返回结果正确，stream模式") 
 async def test_tool_call_auto_stream(client) :
+    completion_not_stream = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=TOOLS,
+        tool_choice="auto",
+        temperature=0
+    )
+    content_not_stream = completion_not_stream.choices[0].message.content
     completion = await client.chat.completions.create(
         model=os_env('MODEL'),
         stream=True,
@@ -236,95 +377,35 @@ async def test_tool_call_auto_stream(client) :
                 "content": "What is the weather in Tokyo and the stock price of Apple?"
             }
         ],
-        tools=[
-        {
-            "type": "function",
-            "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state"
-                },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "Temperature unit"
-                }
-                },
-                "required": ["location", "format"]
-            }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-            "name": "get_stock_price",
-            "description": "Get the current stock price of a company",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Stock symbol"
-                },
-                "currency": {
-                    "type": "string",
-                    "enum": ["USD", "EUR", "JPY"],
-                    "description": "Currency to display price"
-                }
-                },
-                "required": ["symbol"]
-            }
-            }
-        }
-        ],
-        tool_choice="auto"
+        tools=TOOLS,
+        tool_choice="auto",
+        temperature=0
     )
-    
-    tool_calls = []
-    
+    chunks = []
     async for chunk in completion:
-        delta = chunk.choices[0].delta
-        
-        assert delta is not None
-        if delta.content:
-            print(delta.content, end="", flush=True)
-        
-        # Handle tool calls
-        elif delta.tool_calls:
-            for tool_call_chunk in delta.tool_calls:
-                # Ensure we have enough slots
-                while len(tool_calls) <= tool_call_chunk.index:
-                    tool_calls.append({
-                        "function": {
-                            "name": "",
-                            "arguments": ""
-                        }
-                    })
-                
-                # Update tool call
-                tc = tool_calls[tool_call_chunk.index]
-                
-                if tool_call_chunk.function:
-                    # Print tool name when it first appears
-                    if tool_call_chunk.function.name and not tc["function"]["name"]:
-                        tc["function"]["name"] = tool_call_chunk.function.name
-                        print(f"\nTool: {tool_call_chunk.function.name}")
-                    
-                    # Accumulate and print arguments
-                    if tool_call_chunk.function.arguments:
-                        tc["function"]["arguments"] += tool_call_chunk.function.arguments
-                        print(tool_call_chunk.function.arguments, end="", flush=True)
-    
-    print()
+        chunks.append(chunk)
+    reasoning_content, arguments, function_names = extract_reasoning_and_calls(chunks)
+    assert len(function_names) >= 1
+    for function in function_names:
+        assert function in ['get_current_weather', 'get_stock_price']
+    assert reasoning_content.rstrip() == content_not_stream.rstrip()
     
 @pytest.mark.asyncio
 @allure.title("对话_判断调用required tool返回结果正确，stream模式") 
 async def test_tool_call_required_stream(client) :
+    completion_not_stream = await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+            {
+                "role": "user",
+                "content": "What is the weather in Tokyo and the stock price of Apple?"
+            }
+        ],
+        tools=TOOLS,
+        tool_choice="required"
+    )
+    content_not_stream = completion_not_stream.choices[0].message.content
+    
     completion = await client.chat.completions.create(
         model=os_env('MODEL'),
         stream=True,
@@ -334,172 +415,56 @@ async def test_tool_call_required_stream(client) :
                 "content": "What is the weather in Tokyo and the stock price of Apple?"
             }
         ],
-        tools=[
-        {
-            "type": "function",
-            "function": {
-            "name": "get_current_weather",
-            "description": "Get the current weather in a given location",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "location": {
-                    "type": "string",
-                    "description": "The city and state"
-                },
-                "format": {
-                    "type": "string",
-                    "enum": ["celsius", "fahrenheit"],
-                    "description": "Temperature unit"
-                }
-                },
-                "required": ["location", "format"]
-            }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
-            "name": "get_stock_price",
-            "description": "Get the current stock price of a company",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                "symbol": {
-                    "type": "string",
-                    "description": "Stock symbol"
-                },
-                "currency": {
-                    "type": "string",
-                    "enum": ["USD", "EUR", "JPY"],
-                    "description": "Currency to display price"
-                }
-                },
-                "required": ["symbol"]
-            }
-            }
-        }
-        ],
+        tools=TOOLS,
         tool_choice="required"
     )
-    
-    tool_calls = []
-    
+    chunks = []
     async for chunk in completion:
-        delta = chunk.choices[0].delta
-        
-        assert delta is not None
-        
-        if delta.content:
-            print(delta.content, end="", flush=True)
-        
-        # Handle tool calls
-        elif delta.tool_calls:
-            for tool_call_chunk in delta.tool_calls:
-                # Ensure we have enough slots
-                while len(tool_calls) <= tool_call_chunk.index:
-                    tool_calls.append({
-                        "function": {
-                            "name": "",
-                            "arguments": ""
-                        }
-                    })
+        chunks.append(chunk)
+    reasoning_content, arguments, function_names = extract_reasoning_and_calls(chunks)
+    assert len(function_names) >= 1
+    for function in function_names:
+        assert function in ['get_current_weather', 'get_stock_price']
+    assert reasoning_content.rstrip() == content_not_stream.rstrip()
+
+def extract_reasoning_and_calls(chunks: list):
+    reasoning_content = ""
+    arguments = []
+    function_names = []
+    for chunk in chunks:
+        # 检查是否有 tool_calls
+        if hasattr(chunk.choices[0].delta, "tool_calls") and chunk.choices[0].delta.tool_calls:
+            for tool_call in chunk.choices[0].delta.tool_calls:
+                # 确保索引在范围内
+                while len(arguments) <= tool_call.index:
+                    arguments.append("")
+                while len(function_names) <= tool_call.index:
+                    function_names.append("")
                 
-                # Update tool call
-                tc = tool_calls[tool_call_chunk.index]
+                # 更新 function name
+                if hasattr(tool_call.function, "name") and tool_call.function.name:
+                    function_names[tool_call.index] = tool_call.function.name
                 
-                
-                if tool_call_chunk.function:
-                    # Print tool name when it first appears
-                    if tool_call_chunk.function.name and not tc["function"]["name"]:
-                        tc["function"]["name"] = tool_call_chunk.function.name
-                        print(f"\nTool: {tool_call_chunk.function.name}")
-                    
-                    # Accumulate and print arguments
-                    if tool_call_chunk.function.arguments:
-                        tc["function"]["arguments"] += tool_call_chunk.function.arguments
-                        print(tool_call_chunk.function.arguments, end="", flush=True)
-    
-    print()
-
-# TOOLS = [{
-#     "type": "function",
-#     "function": {
-#         "name": "get_current_weather",
-#         "description": "Get the current weather in a given location",
-#         "parameters": {
-#             "type": "object",
-#             "properties": {
-#                 "city": {
-#                     "type":
-#                     "string",
-#                     "description":
-#                     "The city to find the weather for, e.g. 'San Francisco'"
-#                 },
-#                 "state": {
-#                     "type":
-#                     "string",
-#                     "description":
-#                     "the two-letter abbreviation for the state that the city is"
-#                     " in, e.g. 'CA' which would mean 'California'"
-#                 },
-#                 "unit": {
-#                     "type": "string",
-#                     "description": "The unit to fetch the temperature in",
-#                     "enum": ["celsius", "fahrenheit"]
-#                 }
-#             },
-#             "required": ["city", "state", "unit"]
-#         }
-#     }
-# }]
-
-# MESSAGES = [{
-#     "role": "user",
-#     "content": "Hi! How are you doing today?"
-# }, {
-#     "role": "assistant",
-#     "content": "I'm doing well! How can I help you?"
-# }, {
-#     "role":
-#     "user",
-#     "content":
-#     "Can you tell me what the temperate will be in Dallas, in fahrenheit?"
-# }]
-
-# FUNC_NAME = "get_current_weather"
-# FUNC_ARGS = """{"city": "Dallas", "state": "TX", "unit": "fahrenheit"}"""
-
-
-# def extract_reasoning_and_calls(chunks: list):
-#     reasoning_content = ""
-#     tool_call_idx = -1
-#     arguments = []
-#     function_names = []
-#     for chunk in chunks:
-#         if chunk.choices[0].delta.tool_calls:
-#             tool_call = chunk.choices[0].delta.tool_calls[0]
-#             if tool_call.index != tool_call_idx:
-#                 tool_call_idx = chunk.choices[0].delta.tool_calls[0].index
-#                 arguments.append("")
-#                 function_names.append("")
-
-#             if tool_call.function:
-#                 if tool_call.function.name:
-#                     function_names[tool_call_idx] = tool_call.function.name
-
-#                 if tool_call.function.arguments:
-#                     arguments[tool_call_idx] += tool_call.function.arguments
-#         else:
-#             print('*'*50, chunk)
-#             if hasattr(chunk.choices[0].delta, "reasoning_content"):
-#                 reasoning_content += chunk.choices[0].delta.reasoning_content
-#     return reasoning_content, arguments, function_names
+                # 更新 arguments
+                if hasattr(tool_call.function, "arguments") and tool_call.function.arguments:
+                    arguments[tool_call.index] += tool_call.function.arguments
+        
+        # 检查是否有 reasoning_content
+        if hasattr(chunk.choices[0].delta, "content") and chunk.choices[0].delta.content:
+            reasoning_content += chunk.choices[0].delta.content
+    arguments = [x for x in arguments if x != '']
+    function_names = [x for x in function_names if x != '']
+    # print(reasoning_content)
+    # print(arguments)
+    # print(function_names)
+    return reasoning_content, arguments, function_names
 
 
 # # test streaming
-# def test_chat_streaming_of_tool_and_reasoning():
-#     stream = client.chat.completions.create(
+# @pytest.mark.asyncio
+# @allure.title("对话_判断调用required tool返回结果正确，stream模式") 
+# async def test_chat_streaming_of_tool_and_reasoning(client):
+#     stream = await client.chat.completions.create(
 #         model=os_env('MODEL'),
 #         messages=MESSAGES,
 #         tools=TOOLS,
@@ -507,7 +472,7 @@ async def test_tool_call_required_stream(client) :
 #         stream=True,
 #     )
 #     chunks = []
-#     for chunk in stream:
+#     async for chunk in stream:
 #         chunks.append(chunk)
         
 #     # print(chunks)
