@@ -84,11 +84,12 @@ fi
 processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
 touch ${processed_models}
 
-for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+# for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+for option in 'DynamicSplitFuseV2'; do
     use_prefix_cache_flag=1
-    for ((i=1; i<=2; i=i+1)); do
-        swap_space=0
-        for ((j=1; j<=2; j=j+1)); do
+    for ((i=1; i<=1; i=i+1)); do
+        swap_space=40
+        for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
                 model=`echo "$item" | awk -F : '{print $1}'`
                 gpu_quantity=`echo "$item" | awk -F : '{print $2}'`
@@ -264,7 +265,7 @@ for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
                     fi
                 fi
             done
-            swap_space=40
+            swap_space=0
         done
         use_prefix_cache_flag=$((-use_prefix_cache_flag))
     done

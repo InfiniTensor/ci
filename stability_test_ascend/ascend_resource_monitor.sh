@@ -12,7 +12,7 @@ log_name_suffix=$(date +"%Y%m%d")
 parallel=3
 
 declare -A npu_server_list=(
-    ["aicc001"]="10.9.1.6"
+    # ["aicc001"]="10.9.1.6"
     ["aicc003"]="10.9.1.74"
     ["aicc004"]="10.9.1.34"
     ["aicc005"]="10.9.1.26"
@@ -122,31 +122,32 @@ GPU_resource_demand=()
 for item in "${full_model_list[@]}"; do
     model=`echo "$item" | awk -F : '{print $1}'`
     found=0
-    for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
-        for ((i=1; i<=2; i=i+1)); do
-            swap_space=0
-            for ((j=1; j<=2; j=j+1)); do
+        for ((i=1; i<=1; i=i+1)); do
+            swap_space=40
+            for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个
                 if [ $use_prefix_cache_flag -gt 0 ]; then
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi
                 else
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi

@@ -80,7 +80,7 @@ def save_summary_to_log(version_text, model_name, summary_text):
     
     filename = f"report_{current_time}.txt"
     
-    with open(f"/home/s_limingge/smoke_test/{filename}", 'a') as file:
+    with open(f"/home/s_limingge/smoke_test_ascend/{filename}", 'a') as file:
         file.write('Docker image version: ' + version_text + '\n')
         file.write('Model name: ' + model_name + '\n')
         file.write(summary_text + '\n\n')

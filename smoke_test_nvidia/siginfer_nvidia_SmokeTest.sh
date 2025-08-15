@@ -4,7 +4,8 @@ server_list=($2)
 candidate_models=$3
 version=$4
 
-full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
+# full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
+full_model_list=(Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 curr_dir=/home/s_limingge/smoke_test_nvidia
 
 declare -A A800_server_list=(
@@ -55,11 +56,10 @@ fi
 processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
 touch ${processed_models}
 
-# for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
-for option in 'DynamicSplitFuseV2'; do
+for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     use_prefix_cache_flag=1
     for ((i=1; i<=2; i=i+1)); do
-        swap_space=0
+        swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
                 model=`echo "$item" | awk -F : '{print $1}'`
@@ -144,8 +144,8 @@ for option in 'DynamicSplitFuseV2'; do
                         
                         # 启动失败，清理工作
                         for ip in ${server_list[@]}; do
-                            ssh s_limingge@$ip docker stop siginfer_nvidia_smokeTest
-                            ssh s_limingge@$ip docker rm siginfer_nvidia_smokeTest
+                            ssh s_limingge@$ip docker stop siginfer_nvidia_SmokeTest
+                            ssh s_limingge@$ip docker rm siginfer_nvidia_SmokeTest
                         done
                         success=1
                         break
@@ -173,8 +173,8 @@ for option in 'DynamicSplitFuseV2'; do
 
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
-                    ssh s_limingge@$ip docker stop siginfer_nvidia_smokeTest
-                    ssh s_limingge@$ip docker rm siginfer_nvidia_smokeTest
+                    ssh s_limingge@$ip docker stop siginfer_nvidia_SmokeTest
+                    ssh s_limingge@$ip docker rm siginfer_nvidia_SmokeTest
                 done
                 
                 # 发送测试报告
@@ -219,7 +219,7 @@ for option in 'DynamicSplitFuseV2'; do
                     fi
                 fi
             done
-            swap_space=40
+            swap_space=0
         done
         use_prefix_cache_flag=$((-use_prefix_cache_flag))
     done

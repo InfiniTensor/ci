@@ -3,8 +3,8 @@
 version=$1
 
 # full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:8 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:1 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B-FP8:4 DeepSeek-V3-0324:8 Qwen3-30B-A3B-Instruct:2)
-full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:1 Qwen3-235B-A22B-FP8:4 Qwen3-30B-A3B-Instruct:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
-# full_model_list=(Qwen3-235B-A22B-FP8:4 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
+# full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:1 Qwen3-235B-A22B-FP8:4 Qwen3-30B-A3B-Instruct:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
+full_model_list=(Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 
 curr_dir=/home/s_limingge/accuracy_test_nvidia
 log_name_suffix=$(date +"%Y%m%d")
@@ -212,28 +212,28 @@ for item in "${full_model_list[@]}"; do
     for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
-            swap_space=0
+            swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个
                 if [ $use_prefix_cache_flag -gt 0 ]; then
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi
                 else
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi

@@ -5,13 +5,13 @@ version=$1
 # full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Llama-8B:1 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2)
 # full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
-full_model_list=(Qwen2.5-72B-Instruct:4)
+full_model_list=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
 curr_dir=/home/s_limingge/performance_test_ascend
 log_name_suffix=$(date +"%Y%m%d")
-parallel=1
+parallel=3
 
 declare -A npu_server_list=(
-    ["aicc001"]="10.9.1.6"
+    # ["aicc001"]="10.9.1.6"
     ["aicc003"]="10.9.1.74"
     ["aicc004"]="10.9.1.34"
     ["aicc005"]="10.9.1.26"
@@ -124,28 +124,28 @@ for item in "${full_model_list[@]}"; do
     for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
-            swap_space=0
+            swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个
                 if [ $use_prefix_cache_flag -gt 0 ]; then
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi
                 else
                     if [ $swap_space -eq 0 ]; then
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}` ]; then
-                            swap_space=40
                             continue
                         fi
                     else
                         if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_swap-space` ]; then
+                            swap_space=0
                             continue
                         fi
                     fi
@@ -187,7 +187,7 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             /home/s_limingge/performance_test_ascend/siginfer_ascend_PerformanceTest.sh 1 "${servers[*]}" ${model} ${job_count} ${version} > /home/s_limingge/performance_test_ascend/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-            tail -F /home/s_limingge/performance_test_ascend/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型精度测试任务"
+            tail -F /home/s_limingge/performance_test_ascend/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型性能测试任务"
             ((job_count++))
             if [ $job_count -ge $parallel ]; then
                 wait

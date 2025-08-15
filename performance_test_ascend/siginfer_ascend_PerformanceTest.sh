@@ -7,9 +7,10 @@ candidate_models=$3
 job_count=$4
 version=$5
 
-full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+# full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+full_model_list=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
 curr_dir=/home/s_limingge/performance_test_ascend
-concurrency_list=(1 5 10 20 50 100)
+concurrency_list=(1 5 10 20 50 100 150 200 300)
 length_pairs=(
   "128:128"
   "128:1024"
@@ -99,7 +100,7 @@ touch ${processed_models}
 for option in 'DynamicSplitFuseV2'; do
     use_prefix_cache_flag=1
     for ((i=1; i<=1; i=i+1)); do
-        swap_space=0
+        swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
                 model=`echo "$item" | awk -F : '{print $1}'`
@@ -212,11 +213,17 @@ for option in 'DynamicSplitFuseV2'; do
                     continue
                 fi
 
-                echo "开始执行模型精度测试任务......"
+                echo "开始执行模型性能测试任务......"
+
+                if [ $model == "Qwen3-235B-A22B" ]; then
+                    data_path="/home/weight/Qwen3"
+                else
+                    data_path="/home/weight"
+                fi
                 
                 # 开始执行测试
                 # Random
-                ssh -o ConnectionAttempts=3 s_limingge@${server_list[0]} "
+                ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                     docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
                         pip3 install dataSets pillow aiohttp
 
@@ -229,14 +236,14 @@ for option in 'DynamicSplitFuseV2'; do
                             echo \\\"========================================================\\\"
 
                             for concurrency in ${concurrency_list[@]}; do
-                                prompts=\\\$((concurrency * 4))
+                                prompts=\\\$((concurrency * 1))
                                 echo "Testing concurrency=\\\$concurrency, prompts=\\\$prompts"
 
                                 python3 /SigInfer/script/benchmark/benchmark_serving.py \
-                                --port 9701 \
+                                --port \\\$((9701+${job_count})) \
                                 --host 127.0.0.1 \
                                 --model ${model} \
-                                --tokenizer /home/weight/DeepSeek-R1-0528/ \
+                                --tokenizer ${data_path}/${model}/ \
                                 --endpoint /v1/completions \
                                 --dataset-name random \
                                 --random-input-len \\\$input_len \
@@ -311,15 +318,15 @@ for option in 'DynamicSplitFuseV2'; do
 
                     if [ $use_prefix_cache_flag -eq 1 ]; then
                         if [ $swap_space -eq 0 ]; then
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                            python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
                         else
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-Space=40" "$curr_dir/$filename"
+                            python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
                         fi
                     else
                         if [ $swap_space -eq 0 ]; then
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
+                            python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
                         else
-                            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Swap-Space=40" "$curr_dir/$filename"
+                            python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/$filename"
                         fi
                     fi
                 fi
@@ -339,7 +346,7 @@ for option in 'DynamicSplitFuseV2'; do
                     fi
                 fi
             done
-            swap_space=40
+            swap_space=0
         done
         use_prefix_cache_flag=$((-use_prefix_cache_flag))
     done

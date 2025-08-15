@@ -7,7 +7,8 @@ candidate_models=$3
 job_count=$4
 version=$5
 
-full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:8 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:1 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B-FP8:4 DeepSeek-V3-0324:8 Qwen3-30B-A3B-Instruct:2)
+# full_model_list=(DeepSeek-R1:8 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:8 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:1 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B-FP8:4 DeepSeek-V3-0324:8 Qwen3-30B-A3B-Instruct:2)
+full_model_list=(Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 curr_dir=/home/s_limingge/accuracy_test_nvidia
 GPU_MODEL="H20"
 
@@ -73,7 +74,7 @@ schedule_policies=('DynamicSplitFuseV2')
 for option in "${schedule_policies[@]}"; do
     use_prefix_cache_flag=1
     for ((i=1; i<=1; i=i+1)); do
-        swap_space=0
+        swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
                 model=`echo "$item" | awk -F : '{print $1}'`
@@ -227,31 +228,31 @@ for option in "${schedule_policies[@]}"; do
                 done
                 
                 # 发送测试报告
-                if [ $send_report -eq 1 ]; then
-                    if [ -z $version ]; then
-                        latest_tag=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-x86_64-nvidia/tags/list | jq -r '.tags[]' \
-                        | xargs -I% sh -c "echo -n \"%  \"; \
-                            jfrog rt curl --server-id=my-jcr \
-                            /api/storage/docker-local/siginfer-x86_64-nvidia/% \
-                        | jq -r '.created'" | sort -k2 -r | head -n1 | awk '{print $1}')
-                    else
-                        latest_tag=$version
-                    fi
+                # if [ $send_report -eq 1 ]; then
+                #     if [ -z $version ]; then
+                #         latest_tag=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-x86_64-nvidia/tags/list | jq -r '.tags[]' \
+                #         | xargs -I% sh -c "echo -n \"%  \"; \
+                #             jfrog rt curl --server-id=my-jcr \
+                #             /api/storage/docker-local/siginfer-x86_64-nvidia/% \
+                #         | jq -r '.created'" | sort -k2 -r | head -n1 | awk '{print $1}')
+                #     else
+                #         latest_tag=$version
+                #     fi
 
-                    if [ $use_prefix_cache_flag -eq 1 ]; then
-                        if [ $swap_space -eq 0 ]; then
-                            #...
-                        else
-                            #...
-                        fi
-                    else
-                        if [ $swap_space -eq 0 ]; then
-                            #...
-                        else
-                            #...
-                        fi
-                    fi
-                fi
+                #     if [ $use_prefix_cache_flag -eq 1 ]; then
+                #         if [ $swap_space -eq 0 ]; then
+                #             #...
+                #         else
+                #             #...
+                #         fi
+                #     else
+                #         if [ $swap_space -eq 0 ]; then
+                #             #...
+                #         else
+                #             #...
+                #         fi
+                #     fi
+                # fi
                 
                 # 记录测试进度
                 if [ $use_prefix_cache_flag -eq 1 ]; then
@@ -268,7 +269,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
                 fi
             done
-            swap_space=40
+            swap_space=0
         done
         use_prefix_cache_flag=$((-use_prefix_cache_flag))
     done
