@@ -23,7 +23,6 @@ async def test_not_stream_with_stop(client):
         }
         ],
         temperature=0,
-        stream=False,
     )
     content_0 = completion_0.choices[0].message.content
     tokens_0 = completion_0.usage.completion_tokens

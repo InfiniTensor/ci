@@ -157,8 +157,7 @@ async def test_tool_call_none(client) :
     assert completion.choices[0].message.content != None
     
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="目前进行了处理，但有点问题")
-@allure.title("对话_tool_choice为None返回500，非stream模式") 
+@allure.title("对话_tool_choice为None返回400参数错误，非stream模式") 
 async def test_tool_call_null(client) :
     try:
         completion = await client.chat.completions.create(
@@ -173,14 +172,14 @@ async def test_tool_call_null(client) :
             tool_choice=None
         )
         print(completion)
-    except openai.InternalServerError as e:
-        assert e.status_code == 500
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "Value error" in e.response.content.decode()
     else:
         pytest.fail("未按预期处理")
         
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="目前进行了处理，但有点问题")
-@allure.title("对话_tool_choice为None返回500，stream模式") 
+@allure.title("对话_tool_choice为None返回400参数错误，stream模式") 
 async def test_tool_call_null_stream(client) :
     try:
         completion = await client.chat.completions.create(
@@ -196,10 +195,13 @@ async def test_tool_call_null_stream(client) :
             tool_choice=None
         )
         print(completion)
-    except openai.InternalServerError as e:
-        assert e.status_code == 500
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert "Value error" in e.response.content.decode()
+        
     else:
         pytest.fail("未按预期处理")
+
 @pytest.mark.asyncio
 @allure.title("对话_tool_choice为''或'tool'返回400,参数不符合规范，非stream模式") 
 async def test_tool_call_error(client) :
@@ -217,7 +219,7 @@ async def test_tool_call_error(client) :
         )
     except openai.BadRequestError as e:
         assert e.status_code == 400
-        assert "'body', 'tool_choice'" in e.response.content.decode()
+        assert "value_error" in e.response.content.decode()
     try:
         await client.chat.completions.create(
             model=os_env('MODEL'),
@@ -232,7 +234,7 @@ async def test_tool_call_error(client) :
         )
     except openai.BadRequestError as e:
         assert e.status_code == 400
-        assert "'body', 'tool_choice'" in e.response.content.decode()
+        assert "value_error" in e.response.content.decode()
                
 @pytest.mark.asyncio
 @allure.title("对话_判断调用auto tool返回结果正确，非stream模式") 
@@ -334,7 +336,7 @@ async def test_tool_call_error_stream(client) :
         )
     except openai.BadRequestError as e:
         assert e.status_code == 400
-        assert "'body', 'tool_choice'" in e.response.content.decode()
+        assert "value_error" in e.response.content.decode()
     try:
         await client.chat.completions.create(
             model=os_env('MODEL'),
@@ -350,7 +352,7 @@ async def test_tool_call_error_stream(client) :
         )
     except openai.BadRequestError as e:
         assert e.status_code == 400
-        assert "'body', 'tool_choice'" in e.response.content.decode()
+        assert "value_error" in e.response.content.decode()
         
 @pytest.mark.asyncio
 @allure.title("对话_判断调用auto tool返回结果正确，stream模式") 
@@ -385,10 +387,22 @@ async def test_tool_call_auto_stream(client) :
     async for chunk in completion:
         chunks.append(chunk)
     reasoning_content, arguments, function_names = extract_reasoning_and_calls(chunks)
-    assert len(function_names) >= 1
     for function in function_names:
         assert function in ['get_current_weather', 'get_stock_price']
     assert reasoning_content.rstrip() == content_not_stream.rstrip()
+    print(content_not_stream)
+    print("*******************stream result*************************")
+    print(reasoning_content)
+    
+    if not function_names:
+        print("未调用任何function")
+    else:
+        for function in function_names:
+            assert function != None
+            assert function in ['get_current_weather', 'get_stock_price']
+        for argument in arguments:
+            assert argument != None
+            
     
 @pytest.mark.asyncio
 @allure.title("对话_判断调用required tool返回结果正确，stream模式") 

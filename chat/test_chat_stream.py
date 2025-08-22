@@ -65,14 +65,18 @@ async def test_stream_chat(client):
         stream=True,
     )
     chunks= []
+    index=0
     assert isinstance(completion_1, AsyncStream) == True
     async for chunk in completion_1:
         assert isinstance(chunk, ChatCompletionChunk) == True
         delta = chunk.choices[0].delta
         if delta.role:
+            assert index == 0
             assert delta.role == "assistant"
+            assert delta.content == ""
         if delta.content:
             chunks.append(delta.content)
+        index += 1
     content = "".join(chunks)
     assert content == completion_0.choices[0].message.content
 

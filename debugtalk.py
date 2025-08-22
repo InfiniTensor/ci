@@ -15,8 +15,11 @@ def stop_text(text,stop):
     return text.split(stop)[0]
 
 def remove_model_words(res):
+    print('*'*50,res)
     if "<think>\n</think>" in res:
         return res.split("<think>\n</think>")[1]
+    # elif "<think></think>" in res:
+    #     return res.split("<think></think>")[1]
     else:
         return res
     

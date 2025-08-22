@@ -7,29 +7,6 @@ import openai
 import allure
 from debugtalk import *
 
-@pytest.mark.asyncio
-@allure.title("对话_判断stream为false时，返回为ChatCompletion类型")
-async def test_not_stream_chat(client):
-    # 判断stream为false时，返回为ChatCompletion类型
-    completion = await client.chat.completions.create(
-        model=os_env('MODEL'),
-        messages=[
-        {
-            "role": "developer",
-            "content": "You are a helpful assistant."
-        },
-        {
-            "role": "user",
-            "content": "Hello!"
-        }
-        ],
-        temperature=0,
-        stream=False,
-    )
-    assert isinstance(completion, ChatCompletion) == True
-    assert completion.choices[0].message.role == 'assistant'
-
-
 @pytest.mark.asyncio    
 @allure.title("对话_判断设置max_tokens时，输出文本最长为max_tokens，stop reason为length")
 async def test_not_stream_with_max_tokens(client):

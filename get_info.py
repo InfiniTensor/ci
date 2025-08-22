@@ -1,37 +1,24 @@
 import os
 from logging import log
 import json
-import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 import pytz
-import pymysql
 import pandas as pd
-from pyecharts import options as opts
-from pyecharts.charts import Bar
-from pyecharts.render import make_snapshot
-from snapshot_selenium import snapshot
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-import base64
-from pyecharts.components import Table
-from pyecharts.options import ComponentTitleOpts
-from bs4 import BeautifulSoup
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
-from openpyxl.styles import Alignment,Fill,Font
+from openpyxl.styles import Alignment,Font
 
 tz = pytz.timezone('Asia/Shanghai')
 # time_str = "2024-05-27"
 time_str = datetime.now(tz).strftime("%Y_%m_%d %H:%M:%S").split(' ')[0]
-
 # 获取当前文件绝对路径
 script_path = os.path.abspath(__file__)
 # 获取ci_perf所需相对路径
 pro_dir_path = os.path.dirname(script_path)
-print(pro_dir_path)
 directory = f'{pro_dir_path}/allure-report/data/test-cases/'
 
 def get_json_data(file_path):
@@ -66,9 +53,11 @@ cases=[]
 case_name_list=[]
 case_status_list=[]
 pass_num = 0
+skip_num = 0
 failed_num = 0 
 def get_case_info():
     global pass_num
+    global skip_num
     global failed_num
     get_file_contents(directory)
     for case in cases_data:
@@ -84,6 +73,8 @@ def get_case_info():
             cases.append(case)
         if case_status == 'passed':
             pass_num += 1
+        elif case_status == 'skipped':
+            skip_num += 1
         else:
             failed_num +=1
 
@@ -99,7 +90,7 @@ writeData = {  # 用字典设置DataFrame所需数据
 }
 fwrite = pd.DataFrame(writeData) 
 # fwrite['首token时延加速比'] = fwrite.eval("`首token时延（s）2`/`首token时延（s）1`")
-path='./测试1.xlsx'
+path='./openAI测试报告.xlsx'
 fwrite.to_excel(path, index=False,engine='openpyxl')
 wb=load_workbook(path)
 for sheet in wb.sheetnames:#对Excel工作簿里面每个sheet表循环
@@ -137,10 +128,8 @@ for sheet in wb.sheetnames:#对Excel工作簿里面每个sheet表循环
 wb.save(path)#保存Excel
 wb.close()#关闭Excel对象
 df_html1 = fwrite.to_html(escape=False,index=False,justify="left")  # DataFrame数据转化为HTML表格形式   
-# print(df_html)
 df_html2 = df_html1.replace("<td>passed</td>","<td class='pass'>passed</td>")
 df_html = df_html2.replace("<td>broken</td>","<td class='fail'>broken</td>")
-print(df_html)
 #html格式的邮件正文
 head = \
         """
@@ -242,6 +231,7 @@ body = \
                 <h4></h4>
                 <div align="center">
                     <span style="margin-left:20px">passed：<span class="pass">{pass_num}</span></span>
+                    <span style="margin-left:20px">skipped：<span class="skip">{skip_num}</span></span> 
                     <span style="margin-left:20px">broken：<span class="fail">{failed_num}</sapn></span>
                     <p></p>
                 </div>
@@ -254,7 +244,7 @@ body = \
             </p>
         </div>
         </body>
-        """.format(pass_num=pass_num, failed_num=failed_num, df_html=df_html, time=time_str)
+        """.format(pass_num=pass_num, skip_num=skip_num, failed_num=failed_num, df_html=df_html, time=time_str)
 html_msg = "<html>" + head + body + "</html>"
 html_msg = html_msg.replace('\n', '').encode("utf-8")
 
@@ -287,10 +277,10 @@ msg['Subject'] = subject  # 邮件主题
 msg.attach(MIMEText(html_msg,"html",'utf-8'))
 
 # 构造附件1，txt文件
-att1 = MIMEText(open('./测试1.xlsx', 'rb').read(), 'base64', 'utf-8')
+att1 = MIMEText(open(path, 'rb').read(), 'base64', 'utf-8')
 att1["Content-Type"] = 'application/octet-stream'
 # 这里的filename可以任意写，写什么名字，邮件中显示什么名字
-att1["Content-Disposition"] = 'attachment; filename="test.xls"'
+att1["Content-Disposition"] = 'attachment; filename="openAI_report.xls"'
 msg.attach(att1)
 
 smtpObj = smtplib.SMTP_SSL(smtp_server, smtp_port)  # 启用SSL发信, 端口一般是465
