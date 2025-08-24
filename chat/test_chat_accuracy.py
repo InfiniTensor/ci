@@ -75,6 +75,7 @@ async def test_chat_accuracy(client,question,title):
         ],
         temperature=0,
         stream=False,
+        max_completion_tokens=512
     )
     print(f"正在测试: {title}")
     assert completion.object == 'chat.completion'

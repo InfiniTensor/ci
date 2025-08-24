@@ -151,7 +151,8 @@ async def test_tool_call_none(client) :
             }
         ],
         tools=TOOLS,
-        tool_choice="none"
+        tool_choice="none",
+        max_tokens=200
     )
     assert not completion.choices[0].message.tool_calls
     assert completion.choices[0].message.content != None
@@ -248,7 +249,8 @@ async def test_tool_call_auto(client) :
             }
         ],
         tools=TOOLS,
-        tool_choice="auto"
+        tool_choice="auto",
+        max_completion_tokens=512
     )
     
     if not completion.choices[0].message.tool_calls:
@@ -271,7 +273,9 @@ async def test_tool_call_required(client) :
             }
         ],
         tools=TOOLS,
-        tool_choice="required"
+        tool_choice="required",
+        max_completion_tokens=512
+        
     )
     
     assert len(completion.choices[0].message.tool_calls) >= 1
@@ -293,7 +297,8 @@ async def test_tool_call_none_stream(client) :
         ],
         tools=TOOLS,
         tool_choice="none",
-        temperature=0
+        temperature=0,
+        max_tokens=512
     )
     content_not_stream = completion_not_stream.choices[0].message.content
     
@@ -308,7 +313,8 @@ async def test_tool_call_none_stream(client) :
         ],
         tools=TOOLS,
         tool_choice="none",
-        temperature=0
+        temperature=0,
+        max_tokens=512
         
     )
     chunks = []
@@ -348,7 +354,8 @@ async def test_tool_call_error_stream(client) :
                 }
             ],
             tools=TOOLS,
-            tool_choice="tool"
+            tool_choice="tool",
+            max_tokens=512
         )
     except openai.BadRequestError as e:
         assert e.status_code == 400
@@ -367,7 +374,8 @@ async def test_tool_call_auto_stream(client) :
         ],
         tools=TOOLS,
         tool_choice="auto",
-        temperature=0
+        temperature=0,
+        max_tokens=512
     )
     content_not_stream = completion_not_stream.choices[0].message.content
     completion = await client.chat.completions.create(
@@ -381,7 +389,8 @@ async def test_tool_call_auto_stream(client) :
         ],
         tools=TOOLS,
         tool_choice="auto",
-        temperature=0
+        temperature=0,
+        max_tokens=512
     )
     chunks = []
     async for chunk in completion:
@@ -416,7 +425,8 @@ async def test_tool_call_required_stream(client) :
             }
         ],
         tools=TOOLS,
-        tool_choice="required"
+        tool_choice="required",
+        max_tokens=512
     )
     content_not_stream = completion_not_stream.choices[0].message.content
     
@@ -430,7 +440,8 @@ async def test_tool_call_required_stream(client) :
             }
         ],
         tools=TOOLS,
-        tool_choice="required"
+        tool_choice="required",
+        max_tokens=512
     )
     chunks = []
     async for chunk in completion:

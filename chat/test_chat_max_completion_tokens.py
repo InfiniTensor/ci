@@ -26,6 +26,7 @@ async def test_not_stream_with_max_tokens(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     content_0 = completion_0.choices[0].message.content
     tokens_0 = completion_0.usage.completion_tokens
@@ -69,6 +70,7 @@ async def test_not_stream_with_max_completion_tokens(client):
         ],
         temperature=0,
         stream=False,
+        max_completion_tokens=512
     )
     content_0 = completion_0.choices[0].message.content
     tokens_0 = completion_0.usage.completion_tokens

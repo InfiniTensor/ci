@@ -25,6 +25,7 @@ async def test_not_stream_chat(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     assert completion.object == 'chat.completion'
     assert isinstance(completion, ChatCompletion) == True
@@ -47,6 +48,7 @@ async def test_stream_chat(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     # 判断stream为true时，返回为流式AsyncStream类型
     completion_1 = await client.chat.completions.create(
@@ -63,6 +65,7 @@ async def test_stream_chat(client):
         ],
         temperature=0,
         stream=True,
+        max_tokens=512
     )
     chunks= []
     index=0
@@ -143,7 +146,8 @@ async def test_stream_with_option_include_usage_true(client):
         stream_options={
             "include_usage":True,
             "continuous_usage_stats":False
-        }
+        },
+        max_tokens=512
     )
     assert isinstance(completion, AsyncStream) == True
     async for chunk in completion:
@@ -179,6 +183,7 @@ async def test_stream_with_option_continuous_usage_stats_true(client):
         ],
         temperature=0,
         stream=True,
+        max_tokens=512,
         stream_options={
             "continuous_usage_stats":True
         }
@@ -210,7 +215,8 @@ async def test_not_stream_with_option_continuous_usage_stats_true(client):
             stream=False,
             stream_options={
                 "continuous_usage_stats":True
-            }
+            },
+            max_tokens=512
     )
     except openai.BadRequestError as e:
         assert e.status_code == 400

@@ -23,6 +23,7 @@ async def test_support_role(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     assert isinstance(developer_completion, ChatCompletion) == True
     assert developer_completion.choices[0].message.role == 'assistant'
@@ -37,6 +38,7 @@ async def test_support_role(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     assert isinstance(user_completion, ChatCompletion) == True
     assert user_completion.choices[0].message.role == 'assistant'
@@ -51,6 +53,7 @@ async def test_support_role(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     assert isinstance(system_completion, ChatCompletion) == True
     assert system_completion.choices[0].message.role == 'assistant'
@@ -65,6 +68,7 @@ async def test_support_role(client):
         ],
         temperature=0,
         stream=False,
+        max_tokens=512
     )
     assert isinstance(assistant_completion, ChatCompletion) == True
     assert assistant_completion.choices[0].message.role == 'assistant'
