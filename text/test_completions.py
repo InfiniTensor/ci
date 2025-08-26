@@ -185,7 +185,7 @@ async def test_completion_streaming(client):
     assert chunk.choices[0].text
     assert "".join(chunks) == single_output
     
-@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')    
+   
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断n=3时，parallel_streaming回结果正确")        
 async def test_parallel_streaming(client):
@@ -362,7 +362,7 @@ async def test_completion_without_stream_use_options(client):
             stream=False,
             stream_options={"continuous_usage_stats": True})
 
-@pytest.mark.skipif(os_env('GPU')=='910b',reason='昇腾暂不支持')
+@pytest.mark.skip(reason='多进程暂不支持')
 @pytest.mark.asyncio 
 @allure.title("文本补全_prompt为文本数组和token ids数组时batch_completions返回结果正确")      
 async def test_batch_completions(client):

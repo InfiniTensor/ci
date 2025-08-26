@@ -43,7 +43,7 @@ async def test_stream_chat(client):
         },
         {
             "role": "user",
-            "content": "Hello!"
+            "content": "Hello! What is an LLM?"
         }
         ],
         temperature=0,
@@ -60,7 +60,7 @@ async def test_stream_chat(client):
         },
         {
             "role": "user",
-            "content": "Hello!"
+            "content": "Hello! What is an LLM?"
         }
         ],
         temperature=0,
@@ -81,6 +81,9 @@ async def test_stream_chat(client):
             chunks.append(delta.content)
         index += 1
     content = "".join(chunks)
+    print('*'*50 + '非流式',completion_0.choices[0].message.content)
+    print('*'*50 + '流式',content)
+    
     assert content == completion_0.choices[0].message.content
 
 @pytest.mark.asyncio
