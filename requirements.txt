@@ -3,3 +3,8 @@ dynaconf==3.2.11
 allure-pytest==2.14.3
 pytest-asyncio==1.0.0
 lark==1.2.2
+openai==1.101.0
+jsonschema==4.23.0
+pytz==2023.3.post1
+pandas==4.23.0
+openpyxl==3.1.5

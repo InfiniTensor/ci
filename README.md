@@ -26,6 +26,8 @@ pip3 install allure-pytest
 
 ## 5.用例report汇总并发送邮件
 执行python3 get_info.py（需要修改邮件收件人信息，如果执行用例结果路径与#4不一致需要进行修改第35行）
-
 结果如下
 ![表格](./images/table.png)
+## 6.自动化环境信息动态配置
+命令：dynaconf write toml -v BASE_URL=http://10.208.130.44:2055/v1 -v MODEL=qwen3 -p config/env_settings.toml -e 45 -y    
+参数含义：-e：环境名称 -v：环境变量

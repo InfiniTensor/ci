@@ -11,7 +11,26 @@ from email.mime.text import MIMEText
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Alignment,Font
+import argparse
+from dynaconf import Dynaconf
 
+parser = argparse.ArgumentParser(description="汇总结果写入文件")
+parser.add_argument('--file', type=str)
+parser.add_argument('--email', type=str)
+parser.add_argument('--env', type=str)
+parser.add_argument('--url', type=str)
+parser.add_argument('--model', type=str)
+
+args=parser.parse_args()
+file_name = args.file
+emails = args.email
+env = args.env
+url = args.url
+model = args.model
+
+
+if ',' in emails:
+    emails = emails.split(',')
 tz = pytz.timezone('Asia/Shanghai')
 # time_str = "2024-05-27"
 time_str = datetime.now(tz).strftime("%Y_%m_%d %H:%M:%S").split(' ')[0]
@@ -90,7 +109,7 @@ writeData = {  # 用字典设置DataFrame所需数据
 }
 fwrite = pd.DataFrame(writeData) 
 # fwrite['首token时延加速比'] = fwrite.eval("`首token时延（s）2`/`首token时延（s）1`")
-path='./openAI测试报告.xlsx'
+path=f'./{file_name}.xlsx'
 fwrite.to_excel(path, index=False,engine='openpyxl')
 wb=load_workbook(path)
 for sheet in wb.sheetnames:#对Excel工作簿里面每个sheet表循环
@@ -257,7 +276,7 @@ password = 'PlIncAWZ4s7C11Dk'
 # 邮件内容设置
 sender_email = 'yangshuo@xcoresigma.com'
 # receiver_email = ['yangshuo@xcoresigma.com','sunqianqi@xcoresigma.com','zhaojiacheng@xcoresigma.com']
-receiver_email = ['yangshuo@xcoresigma.com']
+receiver_email = emails
 # receiver_email = ['yangshuo@xcoresigma.com','chenlong@xcoresigma.com','zhaojiacheng@xcoresigma.com',
 #                   'wangrui@xcoresigma.com','sunqianqi@xcoresigma.com','caowanlu@xcoresigma.com',
 #                   'zhangxinyuan@xcoresigma.com','shixiyu@xcoresigma.com','donghanyuan@xcoresigma.com','limingge@xcoresigma.com']
@@ -280,7 +299,7 @@ msg.attach(MIMEText(html_msg,"html",'utf-8'))
 att1 = MIMEText(open(path, 'rb').read(), 'base64', 'utf-8')
 att1["Content-Type"] = 'application/octet-stream'
 # 这里的filename可以任意写，写什么名字，邮件中显示什么名字
-att1["Content-Disposition"] = 'attachment; filename="openAI_report.xls"'
+att1["Content-Disposition"] = f'attachment; filename="{file_name}.xls"'
 msg.attach(att1)
 
 smtpObj = smtplib.SMTP_SSL(smtp_server, smtp_port)  # 启用SSL发信, 端口一般是465

@@ -1,35 +1,38 @@
+[aicc005]
+BASE_URL = "http://10.9.1.26:2055/v1"
+MODEL = "Qwen3-32B"
+API_KEY = "-"
+
+[45]
+BASE_URL = "http://10.208.130.44:2055/v1"
+MODEL = "qwen3"
+
 [aicc07-2]
-BASE_URL="http://10.9.1.58:2055/v1"
+BASE_URL = "http://10.9.1.58:2055/v1"
 MODEL = "Qwen3-32B"
 API_KEY = "-"
 GPU = "910b"
 
 [aicc07]
-BASE_URL="http://10.9.1.58:2066/v1"
+BASE_URL = "http://10.9.1.58:2066/v1"
 MODEL = "Qwen3-32B"
 API_KEY = "-"
 GPU = "910b"
 
 [44]
-BASE_URL="http://10.208.130.44:2025/v1"
+BASE_URL = "http://10.208.130.44:2025/v1"
 MODEL = "qwen3"
 API_KEY = "-"
 GPU = ""
 
 [h20]
-BASE_URL="http://10.9.1.14:8000/v1"
+BASE_URL = "http://10.9.1.14:8000/v1"
 MODEL = "llama"
 API_KEY = "-"
 GPU = ""
 
 [aicc011]
-BASE_URL="http://10.9.1.42:4321/v1"
+BASE_URL = "http://10.9.1.42:4321/v1"
 MODEL = "DeepSeek-R1-awq"
-API_KEY = "-"
-GPU = "910b"
-
-[aicc05]
-BASE_URL="http://10.9.1.26:2055/v1"
-MODEL = "Qwen3-32B"
 API_KEY = "-"
 GPU = "910b"
