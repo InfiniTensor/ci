@@ -73,12 +73,13 @@ async def test_chat_accuracy(client,text,title):
         model=os_env('MODEL'),
         prompt=text,
         temperature=0,
-        stream=False,
-        max_tokens=512
+        stream=False
     )
     print(title)
     assert completion.object == 'text_completion'
     assert isinstance(completion, Completion) == True
+    print('*'*25 + '文本补全输出信息' +'*'*25,completion.usage)
+    print('*'*25 + '文本补全停止原因' +'*'*25,completion.choices[0].finish_reason)
     assert is_nonsense_text(completion.choices[0].text, min_repeat=3, max_ratio=0.3) == False
     # assert is_low_diversity(completion.choices[0].text) == False
     assert text_accuracy(completion.choices[0].text) == True

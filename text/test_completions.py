@@ -47,6 +47,46 @@ async def test_with_stop(client):
     assert no_stop_tokens > completion.usage.completion_tokens
     text = stop_text(no_stop_content,stop_world)
     assert completion.choices[0].text == text
+    
+@pytest.mark.asyncio
+@pytest.mark.skip("未完成开发")
+@allure.title("文本补全_判断设置stop_token_ids，输出结果遇到stop id停止输出")
+async def test_with_stop_token_ids(client):
+    # completion_without_stop = await client.completions.create(
+    #     model=os_env('MODEL'),
+    #     prompt="How to tell if a customer segment is well segmented? In 3 bullet points.",
+    #     temperature=0,
+    #     max_tokens=512
+    # )
+    # no_stop_content = completion_without_stop.choices[0].text
+    # no_stop_tokens = completion_without_stop.usage.completion_tokens
+    # results = get_stop_token_ids(no_stop_content,'/home/weight/Qwen2.5-7B-Instruct/')
+    # token_ids = results[1]
+    # token_words = results[0]
+    # print('*'*50,token_ids)
+    # print('*'*50,token_words)
+    # print('*'*50,no_stop_content)
+    # stop_world = "Python"
+    completion = await client.completions.create(
+        model= os_env('MODEL'),
+        prompt="How to tell if a customer segment is well segmented? In 3 bullet points.",
+        temperature=0,
+        max_tokens=30000,
+        # extra_body={
+        #     "stop_token_ids":[19],
+        # }
+    )
+    stop_content = completion.choices[0].text
+    print('*'*50,stop_content)
+    
+    # assert completion.id != None
+    # assert len(completion.choices) == 1
+    assert completion.choices[0].finish_reason == 'stop'
+    # assert completion.usage.completion_tokens < 512
+    # assert no_stop_content != completion.choices[0].text
+    # assert no_stop_tokens > completion.usage.completion_tokens
+    # text = stop_text(no_stop_content,stop_world)
+    # assert completion.choices[0].text == text
 
 @pytest.mark.asyncio
 @allure.title("文本补全_判断温度不同返回结果改变")

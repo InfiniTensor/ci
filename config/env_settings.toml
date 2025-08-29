@@ -36,3 +36,15 @@ BASE_URL = "http://10.9.1.42:4321/v1"
 MODEL = "DeepSeek-R1-awq"
 API_KEY = "-"
 GPU = "910b"
+
+[106]
+BASE_URL = "http://192.168.100.106:2025/v1"
+MODEL = "Qwen2.5-7B-Instruct/"
+API_KEY = "-"
+GPU = "910b"
+
+[106-sig]
+BASE_URL = "http://192.168.100.106:2055/v1"
+MODEL = "qwen3"
+API_KEY = "-"
+GPU = "910b"
