@@ -457,6 +457,8 @@ while true; do
                     echo "程序出错！"
                 fi
                 continue
+            else
+                echo $status_msg
             fi
             ((job_count++))
             if [ $job_count -ge $parallel ]; then
