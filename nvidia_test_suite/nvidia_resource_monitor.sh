@@ -430,12 +430,33 @@ while true; do
             # fi
             if [ $TEST_TYPE == "Stability" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                pid_map[$!]=$item
-                tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             else
-                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                pid_map[$!]=$item
-                tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"
+                if [ $TEST_TYPE == "Smoke" ]; then
+                    send_report=0
+                else
+                    send_report=1
+                fi
+                $curr_dir/siginfer_nvidia_test.sh ${send_report} "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
+            fi
+            if [ $status_msg == "测试全部完成" ]; then
+                echo "模型运行环境配置失败，准备尝试测试下一个模型......"
+                echo
+                wait $last_pid  # 等待上一个子进程结束
+                err=$?          # 保存上一个结束子进程的退出状态
+                if [ $err -ne 0 ]; then
+                    if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                        temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                    fi
+                else
+                    echo "程序出错！"
+                fi
+                continue
             fi
             ((job_count++))
             if [ $job_count -ge $parallel ]; then
@@ -460,7 +481,7 @@ while true; do
             temp_list+=(${item})
             echo "未找到足够的空闲 GPU, 无法测试模型${model}, 准备尝试测试下一个模型......"
             echo
-            # 等待一段时间后重新扫描（例如 5 秒）
+            # 等待一段时间后重新扫描（例如 10 秒）
             sleep 10
         fi
     done
