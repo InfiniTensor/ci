@@ -10,7 +10,9 @@ version=$6
 
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H100 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20)
 # full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
-full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
+# full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
+full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
+
 curr_dir=/home/s_limingge/nvidia_test_suite
 
 declare -A A800_server_list=(
@@ -200,7 +202,9 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE == "Performance" ]; then
                     if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-FP8" ]; then
-                        data_path="/home/weight/Qwen3/Qwen"
+                        data_path="/home/weight/Qwen3"
+                    elif [ $model == "QwQ-32B" ] || [ $model == "QwQ-32B-AWQ" ]; then
+                        data_path="/home/weight/Qwen"
                     else
                         data_path="/home/weight"
                     fi
@@ -310,7 +314,7 @@ for option in "${schedule_policies[@]}"; do
                     # fi
 
                     # 获取模型启动命令，并做为参数传入
-                    launch_cmd=`tail -2 $curr_dir/$filename`
+                    launch_cmd=`tail -n 2 "$curr_dir/$filename" | head -n 1`
                     # ......
 
                     if [ $gpu_model == "H20" ]; then

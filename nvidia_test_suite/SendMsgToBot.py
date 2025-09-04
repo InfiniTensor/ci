@@ -88,14 +88,14 @@ def save_summary_to_log(version_text, model_name, summary_text, failed_count):
     
     filename = f"report_{current_time}.txt"
     
-    with open(f"/home/s_limingge/smoke_test_nvidia/{filename}", 'a') as file:
+    with open(f"/home/s_limingge/nvidia_test_suite/{filename}", 'a') as file:
         file.write('Docker image version: ' + version_text + '\n')
         file.write('Model name: ' + model_name + '\n')
         file.write(summary_text + '\n\n')
         
     statistics_filename = f"statistics_{current_time}.txt"
     
-    with open(f"/home/s_limingge/smoke_test_nvidia/{statistics_filename}", 'a') as file:
+    with open(f"/home/s_limingge/nvidia_test_suite/{statistics_filename}", 'a') as file:
         file.write(model_name + ':' + str(failed_count) + '\n')
 
 def main():

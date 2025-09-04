@@ -6,8 +6,10 @@ version=$2
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct:4:H20)
-# full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
-full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
+# full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
+# full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
+full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
+# Qwen3-30B-A3B-Instruct-2507:2:H20
 
 curr_dir=/home/s_limingge/nvidia_test_suite
 log_name_suffix=$(date +"%Y%m%d")
@@ -285,6 +287,14 @@ search_servers() {
 
 # git clone http://git.xcoresigma.com/xcore-sigma/openai-test.git $curr_dir/openai_test
 
+if [ -z $TEST_TYPE ]; then
+    echo "Parameter Test_Type required!"
+    exit 1
+elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ]; then
+    echo "Test_Type is wrong!"
+    exit 1
+fi
+
 if [ -z $version ]; then
     python3 $curr_dir/script_generator.py ${TEST_TYPE} "latest"
 else
@@ -323,7 +333,8 @@ for item in "${full_model_list[@]}"; do
     quanity=`echo "$item" | awk -F : '{print $2}'`
     gpu=`echo "$item" | awk -F : '{print $3}'`
     found=0
-    for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
             swap_space=40

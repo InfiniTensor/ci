@@ -180,6 +180,7 @@ while true; do
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
                 echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+                CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
                 break
             fi
         fi

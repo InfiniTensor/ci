@@ -42,7 +42,7 @@ def main():
         src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        src_code += "PORT=$((8000+${JOB_COUNT}))\n
+        src_code += "PORT=$((8000+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28880+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((9032+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_StabilityTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"

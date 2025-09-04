@@ -10,7 +10,7 @@ version=$6
 
 # full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
 full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
-full_model_list_for_smoke=(DeepSeek-R1-awq:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 curr_dir=/home/s_limingge/ascend_test_suite
 concurrency_list=(1 5 10 20 50 100 150 200 300)
 length_pairs=(
@@ -99,7 +99,8 @@ fi
 processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
 touch ${processed_models}
 
-schedule_policies=('DynamicSplitFuseV2' 'PrefillFirst')
+# schedule_policies=('DynamicSplitFuseV2' 'PrefillFirst')
+schedule_policies=('DynamicSplitFuseV2')
 ret_code=0
 
 for option in "${schedule_policies[@]}"; do
@@ -244,7 +245,7 @@ for option in "${schedule_policies[@]}"; do
                     # pytest --env "${npu_server_list[${server_list[0]}]}_${job_count}" text --alluredir report >> "$curr_dir/$filename"
 
                     # 获取模型启动命令，并做为参数传入
-                    launch_cmd=`tail -2 $curr_dir/$filename`
+                    launch_cmd=`tail -n 2 "$curr_dir/$filename" | head -n 1`
                     # ......
 
                     echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model"
