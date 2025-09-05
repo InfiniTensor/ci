@@ -444,7 +444,7 @@ while true; do
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
             fi
-            if [ $status_msg == "测试全部完成" ]; then
+            if [ $status_msg == "测试全部完成！" ]; then
                 echo "模型运行环境配置失败，准备尝试测试下一个模型......"
                 echo
                 wait $last_pid  # 等待上一个子进程结束
