@@ -91,13 +91,13 @@ while true; do
     fi
 
     # 使用 npu-smi 获取 GPU 使用情况
-    GPU_INFO=$(npu-smi info | grep "No\ running\ processes\ found\ in\ NPU" | awk '{print $8}')
+    GPU_INFO=($(npu-smi info | grep "No\ running\ processes\ found\ in\ NPU" | awk '{print $8}'))
     # 检查空闲 GPU 数量
-    FREE_COUNT=$(echo "$GPU_INFO" | wc -w)
-    echo "当前空闲 GPU 数量：$FREE_COUNT, 索引: $GPU_INFO"
+    FREE_COUNT=$(echo "${GPU_INFO[@]}" | wc -w)
+    echo "当前空闲 GPU 数量：$FREE_COUNT, 索引: ${GPU_INFO[@]}"
     # 如果找到足够的空闲 GPU, 则返回结果并退出
     if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：$GPU_INFO"
+        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${GPU_INFO[@]}"
         break
     fi
 

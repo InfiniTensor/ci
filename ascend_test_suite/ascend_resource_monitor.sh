@@ -77,15 +77,13 @@ search_servers() {
                 fi
                 echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
                 # 使用 npu-smi 获取 GPU 使用情况
-                GPU_INFO=\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}')
+                GPU_INFO=(\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}'))
                 # 检查空闲 GPU 数量
-                FREE_COUNT=\$(echo \"\$GPU_INFO\" | wc -w)
-                # echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \$GPU_INFO\"
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT\"
+                FREE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \${GPU_INFO[@]}\"
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    # echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\$GPU_INFO\"
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU\"
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${GPU_INFO[@]}\"
                     exit 0
                 fi
                 exit 1"
@@ -102,19 +100,17 @@ search_servers() {
                 fi
                 echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
                 # 使用 npu-smi 获取 GPU 使用情况
-                GPU_INFO=\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}')
-                #if [ $NPU_QUANTITY -ne 16 ]; then
-                    # 过滤掉第7块和第8块GPU卡
-                    # GPU_INFO=\$(echo \"\$GPU_INFO\" | sed -E 's/\b6\b//g' | sed -E 's/\b7\b//g' | sed -E 's/\s+/ /g' | xargs)
-                #fi
+                GPU_INFO=(\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}'))
+                # if [ $NPU_QUANTITY -ne 16 ]; then
+                #    过滤掉第7块和第8块GPU卡
+                #    GPU_INFO=\$(echo \"\${GPU_INFO[@]}\" | sed -E 's/\b6\b//g' | sed -E 's/\b7\b//g' | sed -E 's/\s+/ /g' | xargs)
+                # fi
                 # 检查空闲 GPU 数量
-                FREE_COUNT=\$(echo \"\$GPU_INFO\" | wc -w)
-                # echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \$GPU_INFO\"
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT\"
+                FREE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+                echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \${GPU_INFO[@]}\"
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    # echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\$GPU_INFO\"
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU\"
+                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${GPU_INFO[@]}\"
                     exit 0
                 fi
                 exit 1"
@@ -256,7 +252,7 @@ while true; do
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
             fi
 
-            if [ $status_msg == "测试全部完成" ]; then
+            if [ $status_msg == "测试全部完成！" ]; then
                 echo "模型运行环境配置失败，准备尝试测试下一个模型......"
                 echo
                 wait $last_pid  # 等待上一个子进程结束
