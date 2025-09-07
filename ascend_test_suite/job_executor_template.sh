@@ -106,7 +106,7 @@ while true; do
     sleep 10
 done
 
-ASCEND_RT_VISIBLE_DEVICES=$(echo $GPU_INFO | sed -E 's/\s+/\,/g')
+ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"

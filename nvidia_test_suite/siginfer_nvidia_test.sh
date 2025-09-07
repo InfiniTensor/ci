@@ -153,7 +153,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > $curr_dir/$filename &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > "$curr_dir/${filename}_${seq_num}" &
                         pid_map[$!]=$ip
                     else
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
@@ -314,7 +314,10 @@ for option in "${schedule_policies[@]}"; do
                     # fi
 
                     # 获取模型启动命令，并做为参数传入
-                    launch_cmd=`tail -n 2 "$curr_dir/$filename" | head -n 1`
+                    for ((k=0; k<$seq_num; k=k+1)); do
+                        launch_cmd=`tail -n 2 "$curr_dir/${filename}_${k}" | head -n 1`
+                        echo $launch_cmd
+                    done
                     # ......
 
                     if [ $gpu_model == "H20" ]; then

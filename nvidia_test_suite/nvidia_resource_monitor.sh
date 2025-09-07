@@ -17,7 +17,7 @@ parallel=3
 
 rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.txt
-rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
+# rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
 # rm -rf $curr_dir/openai_test
 
