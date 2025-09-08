@@ -1,6 +1,6 @@
 [aicc005]
-BASE_URL = "http://10.9.1.26:2055/v1"
-MODEL = "Qwen3-32B"
+BASE_URL = "http://10.9.1.46:2025/v1"
+MODEL = "qwen3"
 API_KEY = "-"
 
 [45]

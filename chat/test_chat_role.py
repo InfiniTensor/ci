@@ -18,7 +18,7 @@ async def test_support_role(client):
         messages=[
         {
             "role": "developer",
-            "content": "what is 1+1? please provide the result without any other text."
+            "content": "How do I check if a Python object is an instance of a class?"
         }
         ],
         temperature=0,
@@ -33,7 +33,7 @@ async def test_support_role(client):
         messages=[
         {
             "role": "user",
-            "content": "what is 1+1? please provide the result without any other text."
+            "content": "How do I check if a Python object is an instance of a class?"
         }
         ],
         temperature=0,
@@ -48,7 +48,7 @@ async def test_support_role(client):
         messages=[
         {
             "role": "system",
-            "content": "what is 1+1? please provide the result without any other text."
+            "content": "How do I check if a Python object is an instance of a class?"
         }
         ],
         temperature=0,
@@ -63,7 +63,7 @@ async def test_support_role(client):
         messages=[
         {
             "role": "assistant",
-            "content": "what is 1+1? please provide the result without any other text."
+            "content": "How do I check if a Python object is an instance of a class?"
         }
         ],
         temperature=0,

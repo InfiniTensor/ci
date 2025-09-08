@@ -77,6 +77,8 @@ async def test_chat_accuracy(client,question,title):
         stream=False
     )
     print(f"正在测试: {title}")
+    print(completion.usage)
+    
     assert completion.object == 'chat.completion'
     assert isinstance(completion, ChatCompletion) == True
     assert completion.choices[0].message.role == 'assistant'

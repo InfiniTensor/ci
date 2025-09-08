@@ -1,7 +1,7 @@
 from dynaconf import settings
-# import random
+import random
 # import re
-# from transformers import AutoTokenizer
+# from transformers import AutoTokenizer,AutoConfig
 
 def os_env(ekey, default=""):
     "提取环境配置变量"
@@ -25,6 +25,20 @@ def remove_model_words(res):
     #     return res.split("<think></think>")[1]
     else:
         return res
+
+def get_stop_word(content):
+    words = content.split()
+    # 去除标点符号（可选）
+    clean_words = []
+    for word in words:
+        # 移除单词两端的标点符号
+        clean_word = word.strip('.,!?;:"\'()[]{}')
+        if clean_word and clean_word != '<think>' and clean_word != '</think>':  # 确保不是空字符串且不是think
+            clean_words.append(clean_word)  # 转为小写以确保唯一性
+    
+    # 随机选择1个单词
+    selected_word = random.sample(clean_words, 1)
+    return selected_word[0]
 
 def get_stop_token_ids(content,model):
     # words = content.split()
@@ -61,3 +75,11 @@ def get_stop_token_ids(content,model):
         
     # return words,token_ids
     return ['level', 'changed'],[3294, 17353]
+
+# def get_max_len(model):
+#     tokenizer = AutoTokenizer.from_pretrained(model,trust_remote_code=True)
+#     config = AutoConfig.from_pretrained(model,trust_remote_code=True)
+#     if hasattr(config, 'max_position_embeddings'):
+#         return config.max_position_embeddings
+#     elif hasattr(tokenizer, 'model_max_length'):
+#         return tokenizer.model_max_length

@@ -31,7 +31,7 @@ async def test_with_stop(client):
     )
     no_stop_content = completion_without_stop.choices[0].text
     no_stop_tokens = completion_without_stop.usage.completion_tokens
-    stop_world = "Python"
+    stop_world = get_stop_word(no_stop_content)
     completion = await client.completions.create(
         model= os_env('MODEL'),
         prompt="How do I check if a Python object is an instance of a class?",
@@ -46,6 +46,8 @@ async def test_with_stop(client):
     assert no_stop_content != completion.choices[0].text
     assert no_stop_tokens > completion.usage.completion_tokens
     text = stop_text(no_stop_content,stop_world)
+    print('*'*50,completion.choices[0].text)
+    print('*'*50,text)
     assert completion.choices[0].text == text
     
 @pytest.mark.asyncio

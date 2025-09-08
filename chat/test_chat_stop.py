@@ -26,7 +26,8 @@ async def test_not_stream_with_stop(client):
     )
     content_0 = completion_0.choices[0].message.content
     tokens_0 = completion_0.usage.completion_tokens
-    stop_world = "can"
+    stop_world = get_stop_word(content_0)
+    print('*'*50,stop_world)
     # 判断stream为false时，返回为ChatCompletion类型
     completion_1 = await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -47,4 +48,6 @@ async def test_not_stream_with_stop(client):
     assert content_0 != completion_1.choices[0].message.content
     assert tokens_0 > completion_1.usage.completion_tokens
     text = stop_text(content_0, stop_world)
+    print('*'*50,completion_1.choices[0].message.content)
+    print('*'*50,text)
     assert completion_1.choices[0].message.content == text
