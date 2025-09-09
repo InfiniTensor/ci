@@ -24,6 +24,6 @@ git pull
 rm -rf $pro_dir/allure-results
 rm -rf $pro_dir/allure-report
 python3 set_env.py "$@"
-pytest --env $env text/test_completions_accuracy.py --alluredir allure-results
+pytest --env $env text/test_completions_accuracy.py --alluredir allure-results | tee test_info.log
 allure generate allure-results/ -o allure-report --clean
 python3 get_info.py "$@"

@@ -20,6 +20,10 @@ parser.add_argument('--email', type=str)
 parser.add_argument('--env', type=str)
 parser.add_argument('--url', type=str)
 parser.add_argument('--model', type=str)
+parser.add_argument('--gpu', type=str)
+parser.add_argument('--cmd', type=str)
+
+
 
 args=parser.parse_args()
 file_name = args.file
@@ -27,7 +31,8 @@ emails = args.email
 env = args.env
 url = args.url
 model = args.model
-
+gpu = args.gpu
+cmd = args.cmd
 
 if ',' in emails:
     emails = emails.split(',')
@@ -237,9 +242,12 @@ head = \
 body = \
         """
         <body>
-        <div align="center" class="header">
+        <div align="left" class="header">
             <!--标题部分的信息-->
-            <h1 align="center">OpenAI自动化测试结果</h1>
+            <div>显卡类型：{gpu}</div>
+            <div>测试模型：{model}</div>
+            <div>启动命令：{cmd}</div>
+            
         </div>
         <hr>
         <div class="content">
@@ -251,7 +259,7 @@ body = \
                 <div align="center">
                     <span style="margin-left:20px">passed：<span class="pass">{pass_num}</span></span>
                     <span style="margin-left:20px">skipped：<span class="skip">{skip_num}</span></span> 
-                    <span style="margin-left:20px">broken：<span class="fail">{failed_num}</sapn></span>
+                    <span style="margin-left:20px">failed：<span class="fail">{failed_num}</sapn></span>
                     <p></p>
                 </div>
                 {df_html}
@@ -263,7 +271,7 @@ body = \
             </p>
         </div>
         </body>
-        """.format(pass_num=pass_num, skip_num=skip_num, failed_num=failed_num, df_html=df_html, time=time_str)
+        """.format(gpu=gpu,model=model,cmd=cmd,pass_num=pass_num, skip_num=skip_num, failed_num=failed_num, df_html=df_html, time=time_str)
 html_msg = "<html>" + head + body + "</html>"
 html_msg = html_msg.replace('\n', '').encode("utf-8")
 
@@ -301,6 +309,12 @@ att1["Content-Type"] = 'application/octet-stream'
 # 这里的filename可以任意写，写什么名字，邮件中显示什么名字
 att1["Content-Disposition"] = f'attachment; filename="{file_name}.xls"'
 msg.attach(att1)
+# 构造附件2，txt文件
+att2 = MIMEText(open('./test_info.log', 'rb').read(), 'base64', 'utf-8')
+att2["Content-Type"] = 'application/octet-stream'
+# 这里的filename可以任意写，写什么名字，邮件中显示什么名字
+att2["Content-Disposition"] = f'attachment; filename="test_info.log"'
+msg.attach(att2)
 
 smtpObj = smtplib.SMTP_SSL(smtp_server, smtp_port)  # 启用SSL发信, 端口一般是465
 smtpObj.login(username,password)
