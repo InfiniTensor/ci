@@ -180,6 +180,7 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
     --env LICENSE_LOCATION=/SigInfer/lib/trial-20251201.lic\
     -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES    \
     -e SIG_LOG_LEVEL='warn,console_logger=info' \
+    --multi-thread \
     $DOCKER_IMAGE_URL"
 
 <<<generated source code>>>
