@@ -158,7 +158,9 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE != "Accuracy" ]; then
                     filename+=".log"
-                    touch ${filename}
+                    if [ $TEST_TYPE != "Smoke" ]; then
+                        touch ${filename}
+                    fi
                 fi
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
@@ -245,14 +247,16 @@ for option in "${schedule_policies[@]}"; do
                     # pytest --env "${npu_server_list[${server_list[0]}]}_${job_count}" text --alluredir report >> "$curr_dir/$filename"
 
                     # 获取模型启动命令，并做为参数传入
+                    exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 2 "$curr_dir/${filename}_${k}" | head -n 1`
-                        echo $launch_cmd
+                        launch_cmd=`tail -n 3 "$curr_dir/${filename}_${k}" | head -n 1`
+                        exec_cmd+="$launch_cmd\n"
                     done
-                    # ......
 
-                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model"
-                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model
+                    full_cmd=${exec_cmd%??}
+
+                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd $full_cmd"
+                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd $full_cmd
                 elif [ $TEST_TYPE == "Performance" ]; then
                     if [ $model == "Qwen3-235B-A22B" ]; then
                         data_path="/home/weight/Qwen3"

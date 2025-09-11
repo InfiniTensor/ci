@@ -136,7 +136,9 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE != "Accuracy" ]; then
                     filename+=".log"
-                    touch ${filename}
+                    if [ $TEST_TYPE != "Smoke" ]; then
+                        touch ${filename}
+                    fi
                 fi
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
@@ -314,21 +316,23 @@ for option in "${schedule_policies[@]}"; do
                     # fi
 
                     # 获取模型启动命令，并做为参数传入
+                    exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 2 "$curr_dir/${filename}_${k}" | head -n 1`
-                        echo $launch_cmd
+                        launch_cmd=`tail -n 3 "$curr_dir/${filename}_${k}" | head -n 1`
+                        exec_cmd+="$launch_cmd\n"
                     done
-                    # ......
+
+                    full_cmd=${exec_cmd%??}
 
                     if [ $gpu_model == "H20" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model"
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
+                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd"
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
                     elif [ $gpu_model == "A800" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
                     elif [ $gpu_model == "H100" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
                     elif [ $gpu_model == "L20" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
                     fi
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
