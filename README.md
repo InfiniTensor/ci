@@ -31,3 +31,13 @@ pip3 install allure-pytest
 ## 6.自动化环境信息动态配置
 命令：dynaconf write toml -v BASE_URL=http://10.208.130.44:2055/v1 -v MODEL=qwen3 -p config/env_settings.toml -e 45 -y    
 参数含义：-e：环境名称 -v：环境变量
+
+## 7.docker容器使用方法
+docker run -it --rm --entrypoint /test/start.sh openai:0826 --file qwen1.5B --email yangshuo@xcoresigma.com --env=aicc005005 --url http://10.9.1.26:2055/v1 --model Qwen3-32B --gpu "Nvidia H20" --cmd "XXXXX"
+参数说明：
+--file 用例执行结果汇总表格名称（不用加后缀） 
+--model 引擎启动服务名称 
+--email 接收邮件邮箱 
+--env 必须加‘=’，如果同一服务器启多个服务需要保证唯一性
+--gpu 显卡类型，展示在邮件中方便定位问题
+--cmd 服务启动命令，展示在邮件中方便定位问题

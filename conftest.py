@@ -16,11 +16,18 @@ def pytest_sessionstart(session):
     
 @pytest.fixture
 def client():
-    client = AsyncOpenAI(
-    # This is the default and can be omitted
-    api_key=os_env('API_KEY'),
-    base_url=os_env('BASE_URL')
-    )
+    if os_env('API_KEY'):
+        client = AsyncOpenAI(
+        # This is the default and can be omitted
+        api_key=os_env('API_KEY'),
+        base_url=os_env('BASE_URL')
+        )
+    else: 
+        client = AsyncOpenAI(
+        # This is the default and can be omitted
+        api_key="-",
+        base_url=os_env('BASE_URL')
+        )
     return client
 
 @pytest.fixture
