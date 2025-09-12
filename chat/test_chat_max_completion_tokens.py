@@ -204,3 +204,28 @@ async def test_with_beam_search_with_max_tokens(client):
     content_3 = completion.choices[3].message.content
     content_4 = completion.choices[4].message.content
     # assert content_0 != content_1 != content_2 != content_3 != content_4 
+@pytest.mark.asyncio    
+@allure.title("对话_判断设置max_completion_tokens=0时，400报错，返回正确提示信息")    
+async def test_max_tokens_0(client):
+    max_completion_tokens = 6
+    # 判断max_tokens和max_completion_tokens不一致时提示信息正确
+    try:
+        await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+        {
+            "role": "developer",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Hello!"
+        }
+        ],
+        temperature=0,
+        max_completion_tokens=00
+        
+    )
+    except openai.BadRequestError as e:
+        assert e.status_code == 400
+        assert 'max_tokens must be at least 1, got 0.' in e.message
