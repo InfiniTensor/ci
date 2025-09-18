@@ -1,7 +1,35 @@
 #!/bin/bash
 
 TEST_TYPE=$1
-version=$2
+curr_dir=/home/s_limingge/nvidia_test_suite
+
+if [ -z $TEST_TYPE ]; then
+    echo "Parameter Test_Type required!"
+    exit 1
+elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ]; then
+    echo "Test_Type is wrong!"
+    exit 1
+fi
+
+if [ $TEST_TYPE == "Performance" ]; then
+    TEST_PARAM=$2
+    version=$3
+    if [ -z $TEST_PARAM ]; then
+        echo "Parameter Test_Param required!"
+        exit 1
+    elif [ $TEST_PARAM != "Random" ] && [ $TEST_PARAM != "SharedGPT" ]; then
+        echo "Test_Param is wrong!"
+        exit 1
+    fi
+else
+    version=$2
+fi
+
+if [ -z $version ]; then
+    python3 $curr_dir/script_generator.py ${TEST_TYPE} "latest"
+else
+    python3 $curr_dir/script_generator.py ${TEST_TYPE} $version
+fi
 
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20)
@@ -11,7 +39,6 @@ version=$2
 full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
 # Qwen3-30B-A3B-Instruct-2507:2:H20
 
-curr_dir=/home/s_limingge/nvidia_test_suite
 log_name_suffix=$(date +"%Y%m%d")
 parallel=3
 
@@ -19,39 +46,22 @@ rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.txt
 # rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
-# rm -rf $curr_dir/openai_test
 
 declare -A A800_server_list=(
     ["A800-001"]="10.208.130.44"
 )
 
-# declare -A A800_server_reverse_list=(
-#     ["10.208.130.44"]="A800-001"
-# )
-
 declare -A H20_server_list=(
     ["H20-001"]="10.9.1.14"
 )
-
-# declare -A H20_server_reverse_list=(
-#     ["10.9.1.14"]="H20-001"
-# )
 
 declare -A H100_server_list=(
     ["H100-001"]="192.168.100.106"
 )
 
-# declare -A H100_server_reverse_list=(
-#     ["192.168.100.106"]="H100-001"
-# )
-
 declare -A L20_server_list=(
     ["L20-001"]="192.168.100.106"
 )
-
-# declare -A L20_server_reverse_list=(
-#     ["192.168.100.106"]="L20-001"
-# )
 
 search_servers() {
     NPU_QUANTITY=$1
@@ -285,22 +295,6 @@ search_servers() {
     fi
 }
 
-# git clone http://git.xcoresigma.com/xcore-sigma/openai-test.git $curr_dir/openai_test
-
-if [ -z $TEST_TYPE ]; then
-    echo "Parameter Test_Type required!"
-    exit 1
-elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ]; then
-    echo "Test_Type is wrong!"
-    exit 1
-fi
-
-if [ -z $version ]; then
-    python3 $curr_dir/script_generator.py ${TEST_TYPE} "latest"
-else
-    python3 $curr_dir/script_generator.py ${TEST_TYPE} $version
-fi
-
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
     scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
@@ -335,7 +329,7 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=1
+        use_prefix_cache_flag=0
         for ((i=1; i<=1; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
@@ -393,7 +387,6 @@ while true; do
     temp_list=()
     unset pid_map
     declare -A pid_map
-    # rm -rf $curr_dir/openai_test/config/env_settings.toml
     for item in "${GPU_resource_demand[@]}"; do
         model=`echo "$item" | awk -F : '{print $1}'`
         GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
@@ -403,36 +396,16 @@ while true; do
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
-            # if [ $GPU_MODEL == "H20" ]; then
-            #     config="[${H20_server_reverse_list[${servers[0]}]}]\n"
-            #     config+="BASE_URL=\"http://${servers[0]}:$((8000+${job_count}))/v1\"\n"
-            #     config+="MODEL = \"llama\"\n"
-            #     config+="API_KEY = \"-\"\n"
-            #     echo -e "$config" >> $curr_dir/openai_test/config/env_settings.toml
-            # elif [ $GPU_MODEL == "A800" ]; then
-            #     config="[${A800_server_reverse_list[${servers[0]}]}]\n"
-            #     config+="BASE_URL=\"http://${servers[0]}:$((8000+${job_count}))/v1\"\n"
-            #     config+="MODEL = \"llama\"\n"
-            #     config+="API_KEY = \"-\"\n"
-            #     echo -e "$config" >> $curr_dir/openai_test/config/env_settings.toml
-            # elif [ $GPU_MODEL == "H100" ]; then
-            #     config="[${H100_server_reverse_list[${servers[0]}]}]\n"
-            #     config+="BASE_URL=\"http://${servers[0]}:$((8000+${job_count}))/v1\"\n"
-            #     config+="MODEL = \"llama\"\n"
-            #     config+="API_KEY = \"-\"\n"
-            #     echo -e "$config" >> $curr_dir/openai_test/config/env_settings.toml
-            # elif [ $GPU_MODEL == "L20" ]; then
-            #     config="[${L20_server_reverse_list[${servers[0]}]}]\n"
-            #     config+="BASE_URL=\"http://${servers[0]}:$((8000+${job_count}))/v1\"\n"
-            #     config+="MODEL = \"llama\"\n"
-            #     config+="API_KEY = \"-\"\n"
-            #     echo -e "$config" >> $curr_dir/openai_test/config/env_settings.toml
-            # fi
             if [ $TEST_TYPE == "Stability" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
+            elif [ $TEST_TYPE == "Performance" ]; then
+                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${TEST_PARAM} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
             else
                 if [ $TEST_TYPE == "Smoke" ]; then
                     send_report=0
@@ -475,7 +448,6 @@ while true; do
                     ((remaining--))
                 done
                 job_count=0
-                # rm -rf $curr_dir/openai_test/config/env_settings.toml
                 echo "当前批量模型测试完成！"
                 echo
             fi

@@ -6,24 +6,18 @@ server_list=($2)
 candidate_models=$3
 job_count=$4
 TEST_TYPE=$5
-version=$6
+
+if [ $TEST_TYPE == "Performance" ]; then
+    TEST_PARAM=$6
+    version=$7
+else
+    version=$6
+fi
 
 # full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
 full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
 full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 curr_dir=/home/s_limingge/ascend_test_suite
-concurrency_list=(1 5 10 20 50 100 150 200 300)
-length_pairs=(
-  "128:128"
-  "128:1024"
-  "128:2048"
-  "1024:1024"
-  "2048:2048"
-  "4096:1024"
-  "1024:4096"
-  "30000:2048"
-  "126000:2048"
-)
 
 declare -A npu_server_list=(
     ["10.9.1.6"]="AICC_001"
@@ -104,7 +98,7 @@ schedule_policies=('DynamicSplitFuseV2')
 ret_code=0
 
 for option in "${schedule_policies[@]}"; do
-    use_prefix_cache_flag=1
+    use_prefix_cache_flag=0
     for ((i=1; i<=1; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
@@ -240,12 +234,6 @@ for option in "${schedule_policies[@]}"; do
                 echo "开始执行模型${TEST_TYPE}测试任务......"
 
                 if [ $TEST_TYPE == "Smoke" ]; then
-                    # cd $curr_dir/openai_test
-
-                    # 开始执行测试
-                    # pytest --env "${npu_server_list[${server_list[0]}]}_${job_count}" chat --alluredir report > "$curr_dir/$filename"
-                    # pytest --env "${npu_server_list[${server_list[0]}]}_${job_count}" text --alluredir report >> "$curr_dir/$filename"
-
                     # 获取模型启动命令，并做为参数传入
                     exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
@@ -265,74 +253,87 @@ for option in "${schedule_policies[@]}"; do
                     fi
                     
                     # 开始执行测试
-                    # Random
-                    ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
-                        docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
-                            pip3 install dataSets pillow aiohttp
+                    if [ $TEST_PARAM == "Random" ]; then
+                        # concurrency_list=(1 5)
+                        # length_pairs=(
+                        #     "32768:128"
+                        # )
+                        concurrency_list=(1 5 10 20 50 100 150)
+                        length_pairs=(
+                          "128:128"
+                          "128:1024"
+                          "128:2048"
+                          "1024:1024"
+                          "2048:2048"
+                          "4096:1024"
+                          "1024:4096"
+                          "30000:2048"
+                          "126000:2048"
+                        )
+                        # Random
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
+                            docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                                pip3 install dataSets pillow aiohttp
 
-                            for pair in ${length_pairs[@]}; do
-                                input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
-                                output_len=\\\$(echo \\\$pair | cut -d ':' -f 2)
+                                for pair in ${length_pairs[@]}; do
+                                    input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
+                                    output_len=\\\$(echo \\\$pair | cut -d ':' -f 2)
 
-                                echo \\\"========================================================\\\"
-                                echo \\\"Random Testing input=\\\$input_len, output=\\\$output_len\\\"
-                                echo \\\"========================================================\\\"
+                                    echo \\\"========================================================\\\"
+                                    echo \\\"Random Testing input=\\\$input_len, output=\\\$output_len\\\"
+                                    echo \\\"========================================================\\\"
+
+                                    for concurrency in ${concurrency_list[@]}; do
+                                        prompts=\\\$((concurrency * 4))
+                                        echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
+                                        echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+
+                                        python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                        --backend openai \
+                                        --port \\\$((8765+${job_count})) \
+                                        --host 0.0.0.0 \
+                                        --model ${model} \
+                                        --tokenizer ${data_path}/${model}/ \
+                                        --endpoint /v1/completions \
+                                        --dataset-name random \
+                                        --random-input-len \\\$input_len \
+                                        --random-output-len \\\$output_len \
+                                        --num-prompts \\\$prompts \
+                                        --request-rate inf \
+                                        --max-concurrency \\\$concurrency \
+                                        --ignore-eos
+                                    done
+                                done
+                            \"
+                        " > "$curr_dir/$filename"
+                    else
+                        concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
+                        # Sharegpt
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
+                            docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                                pip3 install dataSets pillow aiohttp
 
                                 for concurrency in ${concurrency_list[@]}; do
-                                    prompts=\\\$((concurrency * 1))
-                                    echo "Testing concurrency=\\\$concurrency, prompts=\\\$prompts"
+                                    prompts=\\\$((concurrency * 4))
+                                    echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
+                                    echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
                                     python3 /SigInfer/script/benchmark/benchmark_serving.py \
-                                    --port \\\$((9701+${job_count})) \
+                                    --backend openai \
+                                    --port \\\$((8765+${job_count})) \
                                     --host 127.0.0.1 \
                                     --model ${model} \
                                     --tokenizer ${data_path}/${model}/ \
                                     --endpoint /v1/completions \
-                                    --dataset-name random \
-                                    --random-input-len \\\$input_len \
-                                    --random-output-len \\\$output_len \
+                                    --dataset-name sharegpt \
+                                    --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json \
                                     --num-prompts \\\$prompts \
                                     --request-rate inf \
-                                    --max-concurrency \\\$concurrency \
-                                    --ignore-eos
+                                    --max-concurrency \\\$concurrency
                                 done
-                            done
-                        \"
-                    " > "$curr_dir/$filename"
-
-                    # Sharegpt
-                    # ssh -o ConnectionAttempts=3 s_limingge@$local_master_ip "
-                    #     docker exec -it siginfer_nvidia_PerformanceTest_${job_count} /bin/bash \"
-                    #         for pair in \"${length_pairs[@]}\"; do
-                    #             input_len=$(echo \$pair | cut -d ' ' -f 1)
-                    #             output_len=$(echo \$pair | cut -d ' ' -f 2)
-
-                    #             echo "============================================================="
-                    #             echo "ShareGPT Testing input=\$input_len, output=\$output_len"
-                    #             echo "============================================================="
-
-                    #             for concurrency in \"${concurrency_list[@]}\"; do
-                    #                 prompts=\$((concurrency * 4))
-                    #                 echo "Testing concurrency=\$concurrency, prompts=\$prompts"
-
-                    #                 python3 /SigInfer/script/benchmark/benchmark_serving.py \
-                    #                 --port 28881 \
-                    #                 --host 127.0.0.1 \
-                    #                 --model deepseek \
-                    #                 --tokenizer /home/weight/DeepSeek-R1-0528/ \
-                    #                 --endpoint /v1/completions \
-                    #                 --dataset-name sharegpt \
-                    #                 --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json \
-                    #                 --random-input-len \$input_len \
-                    #                 --random-output-len \$output_len \
-                    #                 --num-prompts \$prompts \
-                    #                 --request-rate inf \
-                    #                 --max-concurrency \$concurrency \
-                    #                 --ignore-eos
-                    #             done
-                    #         done
-                    #     \"
-                    # "
+                            \"
+                        " > "$curr_dir/$filename"
+                    fi
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
                     declare -A pid_map
@@ -416,15 +417,15 @@ for option in "${schedule_policies[@]}"; do
                     elif [ $TEST_TYPE == "Performance" ]; then
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/$filename"
                             fi
                         fi
                     fi

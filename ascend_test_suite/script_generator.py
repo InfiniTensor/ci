@@ -71,6 +71,7 @@ def main():
         result = re.sub(r"--schedule-policy\s+\S+", "--schedule-policy $SCHEDULE_POLICY", result)
         result = re.sub(r"--master-port\s+\d+", "--master-port $MASTER_PORT", result)
         result = re.sub(r"--use-prefix-cache", "$USE_PREFIX_CACHE", result)
+        result += " --gpu-memory-utilization 0.98"
         result += " --prometheus-port $PROMETHEUS_PORT"
         
         if start:

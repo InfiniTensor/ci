@@ -3,13 +3,14 @@ import re
 from openpyxl import load_workbook
 
 def main():
-    if len(sys.argv) != 4:
+    if len(sys.argv) != 5:
         print("Usage: python SendMsgToBot <docker_image_version> <model_name> <log_file_path>")
         sys.exit(1)
     
-    docker_image_version = sys.argv[1]
-    model_name = sys.argv[2]
-    log_file_path = sys.argv[3]
+    test_type = sys.argv[1]
+    docker_image_version = sys.argv[2]
+    model_name = sys.argv[3]
+    log_file_path = sys.argv[4]
     
     # 读取日志文件内容
     try:
@@ -47,14 +48,14 @@ def main():
     # 上下文长度
     in_out_row_map={
         "128+128": 6,
-        "128+1024": 15,
-        "128+2048": 24,
-        "1024+1024": 33,
-        "2048+2048": 42,
-        "4096+1024": 51,
-        "1024+4096": 60,
-        "30000+2048": 69,
-        "126000+2048": 78
+        "128+1024": 13,
+        "128+2048": 20,
+        "1024+1024": 27,
+        "2048+2048": 34,
+        "4096+1024": 41,
+        "1024+4096": 48,
+        "30000+2048": 55,
+        "126000+2048": 62
     }
     
     # 统计指标列名
@@ -82,20 +83,25 @@ def main():
     # 存储提取的结果
     results = {}
     current_config = {}
+    
+    if test_type == "SharedGPT":
+        in_out_length_key = "512+100"
+        results[in_out_length_key] = {}
 
     # 对文本进行匹配
     matches = re.finditer(r"(Random Testing [^\n]+|Testing concurrency=[^\n]+|[\=]+ Serving Benchmark Result [\=]+.*?[\=]+)", text, re.DOTALL)
     for match in matches:
         section = match.group(0)
         
-        # 匹配 input 和 output
-        input_output_match = re.search(r"Random Testing input=(\d+), output=(\d+)", section)
-        if input_output_match:
-            current_config["input"] = int(input_output_match.group(1))
-            current_config["output"] = int(input_output_match.group(2))
-            in_out_length_key = f"{current_config['input']}+{current_config['output']}"
-            results[in_out_length_key] = {}
-            # print(section)
+        if test_type == "Random":
+            # 匹配 input 和 output
+            input_output_match = re.search(r"Random Testing input=(\d+), output=(\d+)", section)
+            if input_output_match:
+                current_config["input"] = int(input_output_match.group(1))
+                current_config["output"] = int(input_output_match.group(2))
+                in_out_length_key = f"{current_config['input']}+{current_config['output']}"
+                results[in_out_length_key] = {}
+                # print(section)
         
         # 匹配 concurrency 和 prompts
         concurrency_prompt_match = re.search(r"Testing concurrency=(\d+), prompts=(\d+)", section)
