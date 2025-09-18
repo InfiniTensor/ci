@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TEST_TYPE=$1
+ENGINE_TYPE=$2
 curr_dir=/home/s_limingge/ascend_test_suite
 
 if [ -z $TEST_TYPE ]; then
@@ -11,9 +12,17 @@ elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYP
     exit 1
 fi
 
+if [ -z $ENGINE_TYPE ]; then
+    echo "Parameter PLATFORM required!"
+    exit 1
+elif [ $ENGINE_TYPE != "SigInfer" ] && [ $ENGINE_TYPE != "vLLM" ] && [ $ENGINE_TYPE != "MindIE" ]; then
+    echo "Inference Engine Type is wrong!"
+    exit 1
+fi
+
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$2
-    version=$3
+    TEST_PARAM=$3
+    version=$4
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -22,13 +31,59 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-version=$2
+    version=$3
 fi
 
-if [ -z $version ]; then
-    python3 $curr_dir/script_generator.py $TEST_TYPE "latest"
-else
-    python3 $curr_dir/script_generator.py $TEST_TYPE $version
+if [ $ENGINE_TYPE == "SigInfer" ]; then
+    declare -A npu_server_list=(
+        # ["aicc001"]="10.9.1.6"
+        ["aicc003"]="10.9.1.74"
+        ["aicc004"]="10.9.1.34"
+        ["aicc005"]="10.9.1.26"
+        ["aicc006"]="10.9.1.46"
+        ["aicc007"]="10.9.1.58"
+        ["aicc008"]="10.9.1.30"
+        # ["aicc009"]="10.9.1.38"
+        # ["aicc010"]="10.9.1.70"
+        ["aicc011"]="10.9.1.42"
+        # ["aicc012"]="10.9.1.66"
+        # ["aicc013"]="10.9.1.50"
+        ["aicc014"]="10.9.1.62"
+        # ["aicc015"]="10.9.1.54"
+    )
+    if [ -z $version ]; then
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
+    else
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} $version
+    fi
+elif [ $ENGINE_TYPE == "vLLM" ]; then
+    declare -A npu_server_list=(
+        # ["aicc001"]="10.9.1.6"
+        ["aicc003"]="10.9.1.74"
+        ["aicc004"]="10.9.1.34"
+        ["aicc005"]="10.9.1.26"
+        ["aicc006"]="10.9.1.46"
+        ["aicc007"]="10.9.1.58"
+        ["aicc008"]="10.9.1.30"
+        # ["aicc009"]="10.9.1.38"
+        # ["aicc010"]="10.9.1.70"
+        ["aicc011"]="10.9.1.42"
+        # ["aicc012"]="10.9.1.66"
+        # ["aicc013"]="10.9.1.50"
+        ["aicc014"]="10.9.1.62"
+        # ["aicc015"]="10.9.1.54"
+    )
+    if [ -z $version ]; then
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
+    else
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} $version
+    fi
+elif [ $ENGINE_TYPE == "MindIE" ]; then
+    declare -A npu_server_list=(
+        ["aicc009"]="10.9.1.38"
+        ["aicc010"]="10.9.1.70"
+    )
+    python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE}
 fi
 
 # full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-w8a8:16 DeepSeek-R1-awq:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
@@ -45,23 +100,6 @@ rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.txt
 # rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
-
-declare -A npu_server_list=(
-    # ["aicc001"]="10.9.1.6"
-    ["aicc003"]="10.9.1.74"
-    ["aicc004"]="10.9.1.34"
-    ["aicc005"]="10.9.1.26"
-    ["aicc006"]="10.9.1.46"
-    ["aicc007"]="10.9.1.58"
-    ["aicc008"]="10.9.1.30"
-    # ["aicc009"]="10.9.1.38"
-    # ["aicc010"]="10.9.1.70"
-    ["aicc011"]="10.9.1.42"
-    # ["aicc012"]="10.9.1.66"
-    # ["aicc013"]="10.9.1.50"
-    ["aicc014"]="10.9.1.62"
-    # ["aicc015"]="10.9.1.54"
-)
 
 search_servers() {
     NPU_QUANTITY=$1

@@ -135,8 +135,12 @@ def main():
     # print(results)
     
     # 加载已有Excel模板
-    wb = load_workbook('report_template.xlsx')
-    ws = wb.active  # 或者用 wb["Sheet1"]
+    if test_type == "Random":
+        wb = load_workbook('report_template_for_Random.xlsx')
+        ws = wb.active  # 或者用 wb["Sheet1"]
+    else
+        wb = load_workbook('report_template_for_SharedGPT.xlsx')
+        ws = wb.active  # 或者用 wb["Sheet1"]
     
     for in_out_length_key, concurrency_map in results.items():
         start_row = in_out_row_map[in_out_length_key]

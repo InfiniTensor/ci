@@ -1,6 +1,7 @@
 #!/bin/bash
 
 TEST_TYPE=$1
+ENGINE_TYPE=$2
 curr_dir=/home/s_limingge/nvidia_test_suite
 
 if [ -z $TEST_TYPE ]; then
@@ -11,9 +12,17 @@ elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYP
     exit 1
 fi
 
+if [ -z $ENGINE_TYPE ]; then
+    echo "Parameter PLATFORM required!"
+    exit 1
+elif [ $ENGINE_TYPE != "SigInfer" ] && [ $ENGINE_TYPE != "vLLM" ]; then
+    echo "Inference Engine Type is wrong!"
+    exit 1
+fi
+
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$2
-    version=$3
+    TEST_PARAM=$3
+    version=$4
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -22,13 +31,21 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$2
+    version=$3
 fi
 
-if [ -z $version ]; then
-    python3 $curr_dir/script_generator.py ${TEST_TYPE} "latest"
-else
-    python3 $curr_dir/script_generator.py ${TEST_TYPE} $version
+if [ $ENGINE_TYPE -eq "SigInfer" ]; then
+    if [ -z $version ]; then
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
+    else
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} $version
+    fi
+elif [ $ENGINE_TYPE -eq "vLLM" ]; then
+    if [ -z $version ]; then
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
+    else
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} $version
+    fi
 fi
 
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)

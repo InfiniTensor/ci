@@ -13,14 +13,14 @@ def main():
     test_type = sys.argv[1]
     version = sys.argv[2]
     
-    curr_dir = "/home/s_limingge/nvidia_test_suite"
+    curr_dir = "/home/s_limingge/ascend_test_suite"
 
     # 加载 Excel 文件
     file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
     workbook = load_workbook(file_path)
 
     # 选择工作表
-    sheet = workbook['NVIDIA']
+    sheet = workbook['Ascend']
 
     # 获取行数
     row_count = sheet.max_row
@@ -30,9 +30,9 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        src_code += "PORT=$((8000+${JOB_COUNT}))\n"
-        src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
+        src_code += "PORT=$((6543+${JOB_COUNT}))\n"
+        src_code += "PROMETHEUS_PORT=$((8321+${JOB_COUNT}))\n"
+        src_code += "MASTER_PORT=$((8438+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
@@ -62,15 +62,16 @@ def main():
         args = row[2]
         args = args.split('\n')[0]
         
-        result = re.sub(r"^.*docker\.xcoresigma\.com(\:\d+)?/docker/siginfer-x86_64-nvidia\:\S+", "", args)
+        result = re.sub(r"^.*docker\.xcoresigma\.com/docker/siginfer-aarch64-ascend\:\S+", "", args)
         result = re.sub(r"--swap-space\s+\d+", "$SWAP_SPACE_OPTION", result)
         result = re.sub(r"--prometheus-port\s+\d+", "--prometheus-port $PROMETHEUS_PORT", result)
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
+        result = re.sub(r"--master-addr\s+\S+", "--master-addr $MASTER_IP", result)
+        result = re.sub(r"--node-rank\s+\d+", "--node-rank $NODE_RANK", result)
         result = re.sub(r"--schedule-policy\s+\S+", "--schedule-policy $SCHEDULE_POLICY", result)
         result = re.sub(r"--master-port\s+\d+", "--master-port $MASTER_PORT", result)
         result = re.sub(r"--use-prefix-cache", "$USE_PREFIX_CACHE", result)
-        # temporary modification...
-        result = re.sub(r"--gpu-memory-utilization\s+\S+", "--gpu-memory-utilization 0.99", result)
+        result += " --gpu-memory-utilization 0.98"
         result += " --prometheus-port $PROMETHEUS_PORT"
         
         if start:
@@ -90,7 +91,7 @@ def main():
 
     # print(src_code)
 
-    template_file = "job_executor_template.sh"
+    template_file = "job_executor_template_for_SigInfer.sh"
 
     try:
         with open(f"{curr_dir}/{template_file}", 'r', encoding='utf-8') as file:
