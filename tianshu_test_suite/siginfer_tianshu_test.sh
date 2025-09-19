@@ -1,13 +1,19 @@
 #!/bin/bash
 
 # 接收参数
-send_report=$1
-server_list=($2)
-candidate_models=$3
-job_count=$4
-TEST_TYPE=$5
-version=$6
-user=$7
+USER=$1
+send_report=$2
+server_list=($3)
+candidate_models=$4
+job_count=$5
+TEST_TYPE=$6
+
+if [ $TEST_TYPE == "Performance" ]; then
+    TEST_PARAM=$7
+    version=$8
+else
+    version=$7
+fi
 
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H100 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20)
 # full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
@@ -142,10 +148,10 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $user@$ip /home/$user/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > $curr_dir/$filename &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$ip /home/$USER/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > $curr_dir/$filename &
                         pid_map[$!]=$ip
                     else
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $user@$ip /home/$user/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$ip /home/$USER/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
                         pid_map[$!]=$ip
                     fi
 
@@ -170,8 +176,8 @@ for option in "${schedule_policies[@]}"; do
                         
                         # 启动失败，清理工作
                         for ip in ${server_list[@]}; do
-                            ssh -o ConnectionAttempts=3 $user@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                            ssh -o ConnectionAttempts=3 $user@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                            ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                            ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
                         done
 
                         ret_code=$err
@@ -191,105 +197,109 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE == "Performance" ]; then
                     if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-FP8" ]; then
-                        data_path="/home/weight/Qwen3/Qwen"
+                        data_path="/home/weight/Qwen3"
+                    elif [ $model == "QwQ-32B" ] || [ $model == "QwQ-32B-AWQ" ]; then
+                        data_path="/home/weight/Qwen"
                     else
                         data_path="/home/weight"
                     fi
 
-                    # concurrency_list=(1 5 10 20 50 100 150 200 300)
-                    concurrency_list=(1 10 50 100 200)
-                    multiplier=2
-                    length_pairs=(
-                        "1024:1024"
-                    )
-                    # length_pairs=(
-                    # "128:128"
-                    # "128:1024"
-                    # "128:2048"
-                    # "1024:1024"
-                    # "2048:2048"
-                    # "4096:1024"
-                    # "1024:4096"
-                    # "30000:2048"
-                    # "126000:2048"
-                    # )
-                    
-                    # 开始执行测试
-                    # Random
-                    ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $user@$local_master_ip "
-                        docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
-                            pip3 install dataSets pillow aiohttp
+                    if [ $TEST_PARAM == "Random" ]; then
+                        multiplier=4
+                        # concurrency_list=(1 5)
+                        # length_pairs=(
+                        #     "32768:128"
+                        # )
+                        concurrency_list=(1 5 10 20 50 100 150)
+                        length_pairs=(
+                            "128:128"
+                            "128:1024"
+                            "128:2048"
+                            "1024:1024"
+                            "2048:2048"
+                            "4096:1024"
+                            "1024:4096"
+                            "30000:2048"
+                            "126000:2048"
+                        )
+                        # Random
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$local_master_ip "
+                            docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
+                                pip3 install dataSets pillow aiohttp
 
-                            for pair in ${length_pairs[@]}; do
-                                input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
-                                output_len=\\\$(echo \\\$pair | cut -d ':' -f 2)
+                                for pair in ${length_pairs[@]}; do
+                                    input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
+                                    output_len=\\\$(echo \\\$pair | cut -d ':' -f 2)
 
-                                echo \\\"========================================================\\\"
-                                echo \\\"Random Testing input=\\\$input_len, output=\\\$output_len\\\"
-                                echo \\\"========================================================\\\"
+                                    echo \\\"========================================================\\\"
+                                    echo \\\"Random Testing input=\\\$input_len, output=\\\$output_len\\\"
+                                    echo \\\"========================================================\\\"
+
+                                    for concurrency in ${concurrency_list[@]}; do
+                                        prompts=\\\$((concurrency * ${multiplier}))
+                                        echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
+                                        echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+
+                                        python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                        --backend openai \
+                                        --port \\\$((8765+${job_count})) \
+                                        --host 127.0.0.1 \
+                                        --model ${model} \
+                                        --tokenizer ${data_path}/${model}/ \
+                                        --endpoint /v1/completions \
+                                        --dataset-name random \
+                                        --random-input-len \\\$input_len \
+                                        --random-output-len \\\$output_len \
+                                        --num-prompts \\\$prompts \
+                                        --request-rate inf \
+                                        --max-concurrency \\\$concurrency \
+                                        --ignore-eos
+                                    done
+                                done
+                            \"
+                        " > "$curr_dir/$filename"
+                    else
+                        multiplier=4
+                        concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
+                        # Sharegpt
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$local_master_ip "
+                            docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
+                                pip3 install dataSets pillow aiohttp
 
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * ${multiplier}))
-                                    echo "Testing concurrency=\\\$concurrency, prompts=\\\$prompts"
+                                    echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
+                                    echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
                                     python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                    --backend openai \
                                     --port \\\$((8765+${job_count})) \
                                     --host 127.0.0.1 \
                                     --model ${model} \
                                     --tokenizer ${data_path}/${model}/ \
                                     --endpoint /v1/completions \
-                                    --dataset-name random \
-                                    --random-input-len \\\$input_len \
-                                    --random-output-len \\\$output_len \
+                                    --dataset-name sharegpt \
+                                    --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json \
                                     --num-prompts \\\$prompts \
                                     --request-rate inf \
-                                    --max-concurrency \\\$concurrency \
-                                    --ignore-eos
+                                    --max-concurrency \\\$concurrency
                                 done
-                            done
-                        \"
-                    " > "$curr_dir/$filename"
-
-                    # Sharegpt
-                    # ssh -o ConnectionAttempts=3 $user@$local_master_ip "
-                    #     docker exec -it siginfer_nvidia_PerformanceTest_${job_count} /bin/bash \"
-                    #         for pair in \"${length_pairs[@]}\"; do
-                    #             input_len=$(echo \$pair | cut -d ' ' -f 1)
-                    #             output_len=$(echo \$pair | cut -d ' ' -f 2)
-
-                    #             echo "============================================================="
-                    #             echo "ShareGPT Testing input=\$input_len, output=\$output_len"
-                    #             echo "============================================================="
-
-                    #             for concurrency in \"${concurrency_list[@]}\"; do
-                    #                 prompts=\$((concurrency * 4))
-                    #                 echo "Testing concurrency=\$concurrency, prompts=\$prompts"
-
-                    #                 python3 /SigInfer/script/benchmark/benchmark_serving.py \
-                    #                 --port 28881 \
-                    #                 --host 127.0.0.1 \
-                    #                 --model deepseek \
-                    #                 --tokenizer /home/weight/DeepSeek-R1-0528/ \
-                    #                 --endpoint /v1/completions \
-                    #                 --dataset-name sharegpt \
-                    #                 --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json \
-                    #                 --random-input-len \$input_len \
-                    #                 --random-output-len \$output_len \
-                    #                 --num-prompts \$prompts \
-                    #                 --request-rate inf \
-                    #                 --max-concurrency \$concurrency \
-                    #                 --ignore-eos
-                    #             done
-                    #         done
-                    #     \"
-                    # "
+                            \"
+                        " > "$curr_dir/$filename"
+                    fi
                 elif [ $TEST_TYPE == "Smoke" ]; then
-                    # ...... 
-                    echo "启动接口测试容器，执行冒烟测试"
-                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=${V100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model"
-                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=$local_master_ip --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
-                    echo "冒烟测试完成"
+                    # 获取模型启动命令，并做为参数传入
+                    exec_cmd=""
+                    for ((k=0; k<$seq_num; k=k+1)); do
+                        launch_cmd=`tail -n 3 "$curr_dir/${filename}_${k}" | head -n 1`
+                        exec_cmd+="$launch_cmd\n"
+                    done
 
+                    full_cmd=${exec_cmd%??}
+
+                    echo "启动接口测试容器，执行冒烟测试"
+                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=${V100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd"
+                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=$local_master_ip --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
                     declare -A pid_map
@@ -335,8 +345,8 @@ for option in "${schedule_policies[@]}"; do
 
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
-                    ssh -o ConnectionAttempts=3 $user@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                    ssh -o ConnectionAttempts=3 $user@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                    ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                    ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
                 done
                 
                 # 发送测试报告

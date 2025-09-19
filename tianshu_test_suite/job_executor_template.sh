@@ -23,47 +23,13 @@ if [ $SWAP_SPACE -gt 0 ]; then
     SWAP_SPACE_OPTION="--swap-space $SWAP_SPACE"
 fi
 
-LATEST_TAG=""
 LATEST_TAG=$VERSION
-# if [ -z $VERSION ]; then
-#     # 先拿到所有 tag 并按字母升序
-#     TAGS=$(/home/s_limingge/jfrog rt curl \
-#         --server-id=my-jcr \
-#         /api/docker/docker-local/v2/siginfer-x86_64-tianshu/tags/list \
-#     | jq -r '.tags[]' | sort)
-
-#     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
-#     for tag in $TAGS; do
-#     created=$(/home/s_limingge/jfrog rt curl \
-#         --server-id=my-jcr \
-#         /api/storage/docker-local/siginfer-x86_64-tianshu/$tag \
-#         | jq -r '.created')
-#     echo "$tag $created"
-#     done > tag_dates.txt
-
-#     LATEST_TAG=$(sort -k2 -r tag_dates.txt | head -n1 | awk '{print $1}')
-#     echo "The latest version : $LATEST_TAG"
-# else
-#     LATEST_TAG=$VERSION
-#     echo "The specified version : $LATEST_TAG"
-# fi
-
-DOCKER_IMAGE_URL=""
-# docker pull docker.xcoresigma.com:80/docker/siginfer-x86_64-tianshu:$LATEST_TAG
-# if [ $? -ne 0 ]; then
-#     docker pull docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG
-# if [ $? -ne 0 ]; then
-#     exit 1;
-#     fi
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-# else
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-# fi
 DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-ret=`docker ps -a | grep siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}`
+
+ret=`docker ps -a | grep siginfer_tianshu_<<<TEST_TYPE>>>_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}
-  docker rm siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}
+  docker stop siginfer_tianshu_<<<TEST_TYPE>>>_${JOB_COUNT}
+  docker rm siginfer_tianshu_<<<TEST_TYPE>>>_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -166,7 +132,7 @@ done
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
+EXEC_COMMAND="docker run --name=siginfer_tianshu_<<<TEST_TYPE>>>_${JOB_COUNT} \
     --network host \
     --pid=host \
     --ipc=host	\
@@ -177,16 +143,17 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
     -v /dev:/dev \
     --privileged \
     --cap-add=ALL \
-    --env LICENSE_LOCATION=/SigInfer/lib/trial-20251201.lic\
-    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES    \
+    --env LICENSE_LOCATION=/SigInfer/lib/trial-20251201.lic \
+    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
     -e SIG_LOG_LEVEL='warn,console_logger=info' \
     --multi-thread \
     $DOCKER_IMAGE_URL"
 
 <<<generated source code>>>
-echo "服务启动命令"
+
+echo "服务启动命令:"
 echo "$EXEC_COMMAND"
-echo "服务启动命令"
+
 eval "$EXEC_COMMAND"
 if [ $? -ne 0 ]; then
     exit 1;
