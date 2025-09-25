@@ -26,7 +26,7 @@ GPU = "910b"
 
 [44]
 BASE_URL = "http://10.208.130.44:2025/v1"
-MODEL = "qwen3"
+MODEL = "deepseek"
 API_KEY = "-"
 GPU = ""
 
@@ -49,7 +49,7 @@ API_KEY = "-"
 GPU = "910b"
 
 [106-sig]
-BASE_URL = "http://192.168.100.106:2055/v1"
-MODEL = "qwen3"
+BASE_URL = "http://192.168.100.106:2025/v1"
+MODEL = "deepseek"
 API_KEY = "-"
 GPU = "910b"

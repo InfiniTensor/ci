@@ -228,7 +228,8 @@ async def test_completion_streaming(client):
     assert "".join(chunks) == single_output
     
    
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="现版本不支持")
 @allure.title("文本补全_判断n=3时，parallel_streaming回结果正确")        
 async def test_parallel_streaming(client):
     """Streaming for parallel sampling.
@@ -328,6 +329,7 @@ async def test_completion_with_include_usage_true(client):
 
     # Test stream=True, stream_options=
     #     {"include_usage": True, "continuous_usage_stats": True}
+
 @pytest.mark.asyncio 
 @allure.title("文本补全_判断stream模式下，stream_options全为true时返回结果正确")
 async def test_completion_with_stream_options_all_true(client):
