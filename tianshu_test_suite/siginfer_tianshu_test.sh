@@ -17,9 +17,7 @@ fi
 
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20 DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H100 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20)
 # full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
-full_model_list=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-14B:2:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-8B:1:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Meta-Llama-3.1-8B-Instruct:1:V100
-Meta-Llama-3.1-70B-Instruct:8:V100 Qwen2.5-0.5B-Instruct:1:V100 Qwen2.5-1.5B-Instruct:1:V100 Qwen2.5-3B-Instruct:1:V100 Qwen2.5-7B-Instruct:1:V100 Qwen2.5-14B-Instruct:2:V100 Qwen2.5-32B-Instruct:4:V100 Qwen2.5-72B-Instruct:8:V100 QwQ-32B:4:V100 
-Qwen2.5-0.5B-Instruct-AWQ:1:V100 Qwen2.5-1.5B-Instruct-AWQ:1:V100 Qwen2.5-3B-Instruct-AWQ:1:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-14B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100 QwQ-32B-AWQ:2:V100) 
+full_model_list=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-14B:2:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-8B:1:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Meta-Llama-3.1-8B-Instruct:1:V100 Meta-Llama-3.1-70B-Instruct:8:V100 Qwen2.5-0.5B-Instruct:1:V100 Qwen2.5-1.5B-Instruct:1:V100 Qwen2.5-3B-Instruct:1:V100 Qwen2.5-7B-Instruct:1:V100 Qwen2.5-14B-Instruct:2:V100 Qwen2.5-32B-Instruct:4:V100 Qwen2.5-72B-Instruct:8:V100 QwQ-32B:4:V100 Qwen2.5-0.5B-Instruct-AWQ:1:V100 Qwen2.5-1.5B-Instruct-AWQ:1:V100 Qwen2.5-3B-Instruct-AWQ:1:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-14B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100 QwQ-32B-AWQ:2:V100) 
 curr_dir=$(pwd)
 
 declare -A V100_server_list=(
@@ -131,7 +129,9 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE != "Accuracy" ]; then
                     filename+=".log"
+                    if [ $TEST_TYPE != "Smoke" ]; then
                     touch ${filename}
+                    fi
                 fi
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
@@ -148,7 +148,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$ip /home/$USER/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > $curr_dir/$filename &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$ip /home/$USER/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > "$curr_dir/${filename}_${seq_num}" &
                         pid_map[$!]=$ip
                     else
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$ip /home/$USER/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
@@ -176,8 +176,8 @@ for option in "${schedule_policies[@]}"; do
                         
                         # 启动失败，清理工作
                         for ip in ${server_list[@]}; do
-                            ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                            ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                            ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_tianshu_${TEST_TYPE}Test_${job_count}
+                            ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_tianshu_${TEST_TYPE}Test_${job_count}
                         done
 
                         ret_code=$err
@@ -224,7 +224,7 @@ for option in "${schedule_policies[@]}"; do
                         )
                         # Random
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$local_master_ip "
-                            docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
+                            docker exec siginfer_tianshu_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
                                 for pair in ${length_pairs[@]}; do
@@ -263,7 +263,7 @@ for option in "${schedule_policies[@]}"; do
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 $USER@$local_master_ip "
-                            docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
+                            docker exec siginfer_tianshu_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
                                 for concurrency in ${concurrency_list[@]}; do
@@ -298,8 +298,8 @@ for option in "${schedule_policies[@]}"; do
                     full_cmd=${exec_cmd%??}
 
                     echo "启动接口测试容器，执行冒烟测试"
-                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=${V100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd"
-                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email yangshuo@xcoresigma.com --env=$local_master_ip --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
+                    echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${V100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd"
+                    docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${V100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
                     declare -A pid_map
@@ -345,17 +345,17 @@ for option in "${schedule_policies[@]}"; do
 
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
-                    ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                    ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                    ssh -o ConnectionAttempts=3 $USER@$ip docker stop siginfer_tianshu_${TEST_TYPE}Test_${job_count}
+                    ssh -o ConnectionAttempts=3 $USER@$ip docker rm siginfer_tianshu_${TEST_TYPE}Test_${job_count}
                 done
                 
                 # 发送测试报告
                 if [ $send_report -eq 1 ]; then
                     if [ -z $version ]; then
-                        latest_tag=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-x86_64-nvidia/tags/list | jq -r '.tags[]' \
+                        latest_tag=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-x86_64-tianshu/tags/list | jq -r '.tags[]' \
                         | xargs -I% sh -c "echo -n \"%  \"; \
                             jfrog rt curl --server-id=my-jcr \
-                            /api/storage/docker-local/siginfer-x86_64-nvidia/% \
+                            /api/storage/docker-local/siginfer-x86_64-tianshu/% \
                         | jq -r '.created'" | sort -k2 -r | head -n1 | awk '{print $1}')
                     else
                         latest_tag=$version

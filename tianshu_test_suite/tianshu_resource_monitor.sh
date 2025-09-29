@@ -36,14 +36,15 @@ fi
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-V3-0324:8:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct:4:H20)
 # full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
-full_model_list=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-14B:2:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-8B:1:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Meta-Llama-3.1-8B-Instruct:1:V100
-Meta-Llama-3.1-70B-Instruct:8:V100 Qwen2.5-0.5B-Instruct:1:V100 Qwen2.5-1.5B-Instruct:1:V100 Qwen2.5-3B-Instruct:1:V100 Qwen2.5-7B-Instruct:1:V100 Qwen2.5-14B-Instruct:2:V100 Qwen2.5-32B-Instruct:4:V100 Qwen2.5-72B-Instruct:8:V100 QwQ-32B:4:V100 
-Qwen2.5-0.5B-Instruct-AWQ:1:V100 Qwen2.5-1.5B-Instruct-AWQ:1:V100 Qwen2.5-3B-Instruct-AWQ:1:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-14B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100 QwQ-32B-AWQ:2:V100)
+# full_model_list=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-14B:2:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-8B:1:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Meta-Llama-3.1-8B-Instruct:1:V100 Meta-Llama-3.1-70B-Instruct:8:V100 Qwen2.5-0.5B-Instruct:1:V100 Qwen2.5-1.5B-Instruct:1:V100 Qwen2.5-3B-Instruct:1:V100 Qwen2.5-7B-Instruct:1:V100 Qwen2.5-14B-Instruct:2:V100 Qwen2.5-32B-Instruct:4:V100 Qwen2.5-72B-Instruct:8:V100 QwQ-32B:4:V100 Qwen2.5-0.5B-Instruct-AWQ:1:V100 Qwen2.5-1.5B-Instruct-AWQ:1:V100 Qwen2.5-3B-Instruct-AWQ:1:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-14B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100 QwQ-32B-AWQ:2:V100)
+full_model_list_for_Smoke=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-14B:2:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-8B:1:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Meta-Llama-3.1-8B-Instruct:1:V100 Meta-Llama-3.1-70B-Instruct:8:V100 Qwen2.5-0.5B-Instruct:1:V100 Qwen2.5-1.5B-Instruct:1:V100 Qwen2.5-3B-Instruct:1:V100 Qwen2.5-7B-Instruct:1:V100 Qwen2.5-14B-Instruct:2:V100 Qwen2.5-32B-Instruct:4:V100 Qwen2.5-72B-Instruct:8:V100 QwQ-32B:4:V100 Qwen2.5-0.5B-Instruct-AWQ:1:V100 Qwen2.5-1.5B-Instruct-AWQ:1:V100 Qwen2.5-3B-Instruct-AWQ:1:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-14B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100 QwQ-32B-AWQ:2:V100)
+full_model_list_for_Performance=(DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100)
 
 log_name_suffix=$(date +"%Y%m%d")
 parallel=3
 
 rm -rf $curr_dir/*.log
+rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
 # rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
@@ -51,6 +52,12 @@ rm -rf $curr_dir/report/*
 declare -A V100_server_list=(
     ["V100-001"]="192.168.100.101"
 )
+
+if [ $TEST_TYPE == "Performance" ]; then
+    full_model_list=(${full_model_list_for_Performance[@]})
+elif [ $TEST_TYPE == "Smoke" ]; then
+    full_model_list=(${full_model_list_for_Smoke[@]})
+fi
 
 search_servers() {
     NPU_QUANTITY=$1
@@ -69,19 +76,16 @@ search_servers() {
     if [ $NPU_MODEL == "V100" ]; then
         for key in "${!V100_server_list[@]}"; do
             echo "$key => ${V100_server_list[$key]}"
-            ssh $user@${V100_server_list[$key]} "# 目标空闲 GPU 数量
+            ssh $USER@${V100_server_list[$key]} "# 目标空闲 GPU 数量
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
                     TARGET_FREE_GPUS=$NPU_QUANTITY
                 fi
                 echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
-                
-                # 使用 nvidia-smi 获取 GPU 使用情况
-
+                # 使用 ixsmi 获取 GPU 使用情况
                 GPU_INFO=(\$(docker exec automation_test ixsmi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
                 # 去重
-                echo \${GPU_INFO[@]}
                 GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
                 # 检查使用中的 GPU 数量
                 USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
@@ -93,7 +97,7 @@ search_servers() {
                     if [ \$TARGET_FREE_GPUS -gt 4 ]; then
                         # 如果找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                            echo \"resource moniter 成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                            echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
                             exit 0
                         fi
                     else
@@ -113,19 +117,19 @@ search_servers() {
                         done
                         # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_1_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                            echo \"resource moniter 成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
+                            echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
                             exit 0
                         fi
                         # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_2_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                            echo \"resource moniter 成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
+                            echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
                             exit 0
                         fi
                     fi
                 else
                     # 如果找到足够的空闲 GPU, 则返回结果并退出
                     if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                        echo \"resource moniter 成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
+                        echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
                         exit 0
                     fi
                 fi
@@ -158,7 +162,8 @@ for item in "${full_model_list[@]}"; do
     quanity=`echo "$item" | awk -F : '{print $2}'`
     gpu=`echo "$item" | awk -F : '{print $3}'`
     found=0
-    for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
             swap_space=40
@@ -227,12 +232,12 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/siginfer_nvidia_test.sh ${USER} 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_tianshu_test.sh ${USER} 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/siginfer_nvidia_test.sh ${USER} 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${TEST_PARAM} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_tianshu_test.sh ${USER} 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${TEST_PARAM} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
@@ -242,7 +247,7 @@ while true; do
                 else
                     send_report=1
                 fi
-                $curr_dir/siginfer_nvidia_test.sh ${USER} ${send_report} "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_tianshu_test.sh ${USER} ${send_report} "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
@@ -285,7 +290,7 @@ while true; do
             temp_list+=(${item})
             echo "未找到足够的空闲 GPU, 无法测试模型${model}, 准备尝试测试下一个模型......"
             echo
-            # 等待一段时间后重新扫描（例如 5 秒）
+            # 等待一段时间后重新扫描（例如 10 秒）
             sleep 10
         fi
     done
