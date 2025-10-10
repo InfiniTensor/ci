@@ -87,7 +87,7 @@ ret_code=0
 
 # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
 for option in "${schedule_policies[@]}"; do
-    use_prefix_cache_flag=0
+    use_prefix_cache_flag=1
     for ((i=1; i<=1; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do

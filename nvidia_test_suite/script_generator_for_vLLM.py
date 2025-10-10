@@ -86,7 +86,7 @@ def main():
         src_code += result
         src_code += "\\\"\n"
         
-        src_code += "    nohup vllm serve "
+        src_code += "    nohup CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
         src_code += result
         src_code += " > $LOG_NAME 2>&1 &\n"
         

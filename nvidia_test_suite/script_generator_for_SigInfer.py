@@ -115,7 +115,7 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             line_num += 1
     except FileNotFoundError:
-        print(f"Error: Log file '{log_file_path}' not found.")
+        print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
     except Exception as e:
         print(f"Error reading file: {str(e)}")
     
