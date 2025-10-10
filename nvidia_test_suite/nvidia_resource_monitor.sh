@@ -34,13 +34,13 @@ else
     version=$3
 fi
 
-if [ $ENGINE_TYPE -eq "SigInfer" ]; then
+if [ $ENGINE_TYPE == "SigInfer" ]; then
     if [ -z $version ]; then
         python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
     else
         python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} $version
     fi
-elif [ $ENGINE_TYPE -eq "vLLM" ]; then
+elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
         python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
     else
@@ -60,6 +60,7 @@ log_name_suffix=$(date +"%Y%m%d")
 parallel=3
 
 rm -rf $curr_dir/*.log
+rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
 # rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
@@ -346,7 +347,7 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=0
+        use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
@@ -441,7 +442,7 @@ while true; do
                 err=$?          # 保存上一个结束子进程的退出状态
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                        temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                        temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
                     fi
                 else
                     echo "程序出错！"

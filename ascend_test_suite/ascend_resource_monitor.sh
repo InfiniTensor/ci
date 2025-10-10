@@ -37,18 +37,18 @@ fi
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     declare -A npu_server_list=(
         # ["aicc001"]="10.9.1.6"
-        ["aicc003"]="10.9.1.74"
+        # ["aicc003"]="10.9.1.74"
         ["aicc004"]="10.9.1.34"
         ["aicc005"]="10.9.1.26"
         ["aicc006"]="10.9.1.46"
         ["aicc007"]="10.9.1.58"
         ["aicc008"]="10.9.1.30"
-        # ["aicc009"]="10.9.1.38"
-        # ["aicc010"]="10.9.1.70"
+        ["aicc009"]="10.9.1.38"
+        ["aicc010"]="10.9.1.70"
         ["aicc011"]="10.9.1.42"
-        # ["aicc012"]="10.9.1.66"
-        # ["aicc013"]="10.9.1.50"
-        ["aicc014"]="10.9.1.62"
+        ["aicc012"]="10.9.1.66"
+        ["aicc013"]="10.9.1.50"
+        # ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -97,6 +97,7 @@ log_name_suffix=$(date +"%Y%m%d")
 parallel=3
 
 rm -rf $curr_dir/*.log
+rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
 # rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
 rm -rf $curr_dir/report/*
@@ -193,7 +194,7 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=0
+        use_prefix_cache_flag=1
         for ((i=1; i<=1; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
@@ -288,7 +289,7 @@ while true; do
                 err=$?          # 保存上一个结束子进程的退出状态
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                        temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                        temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
                     fi
                 else
                     echo "程序出错！"

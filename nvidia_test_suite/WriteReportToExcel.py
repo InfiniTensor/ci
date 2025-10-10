@@ -4,7 +4,7 @@ from openpyxl import load_workbook
 
 def main():
     if len(sys.argv) != 5:
-        print("Usage: python SendMsgToBot <docker_image_version> <model_name> <log_file_path>")
+        print("Usage: python SendMsgToBot <test_type> <docker_image_version> <model_name> <log_file_path>")
         sys.exit(1)
     
     test_type = sys.argv[1]
