@@ -23,47 +23,13 @@ if [ $SWAP_SPACE -gt 0 ]; then
     SWAP_SPACE_OPTION="--swap-space $SWAP_SPACE"
 fi
 
-LATEST_TAG=""
 LATEST_TAG=$VERSION
-# if [ -z $VERSION ]; then
-#     # 先拿到所有 tag 并按字母升序
-#     TAGS=$(/home/s_limingge/jfrog rt curl \
-#         --server-id=my-jcr \
-#         /api/docker/docker-local/v2/siginfer-x86_64-tianshu/tags/list \
-#     | jq -r '.tags[]' | sort)
-
-#     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
-#     for tag in $TAGS; do
-#     created=$(/home/s_limingge/jfrog rt curl \
-#         --server-id=my-jcr \
-#         /api/storage/docker-local/siginfer-x86_64-tianshu/$tag \
-#         | jq -r '.created')
-#     echo "$tag $created"
-#     done > tag_dates.txt
-
-#     LATEST_TAG=$(sort -k2 -r tag_dates.txt | head -n1 | awk '{print $1}')
-#     echo "The latest version : $LATEST_TAG"
-# else
-#     LATEST_TAG=$VERSION
-#     echo "The specified version : $LATEST_TAG"
-# fi
-
-DOCKER_IMAGE_URL=""
-# docker pull docker.xcoresigma.com:80/docker/siginfer-x86_64-tianshu:$LATEST_TAG
-# if [ $? -ne 0 ]; then
-#     docker pull docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG
-# if [ $? -ne 0 ]; then
-#     exit 1;
-#     fi
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-# else
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-# fi
 DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:$LATEST_TAG"
-ret=`docker ps -a | grep siginfer_nvidia_SmokeTest_${JOB_COUNT}`
+
+ret=`docker ps -a | grep siginfer_tianshu_SmokeTest_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop siginfer_nvidia_SmokeTest_${JOB_COUNT}
-  docker rm siginfer_nvidia_SmokeTest_${JOB_COUNT}
+  docker stop siginfer_tianshu_SmokeTest_${JOB_COUNT}
+  docker rm siginfer_tianshu_SmokeTest_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -82,12 +48,6 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
-# 检查 nvidia-smi 命令是否存在
-# if ! command -v nvidia-smi &> /dev/null; then
-#     echo "错误: nvidia-smi 未找到，请确保 Nvidia GPU 驱动已安装"
-#     exit 1
-# fi
-
 echo "开始扫描 GPU, 目标: 寻找 $TARGET_FREE_GPUS 张空闲 GPU..."
 
 while true; do
@@ -99,7 +59,7 @@ while true; do
         exit 10
     fi
 
-    # 使用 nvidia-smi 获取 GPU 使用情况
+    # 使用 ixsmi 获取 GPU 使用情况
     GPU_INFO=($(docker exec automation_test ixsmi | awk '/Processes:/,/\+/{ if ($1 ~ /^[|]/ && $2 ~ /^[0-9]+$/) print $2 }'))
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
@@ -113,10 +73,8 @@ while true; do
         if [ $TARGET_FREE_GPUS -gt 4 ]; then
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                echo "job executor 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
                 CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-                echo "空闲显卡索引"
-                echo $CUDA_VISIBLE_DEVICES
                 break
             fi
         else
@@ -135,13 +93,13 @@ while true; do
                 done
                 # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                 if [ "${#CPU_1_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                    echo "job executor CPU_1_GROUP 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
                     CUDA_VISIBLE_DEVICES=$(echo ${CPU_1_GROUP[@]} | sed -E 's/\s+/\,/g')
                     break
                 fi
                 # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                 if [ "${#CPU_2_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                    echo "job executor CPU_2_GROUP 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
                     CUDA_VISIBLE_DEVICES=$(echo ${CPU_2_GROUP[@]} | sed -E 's/\s+/\,/g')
                     break
                 fi
@@ -150,10 +108,8 @@ while true; do
     else
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            echo "job executor 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
             CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-            echo "空闲显卡索引"
-            echo $CUDA_VISIBLE_DEVICES
             break
         fi
     fi
@@ -166,7 +122,7 @@ done
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_NAME="server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log"
 
-EXEC_COMMAND="docker run --name=siginfer_nvidia_SmokeTest_${JOB_COUNT} \
+EXEC_COMMAND="docker run --name=siginfer_tianshu_SmokeTest_${JOB_COUNT} \
     --network host \
     --pid=host \
     --ipc=host	\
@@ -177,8 +133,8 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_SmokeTest_${JOB_COUNT} \
     -v /dev:/dev \
     --privileged \
     --cap-add=ALL \
-    --env LICENSE_LOCATION=/SigInfer/lib/trial-20251201.lic\
-    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES    \
+    --env LICENSE_LOCATION=/SigInfer/lib/trial-20260101.lic \
+    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
     -e SIG_LOG_LEVEL='warn,console_logger=info' \
     $DOCKER_IMAGE_URL"
 
@@ -188,12 +144,82 @@ MASTER_PORT=$((27642+${JOB_COUNT}))
 LOG_NAME="server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log"
 
 if [ $model == "DeepSeek-R1-Distill-Qwen-1.5B" ]; then
-    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Qwen-1.5B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-1.5B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 --multi-thread  $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
-    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Qwen-1.5B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-1.5B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 --multi-thread  $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Qwen-1.5B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-1.5B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Qwen-1.5B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-1.5B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-Distill-Qwen-7B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Qwen-7B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-7B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Qwen-7B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-7B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-Distill-Qwen-14B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Qwen-14B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-14B -tp 2 --port $PORT --platform-type tianshu --block-size 16 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Qwen-14B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-14B -tp 2 --port $PORT --platform-type tianshu --block-size 16 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-Distill-Qwen-32B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-Distill-Llama-8B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Llama-8B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-8B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Llama-8B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-8B -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "DeepSeek-R1-Distill-Llama-70B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model DeepSeek-R1-Distill-Llama-70B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-70B -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model DeepSeek-R1-Distill-Llama-70B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-70B -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Meta-Llama-3.1-8B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Meta-Llama-3.1-8B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-8B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Meta-Llama-3.1-8B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-8B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Meta-Llama-3.1-70B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Meta-Llama-3.1-70B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-70B-Instruct -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Meta-Llama-3.1-70B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-70B-Instruct -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-0.5B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-0.5B-Instruct --tokenizer /home/weight/Qwen2.5-0.5B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-0.5B-Instruct --tokenizer /home/weight/Qwen2.5-0.5B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-1.5B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-1.5B-Instruct --tokenizer /home/weight/Qwen2.5-1.5B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-1.5B-Instruct --tokenizer /home/weight/Qwen2.5-1.5B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-3B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-3B-Instruct --tokenizer /home/weight/Qwen2.5-3B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-3B-Instruct --tokenizer /home/weight/Qwen2.5-3B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-7B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-7B-Instruct --tokenizer /home/weight/Qwen2.5-7B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-7B-Instruct --tokenizer /home/weight/Qwen2.5-7B-Instruct -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-14B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-14B-Instruct --tokenizer /home/weight/Qwen2.5-14B-Instruct -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-14B-Instruct --tokenizer /home/weight/Qwen2.5-14B-Instruct -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-32B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-32B-Instruct --tokenizer /home/weight/Qwen2.5-32B-Instruct -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-32B-Instruct --tokenizer /home/weight/Qwen2.5-32B-Instruct -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-72B-Instruct" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-72B-Instruct --tokenizer /home/weight/Qwen2.5-72B-Instruct -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-72B-Instruct --tokenizer /home/weight/Qwen2.5-72B-Instruct -tp 8 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "QwQ-32B" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model QwQ-32B --tokenizer /home/weight/QwQ-32B -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model QwQ-32B --tokenizer /home/weight/QwQ-32B -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-0.5B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-0.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-0.5B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-0.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-0.5B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-1.5B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-1.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-1.5B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-1.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-1.5B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-3B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-3B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-3B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-3B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-3B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-7B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-7B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-7B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-7B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-7B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-14B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-14B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-14B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-14B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-14B-Instruct-AWQ -tp 1 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-32B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-32B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-32B-Instruct-AWQ -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-32B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-32B-Instruct-AWQ -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "Qwen2.5-72B-Instruct-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model Qwen2.5-72B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-72B-Instruct-AWQ -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model Qwen2.5-72B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-72B-Instruct-AWQ -tp 4 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
+elif [ $model == "QwQ-32B-AWQ" ]; then
+    echo "SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh --model QwQ-32B-AWQ --tokenizer /home/weight/QwQ-32B-AWQ -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT"
+    EXEC_COMMAND+=" --model QwQ-32B-AWQ --tokenizer /home/weight/QwQ-32B-AWQ -tp 2 --port $PORT --platform-type tianshu --block-size 128 --weight-dtype=FP16 --ignore-eos --max-num-batched-tokens 8192 --prometheus-port $PROMETHEUS_PORT --gpu-memory-utilization 0.9 $SWAP_SPACE_OPTION --prometheus-port $PROMETHEUS_PORT > $LOG_NAME 2>&1 &"
 fi
-echo "服务启动命令"
+
+echo "服务启动命令:"
 echo "$EXEC_COMMAND"
-echo "服务启动命令"
+
 eval "$EXEC_COMMAND"
 if [ $? -ne 0 ]; then
     exit 1;

@@ -48,12 +48,6 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
-# 检查 nvidia-smi 命令是否存在
-# if ! command -v nvidia-smi &> /dev/null; then
-#     echo "错误: nvidia-smi 未找到，请确保 Nvidia GPU 驱动已安装"
-#     exit 1
-# fi
-
 echo "开始扫描 GPU, 目标: 寻找 $TARGET_FREE_GPUS 张空闲 GPU..."
 
 while true; do
@@ -65,7 +59,7 @@ while true; do
         exit 10
     fi
 
-    # 使用 nvidia-smi 获取 GPU 使用情况
+    # 使用 ixsmi 获取 GPU 使用情况
     GPU_INFO=($(docker exec automation_test ixsmi | awk '/Processes:/,/\+/{ if ($1 ~ /^[|]/ && $2 ~ /^[0-9]+$/) print $2 }'))
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
@@ -79,10 +73,8 @@ while true; do
         if [ $TARGET_FREE_GPUS -gt 4 ]; then
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                echo "job executor 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
                 CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-                echo "空闲显卡索引"
-                echo $CUDA_VISIBLE_DEVICES
                 break
             fi
         else
@@ -101,13 +93,13 @@ while true; do
                 done
                 # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                 if [ "${#CPU_1_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                    echo "job executor CPU_1_GROUP 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
                     CUDA_VISIBLE_DEVICES=$(echo ${CPU_1_GROUP[@]} | sed -E 's/\s+/\,/g')
                     break
                 fi
                 # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                 if [ "${#CPU_2_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                    echo "job executor CPU_2_GROUP 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
                     CUDA_VISIBLE_DEVICES=$(echo ${CPU_2_GROUP[@]} | sed -E 's/\s+/\,/g')
                     break
                 fi
@@ -116,10 +108,8 @@ while true; do
     else
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            echo "job executor 成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
             CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-            echo "空闲显卡索引"
-            echo $CUDA_VISIBLE_DEVICES
             break
         fi
     fi
@@ -143,10 +133,9 @@ EXEC_COMMAND="docker run --name=siginfer_tianshu_<<<TEST_TYPE>>>_${JOB_COUNT} \
     -v /dev:/dev \
     --privileged \
     --cap-add=ALL \
-    --env LICENSE_LOCATION=/SigInfer/lib/trial-20251201.lic \
+    --env LICENSE_LOCATION=/SigInfer/lib/trial-20260101.lic \
     -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES \
     -e SIG_LOG_LEVEL='warn,console_logger=info' \
-    --multi-thread \
     $DOCKER_IMAGE_URL"
 
 <<<generated source code>>>

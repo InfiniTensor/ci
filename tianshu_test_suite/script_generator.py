@@ -14,11 +14,10 @@ def main():
     version = sys.argv[2]
     
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    pro_dir = os.path.dirname(curr_dir)
 
     # 加载 Excel 文件
-    file_path = f'{pro_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
-    print('*'*50,file_path)
+    file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
+    print('*' * 50, file_path)
     workbook = load_workbook(file_path)
 
     # 选择工作表
@@ -94,7 +93,7 @@ def main():
 
     template_file = "job_executor_template.sh"
     template_file_path = f"{curr_dir}/{template_file}"
-    print('*'*50,template_file_path)
+    print('*' * 50, template_file_path)
     # 验证路径是否存在
     if not os.path.exists(template_file_path):
         print(f"错误: 路径不存在: {template_file_path}")

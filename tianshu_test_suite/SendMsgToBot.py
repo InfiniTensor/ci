@@ -109,8 +109,8 @@ def main():
     
     # 提取 summary 连同版本信息一并发送或保存到本地
     summary, failed_count = extract_test_summary(log_file_path)
-    # send_summary_to_server("docker.xcoresigma.com/docker/siginfer-x86_64-nvidia:" + docker_image_version, model_name, summary)
-    save_summary_to_log("docker.xcoresigma.com/docker/siginfer-x86_64-nvidia:" + docker_image_version, model_name, summary, failed_count)
+    # send_summary_to_server("docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:" + docker_image_version, model_name, summary)
+    save_summary_to_log("docker.xcoresigma.com/docker/siginfer-x86_64-tianshu:" + docker_image_version, model_name, summary, failed_count)
 
 if __name__ == "__main__":
     main()
