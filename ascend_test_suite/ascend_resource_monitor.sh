@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# 捕获 SIGINT (Ctrl+C)、SIGTERM 和 EXIT 信号
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
 TEST_TYPE=$1
 ENGINE_TYPE=$2
-curr_dir=/home/s_limingge/ascend_test_suite
+curr_dir=/home/s_limingge/autotest/ascend_test_suite
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"
@@ -59,18 +62,18 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
         # ["aicc001"]="10.9.1.6"
-        ["aicc003"]="10.9.1.74"
+        # ["aicc003"]="10.9.1.74"
         ["aicc004"]="10.9.1.34"
         ["aicc005"]="10.9.1.26"
         ["aicc006"]="10.9.1.46"
         ["aicc007"]="10.9.1.58"
         ["aicc008"]="10.9.1.30"
-        # ["aicc009"]="10.9.1.38"
-        # ["aicc010"]="10.9.1.70"
+        ["aicc009"]="10.9.1.38"
+        ["aicc010"]="10.9.1.70"
         ["aicc011"]="10.9.1.42"
-        # ["aicc012"]="10.9.1.66"
-        # ["aicc013"]="10.9.1.50"
-        ["aicc014"]="10.9.1.62"
+        ["aicc012"]="10.9.1.66"
+        ["aicc013"]="10.9.1.50"
+        # ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -88,9 +91,9 @@ fi
 
 # full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-w8a8:16 DeepSeek-R1-awq:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Llama-8B:1 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2)
-# full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
 full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
-full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+# full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen2.5-32B-Instruct-AWQ:1)
 
 log_name_suffix=$(date +"%Y%m%d")
@@ -195,7 +198,7 @@ for item in "${full_model_list[@]}"; do
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
-        for ((i=1; i<=1; i=i+1)); do
+        for ((i=1; i<=2; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个

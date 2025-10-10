@@ -88,7 +88,7 @@ ret_code=0
 # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
 for option in "${schedule_policies[@]}"; do
     use_prefix_cache_flag=1
-    for ((i=1; i<=1; i=i+1)); do
+    for ((i=1; i<=2; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
@@ -218,7 +218,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_PARAM == "Random" ]; then
-                        multiplier=4
+                        multiplier=2
                         # concurrency_list=(1 5)
                         # length_pairs=(
                         #     "32768:128"
@@ -324,11 +324,11 @@ for option in "${schedule_policies[@]}"; do
                     unset pid_map
                     declare -A pid_map
                     # 开始执行测试
-                    nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "./logs/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "./logs/${filename}_evalscope_1.log" 2>&1 &
                     pid_map[$!]="evalscope_mmlu,ceval"
-                    nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "./logs/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "./logs/${filename}_evalscope_2.log" 2>&1 &
                     pid_map[$!]="evalscope_gsm8k,ARC_c"
-                    nohup docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "./logs/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "./logs/${filename}_SGLang_3.log" 2>&1 &
                     pid_map[$!]="SGLang_mmlu,gsm8k"
                     
                     # 等待所有后台测试任务结束

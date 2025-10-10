@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# 捕获 SIGINT (Ctrl+C)、SIGTERM 和 EXIT 信号
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
 TEST_TYPE=$1
 ENGINE_TYPE=$2
-curr_dir=/home/s_limingge/nvidia_test_suite
+curr_dir=/home/s_limingge/autotest/nvidia_test_suite
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"
@@ -348,7 +351,7 @@ for item in "${full_model_list[@]}"; do
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=1
-        for ((i=1; i<=1; i=i+1)); do
+        for ((i=1; i<=2; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个
