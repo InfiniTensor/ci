@@ -137,7 +137,7 @@ async def test_logprobs_true_16(client):
     
     
 @pytest.mark.asyncio
-@allure.title("对话_logprobs为True，top_logprobs=8临范围内值时，推理正确包含logprobs信息")        
+@allure.title("对话_logprobs为True，top_logprobs=8范围内值时，推理正确包含logprobs信息")        
 async def test_logprobs_true_8(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -165,9 +165,44 @@ async def test_logprobs_true_8(client):
         logprobs_tokens += item.token
         assert len(item.top_logprobs) == 8
     print(logprobs_tokens)
+
+@pytest.mark.asyncio
+@allure.title("对话_logprobs为True，echo为True,top_logprobs=8范围内值时，推理正确包含logprobs信息")        
+async def test_logprobs_echo_true_8(client):
+    completion =  await client.chat.completions.create(
+        model=os_env('MODEL'),
+        messages=[
+        {
+            "role": "developer",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Hello! Where is BeiJing?"
+        }
+        ],
+        temperature=0,
+        logprobs=True,
+        top_logprobs=8,
+        max_completion_tokens=20,
+        extra_body={
+            "echo": True,
+        }
+    )
+    assert isinstance(completion, ChatCompletion) == True
+    assert completion.choices[0].logprobs != None
+    logprobs_tokens=""
+    # print(completion)
+    print(completion.choices[0].message.content)
+    for item in completion.choices[0].logprobs.content:
+        # print(item)
+        assert isinstance(item,ChatCompletionTokenLogprob) == True
+        logprobs_tokens += item.token
+        assert len(item.top_logprobs) == 8
+    assert "Hello! Where is BeiJing?" in logprobs_tokens
     
 @pytest.mark.asyncio
-@allure.title("对话_logprobs为True，top_logprobs=None临范围内值时，推理正确没有logprobs信息")        
+@allure.title("对话_logprobs为True，top_logprobs=None时，推理正确没有logprobs信息")        
 async def test_logprobs_true_none(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -190,7 +225,7 @@ async def test_logprobs_true_none(client):
     assert completion.choices[0].logprobs == None
     
 @pytest.mark.asyncio
-@allure.title("对话_logprobs为False，top_logprobs=8临范围内值时，推理没有logprobs信息")        
+@allure.title("对话_logprobs为False，top_logprobs=8范围内值时，推理没有logprobs信息")        
 async def test_logprobs_false_8(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -381,7 +416,7 @@ async def test_stream_logprobs_true_16(client):
 
     
 @pytest.mark.asyncio
-@allure.title("对话_stream模式，logprobs为True，top_logprobs=8临范围内值时，推理正确包含logprobs信息")        
+@allure.title("对话_stream模式，logprobs为True，top_logprobs=8范围内值时，推理正确包含logprobs信息")        
 async def test_stream_logprobs_true_8(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -415,7 +450,7 @@ async def test_stream_logprobs_true_8(client):
             assert len(top_logprobs) == 8
     
 @pytest.mark.asyncio
-@allure.title("对话_stream模式，top_logprobs=None临范围内值时，推理正确没有logprobs信息")        
+@allure.title("对话_stream模式，top_logprobs=None时，推理正确没有logprobs信息")        
 async def test_stream_logprobs_true_none(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -449,7 +484,7 @@ async def test_stream_logprobs_true_none(client):
             assert "logprobs" not in chunk.choices[0]
     
 @pytest.mark.asyncio
-@allure.title("对话_stream模式，logprobs为False，top_logprobs=8临范围内值时，推理没有logprobs信息")        
+@allure.title("对话_stream模式，logprobs为False，top_logprobs=8范围内值时，推理没有logprobs信息")        
 async def test_stream_logprobs_false_8(client):
     completion =  await client.chat.completions.create(
         model=os_env('MODEL'),
@@ -481,3 +516,6 @@ async def test_stream_logprobs_false_8(client):
             top_logprobs = chunk.choices[0].logprobs
             print(top_logprobs)
             assert "logprobs" not in chunk.choices[0]
+            
+# 添加温度不同概率的用例
+# 添加echo的用例
