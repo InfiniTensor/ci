@@ -14,10 +14,12 @@ else
     version=$6
 fi
 
-full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
-full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
-# full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 DeepSeek-R1:16)
+# full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+
 curr_dir=/home/s_limingge/ascend_test_suite
+log_name_suffix=$(date +"%Y%m%d")
 
 declare -A npu_server_list=(
     ["10.9.1.6"]="AICC_001"
@@ -90,7 +92,7 @@ else
     echo "推理引擎版本: ${version}"
 fi
 
-processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
+processed_models="${curr_dir}/processed_models_${log_name_suffix}"
 touch ${processed_models}
 
 # schedule_policies=('DynamicSplitFuseV2' 'PrefillFirst')
@@ -129,7 +131,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
                 fi
 
-                filename=$(date +"%Y%m%d")_${model}_
+                filename=${log_name_suffix}_${model}_
                 if [ $use_prefix_cache_flag -eq 1 ]; then
                     if [ $swap_space -eq 0 ]; then
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option, --use-prefix-cache"
@@ -254,10 +256,6 @@ for option in "${schedule_policies[@]}"; do
                     
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
-                        # concurrency_list=(1 5)
-                        # length_pairs=(
-                        #     "32768:128"
-                        # )
                         concurrency_list=(1 5 10 20 50 100 150)
                         length_pairs=(
                           "128:128"
@@ -284,6 +282,10 @@ for option in "${schedule_policies[@]}"; do
                                     echo \\\"========================================================\\\"
 
                                     for concurrency in ${concurrency_list[@]}; do
+                                        if [ \\\$input_len -gt 30000 ] && [ \\\$concurrency -gt 5 ]; then
+                                            break
+                                        fi
+                                        
                                         prompts=\\\$((concurrency * 4))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
                                         echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
@@ -359,13 +361,13 @@ for option in "${schedule_policies[@]}"; do
                         ((remaining--))
                     done
 
-                    touch "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
+                    touch "$curr_dir/report/${log_name_suffix}_result.txt"
 
                     eval_res_1=$(tail -n 1 "./logs/${filename}_evalscope_1.log")
                     eval_res_2=$(tail -n 1 "./logs/${filename}_evalscope_2.log")
                     sglang_res_3=$(tail -n 5 "./logs/${filename}_SGLang_3.log")
                     
-                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
+                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/${log_name_suffix}_result.txt"
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
                     # ......
@@ -415,17 +417,21 @@ for option in "${schedule_policies[@]}"; do
                             fi
                         fi
                     elif [ $TEST_TYPE == "Performance" ]; then
+                        # 获取模型启动命令，并做为参数传入
+                        exec_cmd=`cat "$curr_dir/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
+                        # 获取测试命令，并做为参数传入
+                        test_cmd=`cat "$curr_dir/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             fi
                         fi
                     fi

@@ -18,8 +18,12 @@ fi
 # full_model_list=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
 full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
+# full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
+# full_model_list=(Qwen3-32B-FP8:2:H100)
+# full_model_list=(Qwen3-32B-FP8:1:L20)
 
 curr_dir=/home/s_limingge/nvidia_test_suite
+log_name_suffix=$(date +"%Y%m%d")
 
 declare -A A800_server_list=(
     ["10.208.130.44"]="A800-001"
@@ -79,7 +83,7 @@ else
     echo "推理引擎版本: ${version}"
 fi
 
-processed_models=${curr_dir}/"processed_models"_$(date +"%Y%m%d")
+processed_models=${curr_dir}/"processed_models_${log_name_suffix}"
 touch ${processed_models}
 
 schedule_policies=('DynamicSplitFuseV2')
@@ -119,7 +123,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
                 fi
 
-                filename=$(date +"%Y%m%d")_${model}_
+                filename=${log_name_suffix}_${model}_
                 if [ $use_prefix_cache_flag -eq 1 ]; then
                     if [ $swap_space -eq 0 ]; then
                         echo "开始测试模型: $model, 启动选项: --schedule-policy $option, --use-prefix-cache"
@@ -218,22 +222,22 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_PARAM == "Random" ]; then
-                        multiplier=2
-                        # concurrency_list=(1 5)
+                        multiplier=4
+                        # concurrency_list=(1 5 10 20 50 100 150)
+                        concurrency_list=(1 50 100 150 200)
                         # length_pairs=(
-                        #     "32768:128"
+                        #     "128:128"
+                        #     "128:1024"
+                        #     "128:2048"
+                        #     "1024:1024"
+                        #     "2048:2048"
+                        #     "4096:1024"
+                        #     "1024:4096"
+                        #     "30000:2048"
+                        #     "126000:2048"
                         # )
-                        concurrency_list=(1 5 10 20 50 100 150)
                         length_pairs=(
-                            "128:128"
-                            "128:1024"
-                            "128:2048"
                             "1024:1024"
-                            "2048:2048"
-                            "4096:1024"
-                            "1024:4096"
-                            "30000:2048"
-                            "126000:2048"
                         )
                         # Random
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$local_master_ip "
@@ -345,13 +349,13 @@ for option in "${schedule_policies[@]}"; do
                         ((remaining--))
                     done
 
-                    touch "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
+                    touch "$curr_dir/report/${log_name_suffix}_result.txt"
 
                     eval_res_1=$(tail -n 1 "./logs/${filename}_evalscope_1.log")
                     eval_res_2=$(tail -n 1 "./logs/${filename}_evalscope_2.log")
                     sglang_res_3=$(tail -n 5 "./logs/${filename}_SGLang_3.log")
                     
-                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/$(date +"%Y%m%d")_result.txt"
+                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/${log_name_suffix}_result.txt"
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
                     # ......
@@ -382,17 +386,21 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Performance" ]; then
+                        # 获取模型启动命令，并做为参数传入
+                        exec_cmd=`cat "$curr_dir/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
+                        # 获取测试命令，并做为参数传入
+                        test_cmd=`cat "$curr_dir/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
                             fi
                         fi
                     elif [ $TEST_TYPE == "Smoke" ]; then

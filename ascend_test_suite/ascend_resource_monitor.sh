@@ -40,7 +40,7 @@ fi
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     declare -A npu_server_list=(
         # ["aicc001"]="10.9.1.6"
-        # ["aicc003"]="10.9.1.74"
+        ["aicc003"]="10.9.1.74"
         ["aicc004"]="10.9.1.34"
         ["aicc005"]="10.9.1.26"
         ["aicc006"]="10.9.1.46"
@@ -51,7 +51,7 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         ["aicc011"]="10.9.1.42"
         ["aicc012"]="10.9.1.66"
         ["aicc013"]="10.9.1.50"
-        # ["aicc014"]="10.9.1.62"
+        ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -62,7 +62,7 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
         # ["aicc001"]="10.9.1.6"
-        # ["aicc003"]="10.9.1.74"
+        ["aicc003"]="10.9.1.74"
         ["aicc004"]="10.9.1.34"
         ["aicc005"]="10.9.1.26"
         ["aicc006"]="10.9.1.46"
@@ -73,7 +73,7 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
         ["aicc011"]="10.9.1.42"
         ["aicc012"]="10.9.1.66"
         ["aicc013"]="10.9.1.50"
-        # ["aicc014"]="10.9.1.62"
+        ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -89,11 +89,11 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
     python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE}
 fi
 
-# full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-w8a8:16 DeepSeek-R1-awq:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
+# full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen3-30B-A3B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Llama-8B:1 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2)
-full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
-full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4)
-# full_model_list=(DeepSeek-R1-awq:8 DeepSeek-R1-w8a8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2)
+full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-70B:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 DeepSeek-R1:16)
+# full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen2.5-32B-Instruct-AWQ:1)
 
 log_name_suffix=$(date +"%Y%m%d")
@@ -102,7 +102,7 @@ parallel=3
 rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
-# rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
+rm -rf $curr_dir/processed_models_${log_name_suffix}
 rm -rf $curr_dir/report/*
 
 search_servers() {
