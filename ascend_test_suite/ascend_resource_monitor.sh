@@ -5,7 +5,7 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 TEST_TYPE=$1
 ENGINE_TYPE=$2
-curr_dir=/home/s_limingge/autotest/ascend_test_suite
+curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"

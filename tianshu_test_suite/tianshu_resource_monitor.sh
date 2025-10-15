@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# 捕获 SIGINT (Ctrl+C)、SIGTERM 和 EXIT 信号
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
 USER=$1
 TEST_TYPE=$2
 curr_dir=$(pwd)
@@ -46,7 +49,7 @@ parallel=3
 rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
-# rm -rf $curr_dir/processed_models_$(date +"%Y%m%d")
+rm -rf $curr_dir/processed_models_${log_name_suffix}
 rm -rf $curr_dir/report/*
 
 declare -A V100_server_list=(

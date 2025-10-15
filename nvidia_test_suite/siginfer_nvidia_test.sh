@@ -22,7 +22,7 @@ full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 
 # full_model_list=(Qwen3-32B-FP8:2:H100)
 # full_model_list=(Qwen3-32B-FP8:1:L20)
 
-curr_dir=/home/s_limingge/nvidia_test_suite
+curr_dir=$(pwd)
 log_name_suffix=$(date +"%Y%m%d")
 
 declare -A A800_server_list=(
@@ -315,14 +315,17 @@ for option in "${schedule_policies[@]}"; do
                     full_cmd=${exec_cmd%??}
 
                     if [ $gpu_model == "H20" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd"
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
+                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "A800" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
+                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "H100" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
+                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "L20" ]; then
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd $full_cmd
+                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     fi
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
