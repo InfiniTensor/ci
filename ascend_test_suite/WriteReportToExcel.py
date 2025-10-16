@@ -1,5 +1,6 @@
 import sys
 import re
+import os
 from openpyxl import load_workbook
 from generate_excel_template import generate_excel, fill_benchmark_results
 
@@ -114,10 +115,10 @@ def main():
     # 生成模板
     unique_batch_sizes = sorted(set(batch_sizes))  # 去重并排序
     generate_excel(model_name, exec_cmd, test_cmd, context_lengths, tuple(unique_batch_sizes), 
-                   multiplier, './report/' + model_name + '.xlsx')
+                   multiplier, f"./report_{os.environ['TASK_START_TIME']}/" + model_name + '.xlsx')
     # 填充数据
     fill_benchmark_results(
-            './report/' + model_name + '.xlsx', results, context_lengths, unique_batch_sizes)
+            f"./report_{os.environ['TASK_START_TIME']}/" + model_name + '.xlsx', results, context_lengths, unique_batch_sizes)
 
 if __name__ == "__main__":
     main()

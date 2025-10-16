@@ -63,7 +63,7 @@ def send_summary_to_server(version_text, model_name, summary_text):
     try:
         # 构造 POST 请求的数据
         headers = {"Content-Type": "application/json"}
-        payload = {"msg_type":"text", "content": {"text": "Docker image version: " + version_text + "\nModel name: " + model_name + "\n" + summary_text}}
+        payload = {"msg_type":"text", "content": {"text": version_text + "\n" + model_name + "\n" + summary_text}}
         
         # 发送 POST 请求
         response = requests.post(server_url, json=payload, headers=headers)

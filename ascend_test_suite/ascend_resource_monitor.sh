@@ -97,13 +97,17 @@ full_model_list_for_performance=(Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:
 full_model_list_for_stability=(DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen2.5-32B-Instruct-AWQ:1)
 
 log_name_suffix=$(date +"%Y%m%d")
+export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
 rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
-rm -rf $curr_dir/processed_models_${log_name_suffix}
-rm -rf $curr_dir/report/*
+rm -rf $curr_dir/processed_models_*
+
+if [ ! -d "$curr_dir/report_${log_name_suffix}" ]; then
+    mkdir $curr_dir/report_${log_name_suffix}
+fi
 
 search_servers() {
     NPU_QUANTITY=$1

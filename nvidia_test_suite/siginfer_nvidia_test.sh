@@ -23,7 +23,7 @@ full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 
 # full_model_list=(Qwen3-32B-FP8:1:L20)
 
 curr_dir=$(pwd)
-log_name_suffix=$(date +"%Y%m%d")
+log_name_suffix=${TASK_START_TIME}
 
 declare -A A800_server_list=(
     ["10.208.130.44"]="A800-001"
@@ -352,13 +352,13 @@ for option in "${schedule_policies[@]}"; do
                         ((remaining--))
                     done
 
-                    touch "$curr_dir/report/${log_name_suffix}_result.txt"
+                    touch "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
 
                     eval_res_1=$(tail -n 1 "./logs/${filename}_evalscope_1.log")
                     eval_res_2=$(tail -n 1 "./logs/${filename}_evalscope_2.log")
                     sglang_res_3=$(tail -n 5 "./logs/${filename}_SGLang_3.log")
                     
-                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report/${log_name_suffix}_result.txt"
+                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
                     # ......
@@ -393,17 +393,34 @@ for option in "${schedule_policies[@]}"; do
                         exec_cmd=`cat "$curr_dir/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
                         # 获取测试命令，并做为参数传入
                         test_cmd=`cat "$curr_dir/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                        # 生成本次测试的Excel报告，并比较上一次Excel报告
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
+                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
+                                fi
                             else
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
+                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
+                                fi
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
+                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
+                                fi
                             else
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
+                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
+                                fi
                             fi
                         fi
                     elif [ $TEST_TYPE == "Smoke" ]; then
