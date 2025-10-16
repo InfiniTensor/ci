@@ -44,13 +44,17 @@ full_model_list_for_Smoke=(DeepSeek-R1-Distill-Qwen-1.5B:1:V100 DeepSeek-R1-Dist
 full_model_list_for_Performance=(DeepSeek-R1-Distill-Qwen-7B:1:V100 DeepSeek-R1-Distill-Qwen-32B:4:V100 DeepSeek-R1-Distill-Llama-70B:8:V100 Qwen2.5-7B-Instruct-AWQ:1:V100 Qwen2.5-32B-Instruct-AWQ:2:V100 Qwen2.5-72B-Instruct-AWQ:4:V100)
 
 log_name_suffix=$(date +"%Y%m%d")
+export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
 rm -rf $curr_dir/*.log
 rm -rf $curr_dir/*.log_*
 rm -rf $curr_dir/*.txt
-rm -rf $curr_dir/processed_models_${log_name_suffix}
-rm -rf $curr_dir/report/*
+rm -rf $curr_dir/processed_models_*
+
+if [ ! -d "$curr_dir/report_${log_name_suffix}" ]; then
+    mkdir $curr_dir/report_${log_name_suffix}
+fi
 
 declare -A V100_server_list=(
     ["V100-001"]="192.168.100.101"
