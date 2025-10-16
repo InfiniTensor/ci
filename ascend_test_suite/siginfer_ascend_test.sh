@@ -397,7 +397,7 @@ for option in "${schedule_policies[@]}"; do
                         | xargs -I% sh -c "echo -n \"%  \"; \
                             jfrog rt curl --server-id=my-jcr \
                             /api/storage/docker-local/siginfer-aarch64-ascend/% \
-                        | jq -r '.created'" | sort -k2 -r | head -n1 | awk '{print $1}')
+                        | jq -r '.created'" | sort -k2 -r | grep br1.2- | head -n1 | awk '{print $1}')
                     else
                         latest_tag=$version
                     fi
