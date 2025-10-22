@@ -51,7 +51,7 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         ["aicc011"]="10.9.1.42"
         ["aicc012"]="10.9.1.66"
         ["aicc013"]="10.9.1.50"
-        ["aicc014"]="10.9.1.62"
+        # ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -73,7 +73,7 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
         ["aicc011"]="10.9.1.42"
         ["aicc012"]="10.9.1.66"
         ["aicc013"]="10.9.1.50"
-        ["aicc014"]="10.9.1.62"
+        # ["aicc014"]="10.9.1.62"
         # ["aicc015"]="10.9.1.54"
     )
     if [ -z $version ]; then
@@ -186,8 +186,10 @@ for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
     if [ $name == 'aicc001' ]; then
         sshpass -p 's_limingge' scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc001']}:/home/s_limingge
+        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list['aicc001']}:/home/s_limingge
     else
         scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
+        scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
     fi
 done
 

@@ -20,7 +20,7 @@ fi
 full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
 # full_model_list=(Qwen3-32B-FP8:2:H100)
-# full_model_list=(Qwen3-32B-FP8:1:L20)
+# full_model_list=(Qwen3-32B-FP8:2:L20)
 
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
@@ -53,6 +53,24 @@ if [ -z $server_list ]; then
     echo "Missing parameters!"
     exit 1
 fi
+
+# 设置清理函数，确保异常退出时释放锁
+cleanup_locks() {
+    echo "siginfer_nvidia_test.sh退出, 释放GPU锁......"
+
+    if [ ! -v model ]; then
+        return
+    fi
+    
+    for ip in ${server_list[@]}; do
+        source $curr_dir/npu_lock_manager.sh
+        SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
+        release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
+    done
+}
+
+# 注册退出时的清理函数
+trap cleanup_locks EXIT INT TERM
 
 model_list=()
 
@@ -244,6 +262,15 @@ for option in "${schedule_policies[@]}"; do
                             docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
+                                if [ -f \\\"/SigInfer/script/benchmark/benchmark_serving.py\\\" ]; then
+                                    benchmark_serving_path=\\\"/SigInfer/script/benchmark/benchmark_serving.py\\\"
+                                elif [ -f \\\"/vllm-workspace/benchmarks/benchmark_serving.py\\\" ]; then
+                                    benchmark_serving_path=\\\"/vllm-workspace/benchmarks/benchmark_serving.py\\\"
+                                else
+                                    echo \\\"Error: benchmark_serving.py not found!\\\"
+                                    exit 1
+                                fi
+
                                 for pair in ${length_pairs[@]}; do
                                     input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
                                     output_len=\\\$(echo \\\$pair | cut -d ':' -f 2)
@@ -255,9 +282,9 @@ for option in "${schedule_policies[@]}"; do
                                     for concurrency in ${concurrency_list[@]}; do
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
-                                        python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                        python3 \\\${benchmark_serving_path} \
                                         --backend openai \
                                         --port \\\$((8765+${job_count})) \
                                         --host 127.0.0.1 \
@@ -283,12 +310,21 @@ for option in "${schedule_policies[@]}"; do
                             docker exec siginfer_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
+                                if [ -f \\\"/SigInfer/script/benchmark/benchmark_serving.py\\\" ]; then
+                                    benchmark_serving_path=\\\"/SigInfer/script/benchmark/benchmark_serving.py\\\"
+                                elif [ -f \\\"/vllm-workspace/benchmarks/benchmark_serving.py\\\" ]; then
+                                    benchmark_serving_path=\\\"/vllm-workspace/benchmarks/benchmark_serving.py\\\"
+                                else
+                                    echo \\\"Error: benchmark_serving.py not found!\\\"
+                                    exit 1
+                                fi
+
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * ${multiplier}))
                                     echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                    echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
+                                    echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
-                                    python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                    python3 \\\${benchmark_serving_path} \
                                     --backend openai \
                                     --port \\\$((8765+${job_count})) \
                                     --host 127.0.0.1 \

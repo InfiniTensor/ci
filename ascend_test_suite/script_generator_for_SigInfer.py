@@ -75,10 +75,10 @@ def main():
         result += " --prometheus-port $PROMETHEUS_PORT"
         
         if start:
-            src_code += f"if [ $model == \"{name}\" ]; then\n"
+            src_code += f"if [ $MODEL == \"{name}\" ]; then\n"
             start = False
         else:
-            src_code += f"elif [ $model == \"{name}\" ]; then\n"
+            src_code += f"elif [ $MODEL == \"{name}\" ]; then\n"
         src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh"
         src_code += result
         src_code += "\"\n"
@@ -116,7 +116,7 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             line_num += 1
     except FileNotFoundError:
-        print(f"Error: Log file '{log_file_path}' not found.")
+        print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
     except Exception as e:
         print(f"Error reading file: {str(e)}")
     

@@ -323,21 +323,25 @@ search_servers() {
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
     scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!A800_server_list[@]}"; do
     echo "$name => ${A800_server_list[$name]}"
     scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!H100_server_list[@]}"; do
     echo "$name => ${H100_server_list[$name]}"
     scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!L20_server_list[@]}"; do
     echo "$name => ${L20_server_list[$name]}"
     scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
 done
 
 > "$curr_dir/report/${log_name_suffix}_result.txt"

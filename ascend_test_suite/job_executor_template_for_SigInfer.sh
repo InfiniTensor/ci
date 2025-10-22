@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# 导入NPU锁管理器
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+source "${SCRIPT_DIR}/npu_lock_manager.sh"
+
 # 接收参数
-model=$1
+MODEL=$1
 GPU_QUANITY=$2
 USE_PREFIX_CACHE=$3
 SCHEDULE_POLICY=$4
@@ -10,6 +14,27 @@ MASTER_IP=$6
 NODE_RANK=$7
 JOB_COUNT=$8
 VERSION=$9
+
+# 生成唯一的任务ID
+TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
+
+# 设置清理函数，确保异常退出时释放锁
+cleanup_locks() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        if [ ! -z "$LOCKED_NPUS" ]; then
+            echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
+            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID"
+        fi
+    else
+        echo "正常退出（退出码: 0），保留NPU锁"
+    fi
+}
+
+# 注册退出时的清理函数
+trap cleanup_locks EXIT INT TERM
 
 if [ $USE_PREFIX_CACHE -eq 1 ]; then
     USE_PREFIX_CACHE="--use-prefix-cache"
@@ -81,6 +106,7 @@ fi
 
 echo "开始扫描 GPU, 目标: 寻找 $TARGET_FREE_GPUS 张空闲 GPU..."
 
+LOCKED_NPUS=""
 while true; do
     # 检查是否超时
     CURRENT_TIME=$(date +%s)
@@ -97,12 +123,23 @@ while true; do
     echo "当前空闲 GPU 数量：$FREE_COUNT, 索引: ${GPU_INFO[@]}"
     # 如果找到足够的空闲 GPU, 则返回结果并退出
     if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${GPU_INFO[@]}"
-        break
+        # 只取需要的数量
+        SELECTED_GPUS="${GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
+        echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定: ${SELECTED_GPUS}"
+
+        # 尝试原子性地获取所有NPU的锁
+        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+            LOCKED_NPUS="$SELECTED_GPUS"
+            GPU_INFO=($SELECTED_GPUS)
+            break
+        else
+            echo "锁定失败（可能被其他任务占用），继续扫描......"
+        fi
     fi
 
     # 等待一段时间后重新扫描（例如 10 秒）
-    echo "未找到足够的空闲 GPU, 10秒后重试..."
+    echo "未找到足够的空闲 GPU, 10秒后重试......"
     sleep 10
 done
 

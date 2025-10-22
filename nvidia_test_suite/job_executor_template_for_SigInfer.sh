@@ -1,7 +1,11 @@
 #!/bin/bash
 
+# 导入GPU锁管理器
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+source "${SCRIPT_DIR}/npu_lock_manager.sh"
+
 # 接收参数
-model=$1
+MODEL=$1
 GPU_QUANITY=$2
 USE_PREFIX_CACHE=$3
 SCHEDULE_POLICY=$4
@@ -11,6 +15,27 @@ NODE_RANK=$7
 JOB_COUNT=$8
 GPU_MODEL=$9
 VERSION=${10}
+
+# 生成唯一的任务ID
+TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
+LOCAL_IP=$(hostname -I | awk '{print $1}')
+SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
+
+# 设置清理函数，确保异常退出时释放锁
+cleanup_locks() {
+    local exit_code=$?
+    if [ $exit_code -ne 0 ]; then
+        if [ ! -z "$LOCKED_GPUS" ]; then
+            echo "检测到异常退出（退出码: $exit_code），正在释放GPU锁: ${LOCKED_GPUS}"
+            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_GPUS" "$TASK_ID"
+        fi
+    else
+        echo "正常退出（退出码: 0），保留GPU锁"
+    fi
+}
+
+# 注册退出时的清理函数
+trap cleanup_locks EXIT INT TERM
 
 if [ $USE_PREFIX_CACHE -eq 1 ]; then
     USE_PREFIX_CACHE="--use-prefix-cache"
@@ -51,8 +76,8 @@ DOCKER_IMAGE_URL=""
 docker pull docker.xcoresigma.com:80/docker/siginfer-x86_64-nvidia:$LATEST_TAG
 if [ $? -ne 0 ]; then
     docker pull docker.xcoresigma.com/docker/siginfer-x86_64-nvidia:$LATEST_TAG
-if [ $? -ne 0 ]; then
-    exit 1;
+    if [ $? -ne 0 ]; then
+        exit 1;
     fi
     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/siginfer-x86_64-nvidia:$LATEST_TAG"
 else
@@ -89,6 +114,7 @@ fi
 
 echo "开始扫描 GPU, 目标: 寻找 $TARGET_FREE_GPUS 张空闲 GPU..."
 
+LOCKED_GPUS=""
 while true; do
     # 检查是否超时
     CURRENT_TIME=$(date +%s)
@@ -123,9 +149,18 @@ while true; do
         FREE_GPU_INFO=($(seq 2 $(($TOTAL_COUNT+1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
-            CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-            break
+            # 只取需要的数量
+            SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+            CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+            # 尝试原子性地获取所有GPU的锁
+            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                LOCKED_GPUS="$SELECTED_GPUS"
+                break
+            else
+                echo "锁定失败（可能被其他任务占用），继续扫描......"
+            fi
         fi
     elif [ $GPU_MODEL == "L20" ]; then
         ((TOTAL_COUNT-=4))
@@ -133,9 +168,18 @@ while true; do
         FREE_GPU_INFO=($(seq 0 $(($TOTAL_COUNT-1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
-            CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-            break
+            # 只取需要的数量
+            SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+            CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+            # 尝试原子性地获取所有GPU的锁
+            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                LOCKED_GPUS="$SELECTED_GPUS"
+                break
+            else
+                echo "锁定失败（可能被其他任务占用），继续扫描......"
+            fi
         fi
     else
         FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
@@ -144,9 +188,18 @@ while true; do
             if [ $TARGET_FREE_GPUS -gt 4 ]; then
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
-                    CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-                    break
+                    # 只取需要的数量
+                    SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+                    CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                    # 尝试原子性地获取所有GPU的锁
+                    if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                        echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                        LOCKED_GPUS="$SELECTED_GPUS"
+                        break
+                    else
+                        echo "锁定失败（可能被其他任务占用），继续扫描......"
+                    fi
                 fi
             else
                 # 如果找到足够的空闲 GPU，则需要按与 CPU1 和 CPU2 的通信关系进行分组
@@ -164,24 +217,51 @@ while true; do
                     done
                     # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                     if [ "${#CPU_1_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_1_GROUP[@]}"
-                        CUDA_VISIBLE_DEVICES=$(echo ${CPU_1_GROUP[@]} | sed -E 's/\s+/\,/g')
-                        break
+                        # 只取需要的数量
+                        SELECTED_GPUS="${CPU_1_GROUP[@]:0:$TARGET_FREE_GPUS}"
+                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+                        CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                        # 尝试原子性地获取所有GPU的锁
+                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                            LOCKED_GPUS="$SELECTED_GPUS"
+                            break
+                        else
+                            echo "锁定失败（可能被其他任务占用），继续扫描......"
+                        fi
                     fi
                     # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                     if [ "${#CPU_2_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${CPU_2_GROUP[@]}"
-                        CUDA_VISIBLE_DEVICES=$(echo ${CPU_2_GROUP[@]} | sed -E 's/\s+/\,/g')
-                        break
+                        # 只取需要的数量
+                        SELECTED_GPUS="${CPU_2_GROUP[@]:0:$TARGET_FREE_GPUS}"
+                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+                        CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                        # 尝试原子性地获取所有GPU的锁
+                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                            LOCKED_GPUS="$SELECTED_GPUS"
+                            break
+                        else
+                            echo "锁定失败（可能被其他任务占用），继续扫描......"
+                        fi
                     fi
                 fi
             fi
         else
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引：${FREE_GPU_INFO[@]}"
-                CUDA_VISIBLE_DEVICES=$(echo ${FREE_GPU_INFO[@]} | sed -E 's/\s+/\,/g')
-                break
+                # 只取需要的数量
+                SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
+                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
+                CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                # 尝试原子性地获取所有GPU的锁
+                if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                    echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
+                    LOCKED_GPUS="$SELECTED_GPUS"
+                    break
+                else
+                    echo "锁定失败（可能被其他任务占用），继续扫描......"
+                fi
             fi
         fi
     fi

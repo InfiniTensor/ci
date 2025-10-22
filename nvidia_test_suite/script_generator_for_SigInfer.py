@@ -74,10 +74,10 @@ def main():
         result += " --prometheus-port $PROMETHEUS_PORT"
         
         if start:
-            src_code += f"if [ $model == \"{name}\" ]; then\n"
+            src_code += f"if [ $MODEL == \"{name}\" ]; then\n"
             start = False
         else:
-            src_code += f"elif [ $model == \"{name}\" ]; then\n"
+            src_code += f"elif [ $MODEL == \"{name}\" ]; then\n"
         src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh"
         src_code += result
         src_code += "\"\n"

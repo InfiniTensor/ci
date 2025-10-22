@@ -29,28 +29,28 @@ def main():
     target_file = ""
     src_code = ""
     
-    if test_type == "smoke":
+    if test_type == "Smoke":
         src_code += "PORT=$((8000+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         src_code += "docker exec siginfer_nvidia_SmokeTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_SmokeTest.sh"
-    elif test_type == "performance":
+    elif test_type == "Performance":
         src_code += "PORT=$((8765+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         src_code += "docker exec siginfer_nvidia_PerformanceTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_PerformanceTest.sh"
-    elif test_type == "stability":
+    elif test_type == "Stability":
         src_code += "PORT=$((8000+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28880+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((9032+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_StabilityTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         src_code += "docker exec siginfer_nvidia_StabilityTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_StabilityTest.sh"
-    elif test_type == "accuracy":
+    elif test_type == "Accuracy":
         src_code += "PORT=$((9701+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28771+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
@@ -78,15 +78,15 @@ def main():
         result = re.sub(r"--served-model-name\s+\S+", f"--served-model-name {name}", result)
         
         if start:
-            src_code += f"if [ $model == \\\"{name}\\\" ]; then\n"
+            src_code += f"if [ $MODEL == \\\"{name}\\\" ]; then\n"
             start = False
         else:
-            src_code += f"elif [ $model == \\\"{name}\\\" ]; then\n"
+            src_code += f"elif [ $MODEL == \\\"{name}\\\" ]; then\n"
         src_code += "    echo \\\"vllm serve "
         src_code += result
         src_code += "\\\"\n"
         
-        src_code += "    nohup CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
+        src_code += "    nohup env CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
         src_code += result
         src_code += " > $LOG_NAME 2>&1 &\n"
         
@@ -109,13 +109,13 @@ def main():
                 # print(lines)
                 break
             elif "<<<TEST_TYPE>>>" in line:
-                if test_type == "smoke":
+                if test_type == "Smoke":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
-                elif test_type == "performance":
+                elif test_type == "Performance":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "PerformanceTest")
-                elif test_type == "accuracy":
+                elif test_type == "Accuracy":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
-                elif test_type == "stability":
+                elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             line_num += 1
     except FileNotFoundError:
