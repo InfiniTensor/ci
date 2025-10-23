@@ -23,14 +23,28 @@ for key in "${!npu_server_list[@]}"; do
     echo "$key => ${npu_server_list[$key]}"
     if [ $key == 'aicc001' ]; then
         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list['aicc001']} "# 处理${TEST_TYPE} Test容器
-            docker ps -a | grep -i ${TEST_TYPE} | awk '{print $2}'"
+            container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
+            for container in \$container_list; do
+                # echo \$container
+                docker stop \$container
+                docker rm \$container
+            done
+            echo '容器清理完成！'
+        "
         err=$?
         if [ $err -ne 0 ]; then
             echo "服务器访问失败！"
         fi
     else
         ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list[$key]} "# 处理${TEST_TYPE} Test容器
-            docker ps -a | grep -i ${TEST_TYPE} | awk '{print $2}'"
+            container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
+            for container in \$container_list; do
+                # echo \$container
+                docker stop \$container
+                docker rm \$container
+            done
+            echo '容器清理完成！'
+        "
         err=$?
         if [ $err -ne 0 ]; then
             echo "服务器访问失败！"
