@@ -64,7 +64,7 @@ cleanup_locks() {
     
     for ip in ${server_list[@]}; do
         source $curr_dir/npu_lock_manager.sh
-        SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
+        SERVER_NAME=$(echo $ip | sed 's/\./_/g')
         release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
     done
 }
@@ -241,21 +241,17 @@ for option in "${schedule_policies[@]}"; do
 
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        # concurrency_list=(1 5 10 20 50 100 150)
-                        concurrency_list=(1 50 100 150 200)
-                        # length_pairs=(
-                        #     "128:128"
-                        #     "128:1024"
-                        #     "128:2048"
-                        #     "1024:1024"
-                        #     "2048:2048"
-                        #     "4096:1024"
-                        #     "1024:4096"
-                        #     "30000:2048"
-                        #     "126000:2048"
-                        # )
+                        concurrency_list=(1 5 10 20 50 100 150)
                         length_pairs=(
+                            "128:128"
+                            "128:1024"
+                            "128:2048"
                             "1024:1024"
+                            "2048:2048"
+                            "4096:1024"
+                            "1024:4096"
+                            "30000:2048"
+                            "126000:2048"
                         )
                         # Random
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$local_master_ip "

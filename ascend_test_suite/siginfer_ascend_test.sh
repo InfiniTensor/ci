@@ -274,6 +274,7 @@ for option in "${schedule_policies[@]}"; do
                     
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
+                        multiplier=4
                         concurrency_list=(1 5 10 20 50 100 150)
                         length_pairs=(
                           "128:128"
@@ -314,7 +315,7 @@ for option in "${schedule_policies[@]}"; do
                                             break
                                         fi
                                         
-                                        prompts=\\\$((concurrency * 4))
+                                        prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
                                         echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
