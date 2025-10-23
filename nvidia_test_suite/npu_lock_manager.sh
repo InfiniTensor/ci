@@ -44,6 +44,15 @@ hostname=$(hostname)
 EOF
         return 0
     else
+        # 如果task_id相同，则复用已经存在的锁
+        if [ ! -z "$task_id" ] && [ -d "$lock_dir" ] && [ -f "${lock_dir}/info" ]; then
+            local lock_task_id=$(grep "^task_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
+            if [ "$lock_task_id" == "$task_id" ]; then
+                echo "锁已存在，复用锁: ${server} NPU ${npu_id}, ${lock_task_id} == ${task_id}" >&2
+                return 0
+            fi
+        fi
+
         # 锁已被占用，检查是否超时
         if [ $ENABLE_TIMEOUT_CHECK -eq 1 ] && [ -d "$lock_dir" ] && [ -f "${lock_dir}/info" ]; then
             local lock_timestamp=$(grep "^timestamp=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
@@ -61,6 +70,7 @@ EOF
                 fi
             fi
         fi
+
         return 1
     fi
 }
@@ -132,11 +142,12 @@ release_npu_locks_batch() {
 }
 
 # 检查NPU锁状态
-# 参数: $1=服务器名或IP, $2=NPU索引
+# 参数: $1=服务器名或IP, $2=NPU索引, $3=任务ID
 # 返回: 0=锁空闲, 1=锁被占用
 check_npu_lock() {
     local server=$1
     local npu_id=$2
+    local task_id=$3
     local lock_dir=$(get_lock_file "$server" "$npu_id")
     
     # 简单检查目录是否存在
@@ -144,6 +155,15 @@ check_npu_lock() {
         # 锁目录不存在，说明未被锁定
         return 0
     else
+        # 如果task_id相同，则复用已经存在的锁
+        if [ ! -z "$task_id" ] && [ -d "$lock_dir" ] && [ -f "${lock_dir}/info" ]; then
+            local lock_task_id=$(grep "^task_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
+            if [ "$lock_task_id" == "$task_id" ]; then
+                echo "锁已存在，可以复用锁: ${server} NPU ${npu_id}, ${lock_task_id} == ${task_id}" >&2
+                return 0
+            fi
+        fi
+
         # 检查锁是否超时
         if [ $ENABLE_TIMEOUT_CHECK -eq 1 ] && [ -f "${lock_dir}/info" ]; then
             local lock_timestamp=$(grep "^timestamp=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
@@ -156,9 +176,28 @@ check_npu_lock() {
                 fi
             fi
         fi
+
         # 锁被占用且未超时
         return 1
     fi
+}
+
+# 批量检查NPU锁
+# 参数: $1=服务器名或IP, $2=NPU索引列表（空格分隔）, $3=任务ID
+check_npu_locks_batch() {
+    local server=$1
+    local npu_list=$2
+    local task_id=$3
+    local -n npu_list_found=$4     # 传名引用
+    
+    npu_list_found=()
+    for npu_id in $npu_list; do
+        if check_npu_lock "$server" "$npu_id" "$task_id"; then
+            npu_list_found+=("$npu_id")
+        fi
+    done
+
+    return 0
 }
 
 # 获取锁信息

@@ -118,6 +118,7 @@ search_servers() {
         for key in "${!H20_server_list[@]}"; do
             echo "$key => ${H20_server_list[$key]}"
             ssh s_limingge@${H20_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -139,7 +140,19 @@ search_servers() {
                         # 如果找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                     else
                         if [ \$FREE_COUNT -lt \$TARGET_FREE_GPUS ]; then
@@ -159,19 +172,55 @@ search_servers() {
                         # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_1_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                         # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_2_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                     fi
                 else
                     # 如果找到足够的空闲 GPU, 则返回结果并退出
                     if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                         echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                        exit 0
+                        echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                        # 生成唯一的任务ID
+                        TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                        LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                        SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                        if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                            SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                            echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                            exit 0
+                        else
+                            echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                        fi
                     fi
                 fi
                 exit 1"
@@ -187,6 +236,7 @@ search_servers() {
         for key in "${!A800_server_list[@]}"; do
             echo "$key => ${A800_server_list[$key]}"        
             ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -208,7 +258,19 @@ search_servers() {
                         # 如果找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                     else
                         if [ \$FREE_COUNT -lt \$TARGET_FREE_GPUS ]; then
@@ -228,19 +290,55 @@ search_servers() {
                         # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_1_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_1_GROUP[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                         # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\${#CPU_2_GROUP[@]}\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                             echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${CPU_2_GROUP[@]}\"
-                            exit 0
+                            echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                            # 生成唯一的任务ID
+                            TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                            LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                            SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                                SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                                echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                                exit 0
+                            else
+                                echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                            fi
                         fi
                     fi
                 else
                     # 如果找到足够的空闲 GPU, 则返回结果并退出
                     if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                         echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                        exit 0
+                        echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                        # 生成唯一的任务ID
+                        TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                        LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                        SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                        if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                            SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                            echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                            exit 0
+                        else
+                            echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                        fi
                     fi
                 fi
                 exit 1"
@@ -256,6 +354,7 @@ search_servers() {
         for key in "${!H100_server_list[@]}"; do
             echo "$key => ${H100_server_list[$key]}"
             ssh s_limingge@${H100_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -281,7 +380,19 @@ search_servers() {
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                     echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                    exit 0
+                     echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                    # 生成唯一的任务ID
+                    TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                    LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                    SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                        SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                        echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                        exit 0
+                    else
+                        echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                    fi
                 fi
                 exit 1"
             err=$?
@@ -296,6 +407,7 @@ search_servers() {
         for key in "${!L20_server_list[@]}"; do
             echo "$key => ${L20_server_list[$key]}"
             ssh s_limingge@${L20_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -318,7 +430,19 @@ search_servers() {
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
                     echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${FREE_GPU_INFO[@]}\"
-                    exit 0
+                    echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                    # 生成唯一的任务ID
+                    TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                    LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                    SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                        SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                        echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                        exit 0
+                    else
+                        echo \"无法锁定（可能被其他任务占用），继续扫描......\"
+                    fi
                 fi
                 exit 1"
             err=$?
