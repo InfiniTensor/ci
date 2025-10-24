@@ -183,7 +183,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > "$curr_dir/${filename}_${seq_num}" &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
                         pid_map[$!]=$ip
                     else
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
@@ -297,7 +297,7 @@ for option in "${schedule_policies[@]}"; do
                                     done
                                 done
                             \"
-                        " > "$curr_dir/$filename"
+                        " > "$curr_dir/logs/performance/$filename"
                     else
                         multiplier=4
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
@@ -334,13 +334,13 @@ for option in "${schedule_policies[@]}"; do
                                     --max-concurrency \\\$concurrency
                                 done
                             \"
-                        " > "$curr_dir/$filename"
+                        " > "$curr_dir/logs/performance/$filename"
                     fi
                 elif [ $TEST_TYPE == "Smoke" ]; then
                     # 获取模型启动命令，并做为参数传入
                     exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 3 "$curr_dir/${filename}_${k}" | head -n 1`
+                        launch_cmd=`tail -n 3 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
                         exec_cmd+="$launch_cmd\n"
                     done
 
@@ -363,11 +363,11 @@ for option in "${schedule_policies[@]}"; do
                     unset pid_map
                     declare -A pid_map
                     # 开始执行测试
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "./logs/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
                     pid_map[$!]="evalscope_mmlu,ceval"
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "./logs/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
                     pid_map[$!]="evalscope_gsm8k,ARC_c"
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "./logs/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
                     pid_map[$!]="SGLang_mmlu,gsm8k"
                     
                     # 等待所有后台测试任务结束
@@ -386,9 +386,9 @@ for option in "${schedule_policies[@]}"; do
 
                     touch "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
 
-                    eval_res_1=$(tail -n 1 "./logs/${filename}_evalscope_1.log")
-                    eval_res_2=$(tail -n 1 "./logs/${filename}_evalscope_2.log")
-                    sglang_res_3=$(tail -n 5 "./logs/${filename}_SGLang_3.log")
+                    eval_res_1=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_1.log")
+                    eval_res_2=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_2.log")
+                    sglang_res_3=$(tail -n 5 "$curr_dir/logs/accuracy/${filename}_SGLang_3.log")
                     
                     echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
                 elif [ $TEST_TYPE == "Stability" ]; then
@@ -422,19 +422,19 @@ for option in "${schedule_policies[@]}"; do
 
                     if [ $TEST_TYPE == "Performance" ]; then
                         # 获取模型启动命令，并做为参数传入
-                        exec_cmd=`cat "$curr_dir/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
+                        exec_cmd=`cat "$curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
                         # 获取测试命令，并做为参数传入
-                        test_cmd=`cat "$curr_dir/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                        test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         # 生成本次测试的Excel报告，并比较上一次Excel报告
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
@@ -442,13 +442,13 @@ for option in "${schedule_policies[@]}"; do
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
@@ -458,15 +458,30 @@ for option in "${schedule_policies[@]}"; do
                     elif [ $TEST_TYPE == "Smoke" ]; then
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Use-prefix-cache" "$curr_dir/$filename"
+                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Use-prefix-cache" "$curr_dir/logs/smoke/$filename"
                             else
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/logs/smoke/$filename"
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}" "$curr_dir/$filename"
+                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}" "$curr_dir/logs/smoke/$filename"
                             else
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Swap-space" "$curr_dir/$filename"
+                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Swap-space" "$curr_dir/logs/smoke/$filename"
+                            fi
+                        fi
+                    elif [ $TEST_TYPE == "Accuracy" ]; then
+                        # 生成本次测试的Excel报告
+                        if [ $use_prefix_cache_flag -eq 1 ]; then
+                            if [ $swap_space -eq 0 ]; then
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache
+                            else
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache_Swap-space
+                            fi
+                        else
+                            if [ $swap_space -eq 0 ]; then
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}
+                            else
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Swap-space
                             fi
                         fi
                     fi

@@ -65,14 +65,11 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-rm -rf $curr_dir/*.log
-rm -rf $curr_dir/*.log_*
-rm -rf $curr_dir/*.txt
-rm -rf $curr_dir/processed_models_*
+mkdir -p $curr_dir/logs/accuracy $curr_dir/logs/stability $curr_dir/logs/performance $curr_dir/logs/smoke
+mkdir -p $curr_dir/report_${log_name_suffix}
 
-if [ ! -d "$curr_dir/report_${log_name_suffix}" ]; then
-    mkdir $curr_dir/report_${log_name_suffix}
-fi
+rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/stability/*.log $curr_dir/logs/performance/*.log $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_*
+rm -rf $curr_dir/processed_models_*
 
 if [ $TEST_TYPE == "Smoke" ]; then
     full_model_list=(${full_model_list_for_smoke[@]})
@@ -567,25 +564,28 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${TEST_PARAM} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
+            elif [ $TEST_TYPE == "Smoke" ]; then
+                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
+            elif [ $TEST_TYPE == "Accuracy" ]; then
+                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
             else
-                if [ $TEST_TYPE == "Smoke" ]; then
-                    send_report=0
-                else
-                    send_report=1
-                fi
-                $curr_dir/siginfer_nvidia_test.sh ${send_report} "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${version} > $curr_dir/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型${TEST_TYPE}测试任务|测试全部完成"`
+                echo "测试类型错误！"
+                exit 1
             fi
             if [ $status_msg == "测试全部完成！" ]; then
                 echo "模型运行环境配置失败，准备尝试测试下一个模型......"

@@ -20,7 +20,7 @@ with open(input_file, "r", encoding="utf-8") as file:
     for row_idx, line in enumerate(file, start=1):  # 从第1行开始
         columns = line.strip().split('+')  # 去除换行符并按 '+' 分割
         print(columns)
-        if len(columns[1].split('} {'))==2:
+        if len(columns[1].split('} {')) == 2:
             columns[1] = columns[1].replace("} {", "} \n{")
         # 在"gsm8k"前添加换行符
         if 'gsm8k' in columns[2]:

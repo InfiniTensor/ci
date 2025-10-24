@@ -4,37 +4,41 @@ Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B
 
 # 接收参数
 framework=$1
-res_file="${framework}_result.txt"
 result_dir=$2
-touch $res_file
-echo "模型+evalscope(对话)+SGLang(文本补全)" >> $res_file
 
 echo "******创建结果汇总文件******"
+
 curr_dir=$(pwd)
-echo $curr_dir
+log_name_suffix=${TASK_START_TIME}
+res_file="${curr_dir}/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+touch $res_file
+echo "模型+evalscope(对话)+SGLang(文本补全)" > $res_file
 
 for item in ${full_model_list[@]};do
     model=`echo "$item" | awk -F : '{print $1}'`
     eval_1="$curr_dir/$result_dir/evalscope_${model}_1.log"
     eval_2="$curr_dir/$result_dir/evalscope_${model}_2.log"
     sglang="$curr_dir/$result_dir/SGLang_${model}_3.log"
+
     if [ -f "$eval_1" ];then
         eval_res_1=$(tail -n 1 $eval_1)
     else
         eval_res_1="无结果"
     fi
+    
     if [ -f "$eval_2" ];then
         eval_res_2=$(tail -n 1 $eval_2)
-
     else
         eval_res_2="无结果"
     fi
+
     if [ -f "$sglang" ];then
         sglang_res_3=$(tail -n 5 $sglang)
     else
         sglang_res_3="无结果"
     fi
-    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> $curr_dir/$res_file
+    
+    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> $res_file
 done
 
-python3 $curr_dir/write_file.py --file $curr_dir/$res_file --framework $framework
+python3 $curr_dir/write_file.py --file $res_file --framework $framework
