@@ -1,6 +1,16 @@
 #!/bin/bash
 
 TEST_TYPE=$1
+SHUTDOWN=$2
+
+if [ -z $SHUTDOWN ]; then
+    SHUTDOWN=0
+fi
+
+if [ $SHUTDOWN -ne 0 ] && [ $SHUTDOWN -ne 1 ]; then
+    echo "Parameter SHUTDOWN is wrong!"
+    exit 1
+fi
 
 declare -A npu_server_list=(
     # ["aicc001"]="10.9.1.6"
@@ -25,11 +35,14 @@ for key in "${!npu_server_list[@]}"; do
         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list['aicc001']} "# 处理${TEST_TYPE} Test容器
             container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
             for container in \$container_list; do
-                # echo \$container
-                docker stop \$container
-                docker rm \$container
+                if [ $SHUTDOWN -eq 1 ]; then
+                    docker stop \$container
+                    docker rm \$container
+                    echo '容器清理完成！'
+                else
+                    echo \$container
+                fi
             done
-            echo '容器清理完成！'
         "
         err=$?
         if [ $err -ne 0 ]; then
@@ -39,11 +52,14 @@ for key in "${!npu_server_list[@]}"; do
         ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list[$key]} "# 处理${TEST_TYPE} Test容器
             container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
             for container in \$container_list; do
-                # echo \$container
-                docker stop \$container
-                docker rm \$container
+                if [ $SHUTDOWN -eq 1 ]; then
+                    docker stop \$container
+                    docker rm \$container
+                    echo '容器清理完成！'
+                else
+                    echo \$container
+                fi
             done
-            echo '容器清理完成！'
         "
         err=$?
         if [ $err -ne 0 ]; then

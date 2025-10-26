@@ -110,7 +110,8 @@ else
     echo "推理引擎版本: ${version}"
 fi
 
-processed_models="${curr_dir}/processed_models_${log_name_suffix}"
+test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
+processed_models="${curr_dir}/logs/${test_type}/processed_models_${log_name_suffix}"
 touch ${processed_models}
 
 # schedule_policies=('DynamicSplitFuseV2' 'PrefillFirst')
@@ -172,9 +173,6 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ $TEST_TYPE != "Accuracy" ]; then
                     filename+=".log"
-                    if [ $TEST_TYPE != "Smoke" ]; then
-                        touch ${filename}
-                    fi
                 fi
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"

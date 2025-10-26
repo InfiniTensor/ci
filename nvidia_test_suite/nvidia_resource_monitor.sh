@@ -56,10 +56,10 @@ fi
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct:4:H20)
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
-full_model_list_for_smoke=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20)
+full_model_list_for_smoke=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-V3.1:8:H20)
 full_model_list_for_performance=(Qwen3-32B-FP8:2:L20)
 # full_model_list=(DeepSeek-R1:8:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20)
-full_model_list_for_stability=(Qwen3-235B-A22B:8:H20)
+full_model_list_for_stability=(DeepSeek-V3.1:8:H20)
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -68,17 +68,26 @@ parallel=3
 mkdir -p $curr_dir/logs/accuracy $curr_dir/logs/stability $curr_dir/logs/performance $curr_dir/logs/smoke
 mkdir -p $curr_dir/report_${log_name_suffix}
 
-rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/stability/*.log $curr_dir/logs/performance/*.log $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_*
-rm -rf $curr_dir/processed_models_*
-
 if [ $TEST_TYPE == "Smoke" ]; then
     full_model_list=(${full_model_list_for_smoke[@]})
+    rm -rf $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_* $curr_dir/logs/smoke/processed_models_*
+    processed_models=${curr_dir}/logs/smoke/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
 elif [ $TEST_TYPE == "Performance" ]; then
     full_model_list=(${full_model_list_for_performance[@]})
+    rm -rf $curr_dir/logs/performance/*.log $curr_dir/logs/performance/processed_models_*
+    processed_models=${curr_dir}/logs/performance/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
 elif [ $TEST_TYPE == "Stability" ]; then
     full_model_list=(${full_model_list_for_stability[@]})
+    rm -rf $curr_dir/logs/stability/*.log $curr_dir/logs/stability/processed_models_*
+    processed_models=${curr_dir}/logs/stability/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
 elif [ $TEST_TYPE == "Accuracy" ]; then
     full_model_list=(${full_model_list_for_accuracy[@]})
+    rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/accuracy/processed_models_*
+    processed_models=${curr_dir}/logs/accuracy/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
 fi
 
 declare -A A800_server_list=(
@@ -95,6 +104,11 @@ declare -A H100_server_list=(
 
 declare -A L20_server_list=(
     ["L20-001"]="192.168.100.106"
+)
+
+declare -A H800_server_list=(
+    # ["H800-001"]="10.9.1.54"
+    ["H800-002"]="10.9.1.62"
 )
 
 search_servers() {
@@ -482,10 +496,13 @@ for name in "${!L20_server_list[@]}"; do
     scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
 done
 
-> "$curr_dir/report/${log_name_suffix}_result.txt"
+for name in "${!H800_server_list[@]}"; do
+    echo "$name => ${H800_server_list[$name]}"
+    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
+done
 
-processed_models=${curr_dir}/"processed_models"_${log_name_suffix}
-touch ${processed_models}
+> "$curr_dir/report/${log_name_suffix}_result.txt"
 
 GPU_resource_demand=()
 
