@@ -18,7 +18,7 @@ model_list_for_A800=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Lla
 model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100)
 model_list_for_H20=(DeepSeek-V3-0324:8:H20 DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 DeepSeek-V3.1:8:H20)
 model_list_for_H800=(DeepSeek-V3.1:8:H800)
-model_list_for_L20=(Qwen3-32B-FP8:2:L20)
+model_list_for_L20=(Meta-Llama-3.1-70B-Instruct_L-Series:8:L20 Qwen2.5-32B-Instruct_L-Series:4:L20 Qwen2.5-72B-Instruct_L-Series:4:L20 QwQ-32B_L-Series:4:L20 Qwen2.5-72B-Instruct-AWQ_L-Series:2:L20 Qwen3-32B-FP8_L-Series:2:L20)
 
 full_model_list=(${model_list_for_A800[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
 curr_dir=$(pwd)
@@ -421,12 +421,15 @@ for option in "${schedule_policies[@]}"; do
                         | xargs -I% sh -c "echo -n \"%  \"; \
                             jfrog rt curl --server-id=my-jcr \
                             /api/storage/docker-local/siginfer-x86_64-nvidia/% \
-                        | jq -r '.created'" | sort -k2 -r | grep br1.2- | head -n1 | awk '{print $1}')
+                        | jq -r '.created'" | sort -k2 -r | grep main- | head -n1 | awk '{print $1}')
                     else
                         latest_tag=$version
                     fi
 
                     if [ $TEST_TYPE == "Performance" ]; then
+                        # 保存docker镜像版本信息
+                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
                         # 获取模型启动命令，并做为参数传入
                         exec_cmd=`cat "$curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
                         # 获取测试命令，并做为参数传入
@@ -436,28 +439,48 @@ for option in "${schedule_policies[@]}"; do
                             if [ $swap_space -eq 0 ]; then
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
+                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                else
+                                    last_version="unknown"
+                                fi
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
                                 fi
                             else
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
+                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                else
+                                    last_version="unknown"
+                                fi
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
                                 fi
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
+                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                else
+                                    last_version="unknown"
+                                fi
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
                                 fi
                             else
                                 python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
+                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                else
+                                    last_version="unknown"
+                                fi
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
                                 fi
                             fi
                         fi

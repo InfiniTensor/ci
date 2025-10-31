@@ -58,7 +58,10 @@ def is_numeric(value):
     except (ValueError, TypeError):
         return False
 
-def compare_two_sheets(sheet1_data, sheet2_data, sheet1_name, sheet2_name, threshold, docker_image_version, model_name):
+def compare_two_sheets(sheet1_data, sheet2_data, image_version_1, image_version_2, threshold, model_name):
+    sheet1_name = f"文件1-${image_version_1}"
+    sheet2_name = f"文件2-${image_version_2}"
+    
     """比较两个sheet的数据，检查数值的差值是否在阈值内"""
     print(f"\n{'='*100}")
     print(f"比较 '{sheet1_name}' 和 '{sheet2_name}' 的性能测试数据")
@@ -208,7 +211,7 @@ def compare_two_sheets(sheet1_data, sheet2_data, sheet1_name, sheet2_name, thres
         
         print("\n")
         # 向飞书机器人发送测试结果报告
-        send_summary_to_server("siginfer-aarch64-ascend:" + docker_image_version, model_name, summary)
+        send_summary_to_server(image_version_1 + " vs " + image_version_2, model_name, summary)
         
         return comparison_results
     else:
@@ -220,20 +223,21 @@ def main():
     
     # 文件路径
     if len(sys.argv) < 5:
-        print("Usage: python compare_excel_data.py <docker_image_version> <model_name> <file_path1> <file_path2>")
+        print("Usage: python compare_excel_data.py <model name> <docker version 1> <file path 1> <docker version 2> <file path 2>")
         sys.exit(1)
     
-    docker_image_version = sys.argv[1]
-    model_name = sys.argv[2]
-    file_path1 = sys.argv[3]
-    file_path2 = sys.argv[4]
+    model_name = sys.argv[1]
+    image_version_1 = sys.argv[2]
+    file_path_1 = sys.argv[3]
+    image_version_2 = sys.argv[4]
+    file_path_2 = sys.argv[5]
     
     # 读取Excel数据文件
-    print(f"\n文件1: {file_path1}")
-    sheets_data1 = read_excel_data(file_path1)
+    print(f"\n文件1: {file_path_1}")
+    sheets_data1 = read_excel_data(file_path_1)
     
-    print(f"\n文件2: {file_path2}")
-    sheets_data2 = read_excel_data(file_path2)
+    print(f"\n文件2: {file_path_2}")
+    sheets_data2 = read_excel_data(file_path_2)
     
     # 获取sheet名称
     sheet_names1 = list(sheets_data1.keys())
@@ -243,10 +247,9 @@ def main():
     compare_two_sheets(
         sheets_data1[sheet_names1[0]], 
         sheets_data2[sheet_names2[0]], 
-        f"文件1-{sheet_names1[0]}" if file_path1 != file_path2 else "基准",
-        f"文件2-{sheet_names2[0]}" if file_path1 != file_path2 else "对比",
+        image_version_1,
+        image_version_2,
         0.20,
-        docker_image_version,
         model_name
     )
     
