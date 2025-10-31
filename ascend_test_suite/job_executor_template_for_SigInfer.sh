@@ -64,7 +64,7 @@ if [ -z $VERSION ]; then
     echo "$tag $created"
     done > tag_dates.txt
 
-    LATEST_TAG=$(sort -k2 -r tag_dates.txt | grep br1.2- | head -n1 | awk '{print $1}')
+    LATEST_TAG=$(sort -k2 -r tag_dates.txt | grep main- | head -n1 | awk '{print $1}')
     echo "The latest version : $LATEST_TAG"
 else
     LATEST_TAG=$VERSION
