@@ -45,6 +45,14 @@ declare -A H800_server_list=(
     ["10.9.1.62"]="H800-002"
 )
 
+declare -A local_ip_map=(
+    ["10.208.130.44"]="10.208.130.44"
+    ["10.9.1.14"]="172.31.0.2"
+    ["192.168.100.106"]="192.168.100.106"
+    ["10.9.1.54"]="172.16.28.34"
+    ["10.9.1.62"]="172.16.21.36"
+)
+
 if [ -z $send_report ]; then
     echo "Missing parameter!"
     exit 1
@@ -63,12 +71,14 @@ cleanup_locks() {
     echo "siginfer_nvidia_test.sh退出, 释放GPU锁......"
 
     if [ ! -v model ]; then
+        echo "model is Not set, return"
         return
     fi
     
     for ip in ${server_list[@]}; do
         source $curr_dir/npu_lock_manager.sh
-        SERVER_NAME=$(echo $ip | sed 's/\./_/g')
+        SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
+        echo "release_npu_locks_batch $SERVER_NAME 0 1 2 3 4 5 6 7 ${TEST_TYPE}Test_${model}_${job_count}"
         release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
     done
 }
