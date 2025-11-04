@@ -73,7 +73,8 @@ async def test_chat_accuracy(client,text,title):
         model=os_env('MODEL'),
         prompt=text,
         temperature=0,
-        stream=False
+        stream=False,
+        max_tokens=256
     )
     print(title)
     assert completion.object == 'text_completion'

@@ -74,7 +74,8 @@ async def test_chat_accuracy(client,question,title):
         }
         ],
         temperature=0,
-        stream=False
+        stream=False,
+        max_tokens=256
     )
     print(f"正在测试: {title}")
     print(completion.usage)
