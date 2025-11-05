@@ -15,7 +15,7 @@ else
 fi
 
 model_list_for_A800=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
-model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100)
+model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100 DeepSeek-R1-AWQ:8:H100)
 model_list_for_H20=(DeepSeek-V3-0324:8:H20 DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 DeepSeek-V3.1:8:H20)
 model_list_for_H800=(DeepSeek-V3.1:8:H800)
 model_list_for_L20=(Meta-Llama-3.1-70B-Instruct_L-Series:8:L20 Qwen2.5-32B-Instruct_L-Series:4:L20 Qwen2.5-72B-Instruct_L-Series:4:L20 QwQ-32B_L-Series:4:L20 Qwen2.5-72B-Instruct-AWQ_L-Series:2:L20 Qwen3-32B-FP8_L-Series:2:L20)
@@ -353,7 +353,7 @@ for option in "${schedule_policies[@]}"; do
                     # 获取模型启动命令，并做为参数传入
                     exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 3 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
+                        launch_cmd=`tail -n 4 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
                         exec_cmd+="$launch_cmd\n"
                     done
 

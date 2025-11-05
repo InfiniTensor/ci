@@ -70,7 +70,7 @@ def main():
         result = re.sub(r"--master-port\s+\d+", "--master-port $MASTER_PORT", result)
         result = re.sub(r"--use-prefix-cache", "$USE_PREFIX_CACHE", result)
         # temporary modification...
-        result = re.sub(r"--gpu-memory-utilization\s+\S+", "--gpu-memory-utilization 0.98", result)
+        # result = re.sub(r"--gpu-memory-utilization\s+\S+", "--gpu-memory-utilization 0.98", result)
         result += " --prometheus-port $PROMETHEUS_PORT"
         
         if start:

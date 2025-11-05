@@ -255,7 +255,7 @@ for option in "${schedule_policies[@]}"; do
                     # 获取模型启动命令，并做为参数传入
                     exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 3 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
+                        launch_cmd=`tail -n 4 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
                         exec_cmd+="$launch_cmd\n"
                     done
 
@@ -309,7 +309,7 @@ for option in "${schedule_policies[@]}"; do
                                     echo \\\"========================================================\\\"
 
                                     for concurrency in ${concurrency_list[@]}; do
-                                        if [ \\\$input_len -gt 30000 ] && [ \\\$concurrency -gt 5 ]; then
+                                        if [ \\\$input_len -ge 30000 ] && [ \\\$concurrency -gt 5 ]; then
                                             break
                                         fi
                                         
