@@ -1,4 +1,5 @@
 import argparse
+import os
 from generate_model_comparison_table import generate_model_comparison_excel, fill_model_comparison_data
 
 parser = argparse.ArgumentParser(description="写入结果文件")
@@ -12,7 +13,8 @@ input_file = args.file
 output_file = args.framework
 engine = args.engine
 
-output_file = f"{output_file}_result.xlsx"
+curr_dir = os.getcwd()
+output_file = f"{curr_dir}/report_{os.environ['TASK_START_TIME']}/{output_file}_result.xlsx"
 data_dict = {}
 
 with open(input_file, "r", encoding="utf-8") as file:
