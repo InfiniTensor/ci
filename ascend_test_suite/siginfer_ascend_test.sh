@@ -85,6 +85,9 @@ remove_container_from_array() {
     echo "已从跟踪列表中删除容器: $value_to_remove"
 }
 
+# 标志变量，用于跟踪是否由信号中断
+INTERRUPTED=0
+
 # 统一的清理函数 - 同时处理 NPU 锁、本地容器和远程容器
 cleanup_all_resources() {
     echo ""
@@ -116,13 +119,38 @@ cleanup_all_resources() {
         echo "NPU 锁释放完成"
     fi
     
+    # 3. 清理远程 Docker 容器
+    for ip in ${server_list[@]}; do
+        if [ $ip == "10.9.1.6" ]; then
+            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+        else
+            ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+            ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+        fi
+    done
+    
     echo "=========================================="
     echo "资源清理完成"
     echo "=========================================="
+    
+    # 如果是由于信号中断，则退出进程
+    if [ $INTERRUPTED -eq 1 ]; then
+        echo "进程被中断，退出..."
+        exit 130  # 130 是 Ctrl+C 的标准退出码 (128 + SIGINT的2)
+    fi
 }
 
-# 注册退出时的清理函数
-trap cleanup_all_resources SIGINT SIGTERM EXIT
+# 信号处理函数
+handle_interrupt() {
+    INTERRUPTED=1
+    cleanup_all_resources
+}
+
+# 注册信号处理函数
+trap handle_interrupt SIGINT SIGTERM
+# EXIT 信号仍然调用 cleanup（正常退出时 INTERRUPTED=0，不会额外 exit）
+trap cleanup_all_resources EXIT
 
 model_list=()
 
@@ -264,8 +292,20 @@ for option in "${schedule_policies[@]}"; do
                                 echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
                             fi
                             
+                            # 启动失败，清理工作
+                            for ip in ${server_list[@]}; do
+                                if [ $ip == "10.9.1.6" ]; then
+                                    sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                else
+                                    ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                fi
+                            done
+                            
                             ret_code=$err
                             success=1
+                            break
                         fi
                     fi
 
@@ -274,16 +314,6 @@ for option in "${schedule_policies[@]}"; do
 
                 # 任务启动失败
                 if [ $success -eq 1 ]; then
-                    # 清理工作
-                    for ip in ${server_list[@]}; do
-                        if [ $ip == "10.9.1.6" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        else
-                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        fi
-                    done
                     continue
                 fi
 
@@ -299,13 +329,27 @@ for option in "${schedule_policies[@]}"; do
 
                     full_cmd=${exec_cmd%??}
                     container_name="OpenaiTest_$$"
+                    unset pid_map
+                    declare -A pid_map
+                    
+                    echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd \"$full_cmd\""
+                    docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
+                    pid=$!
+                    pid_map[$pid]="$container_name"
                     DOCKER_CONTAINER_NAMES+=("$container_name")
 
-                    echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd \"$full_cmd\""
-                    docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd "\"$full_cmd\""
-                    
-                    # Smoke 测试的容器是同步运行的，运行完成后从数组中删除
-                    remove_container_from_array "$container_name"
+                    # 等待后台测试任务结束
+                    wait -n -p done_pid
+                    err=$?
+                    if [ -v pid_map[$done_pid] ]; then
+                        echo "测试任务：${pid_map[$done_pid]}结束!"
+                        if [ $err -ne 0 ]; then
+                            echo "测试结果失败！请检查......"
+                        fi
+                        # 从跟踪数组中删除已完成的容器
+                        remove_container_from_array "${pid_map[$done_pid]}"
+                        unset pid_map[$done_pid]
+                    fi
                 elif [ $TEST_TYPE == "Performance" ]; then
                     if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-32B" ] || [ $model == "Qwen3-30B-A3B" ]; then
                         data_path="/home/weight/Qwen3"

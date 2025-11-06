@@ -1,57 +1,7 @@
 #!/bin/bash
 
-# 存储所有子进程PID
-declare -a ALL_CHILD_PIDS
-
-# 从列表中移除指定的子进程PID
-remove_pid_from_list() {
-    local target_pid=$1
-    local new_pids=()
-    for pid in "${ALL_CHILD_PIDS[@]}"; do
-        if [ "$pid" != "$target_pid" ]; then
-            new_pids+=("$pid")
-        fi
-    done
-    ALL_CHILD_PIDS=("${new_pids[@]}")
-}
-
-# 改进的清理函数
-cleanup_all_processes() {
-    echo ""
-    echo "=========================================="
-    echo "接收到退出信号，开始清理所有子进程..."
-    echo "=========================================="
-    
-    # 首先尝试优雅地终止所有子进程
-    for pid in "${ALL_CHILD_PIDS[@]}"; do
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "向子进程 $pid 发送 SIGTERM 信号"
-            kill -TERM "$pid" 2>/dev/null || true
-        fi
-    done
-    
-    # 等待子进程响应
-    echo "等待子进程响应..."
-    sleep 3
-    
-    # 强制杀死未响应的进程
-    for pid in "${ALL_CHILD_PIDS[@]}"; do
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "强制终止子进程 $pid"
-            kill -9 "$pid" 2>/dev/null || true
-        fi
-    done
-    
-    # 清理当前进程组的所有剩余进程
-    trap - SIGTERM SIGINT EXIT
-    kill -- -$$ 2>/dev/null || true
-    
-    echo "清理完成"
-    exit 0
-}
-
 # 捕获 SIGINT (Ctrl+C)、SIGTERM 和 EXIT 信号
-trap cleanup_all_processes SIGINT SIGTERM EXIT
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 TEST_TYPE=$1
 ENGINE_TYPE=$2
@@ -633,25 +583,21 @@ while true; do
             if [ $TEST_TYPE == "Stability" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
-                ALL_CHILD_PIDS+=($last_pid)  # 记录子进程PID
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
-                ALL_CHILD_PIDS+=($last_pid)  # 记录子进程PID
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Smoke" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
-                ALL_CHILD_PIDS+=($last_pid)  # 记录子进程PID
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Accuracy" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
-                ALL_CHILD_PIDS+=($last_pid)  # 记录子进程PID
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
             else
@@ -663,7 +609,6 @@ while true; do
                 echo
                 wait $last_pid  # 等待上一个子进程结束
                 err=$?          # 保存上一个结束子进程的退出状态
-                remove_pid_from_list $last_pid  # 从列表中移除已结束的子进程PID
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
                         temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
@@ -682,7 +627,6 @@ while true; do
                 while (( remaining > 0 )); do
                     wait -n -p done_pid  # 等待任意一个子进程结束
                     err=$?               # 保存最先结束子进程的退出状态
-                    remove_pid_from_list $done_pid  # 从列表中移除已结束的子进程PID
                     if [ $err -ne 0 ]; then
                         if [ $err -eq 10 ]; then  # 没有资源，等待超时
                             temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
@@ -709,7 +653,6 @@ while true; do
         while (( remaining > 0 )); do
             wait -n -p done_pid  # 等待任意一个子进程结束
             err=$?               # 保存最先结束子进程的退出状态
-            remove_pid_from_list $done_pid  # 从列表中移除已结束的子进程PID
             if [ $err -ne 0 ]; then
                 if [ $err -eq 10 ]; then  # 没有资源，等待超时
                     temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
