@@ -121,8 +121,13 @@ cleanup_all_resources() {
 
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
-        ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-        ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+        ssh -o ConnectionAttempts=3 s_limingge@$ip "
+            name=siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+            if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
+                docker stop \$name
+                docker rm \$name
+            fi
+        "
     done
     
     echo "=========================================="

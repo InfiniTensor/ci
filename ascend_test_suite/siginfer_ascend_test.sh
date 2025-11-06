@@ -122,11 +122,21 @@ cleanup_all_resources() {
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
         if [ $ip == "10.9.1.6" ]; then
-            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 "
+                name=siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
+                    docker stop \$name
+                    docker rm \$name
+                fi
+            "
         else
-            ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-            ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+            ssh -o ConnectionAttempts=3 s_limingge@$ip "
+                name=siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
+                    docker stop \$name
+                    docker rm \$name
+                fi
+            "
         fi
     done
     
