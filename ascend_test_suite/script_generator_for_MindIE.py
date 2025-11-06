@@ -12,7 +12,7 @@ def main():
     
     test_type = sys.argv[1]
     
-    curr_dir = "/home/s_limingge/ascend_test_suite"
+    curr_dir = os.getcwd()
     
     target_file = ""
     src_code = ""

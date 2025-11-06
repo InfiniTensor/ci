@@ -13,7 +13,7 @@ def main():
     test_type = sys.argv[1]
     version = sys.argv[2]
     
-    curr_dir = "/home/s_limingge/ascend_test_suite"
+    curr_dir = os.getcwd()
 
     # 加载 Excel 文件
     file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径

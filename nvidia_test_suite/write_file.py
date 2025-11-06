@@ -1,20 +1,19 @@
 import argparse
-from openpyxl import Workbook
-from openpyxl.styles import Alignment
+from generate_model_comparison_table import generate_model_comparison_excel, fill_model_comparison_data
 
 parser = argparse.ArgumentParser(description="写入结果文件")
 parser.add_argument('--file', type=str)
 parser.add_argument('--framework', type=str)
+parser.add_argument('--engine', type=str)
 
 args=parser.parse_args()
 # 读取 txt 文件，按 '+' 分割列
 input_file = args.file
 output_file = args.framework
+engine = args.engine
 
 output_file = f"{output_file}_result.xlsx"
-
-wb = Workbook()
-ws = wb.active
+data_dict = {}
 
 with open(input_file, "r", encoding="utf-8") as file:
     for row_idx, line in enumerate(file, start=1):  # 从第1行开始
@@ -26,15 +25,18 @@ with open(input_file, "r", encoding="utf-8") as file:
         if 'gsm8k' in columns[2]:
             columns[2] = columns[2].replace("gsm8k", "\ngsm8k")
         for col_idx, value in enumerate(columns, start=1):  # 从第1列开始
-            ws.cell(row=row_idx, column=col_idx, value=value)
-            
-for row in ws.iter_rows():
-    for cell in row:
-        if isinstance(cell.value, str) and '\n' in cell.value:
-            cell.alignment = Alignment(wrap_text=True)
-            
-ws.column_dimensions['B'].width=50
-ws.column_dimensions['C'].width=78
+            if engine == "SigInfer":
+                data_dict[columns[0]] = {
+                    "SigInfer_opencompass": columns[1],
+                    "SigInfer_SGLang": columns[2]
+                }
+            elif engine == "vLLM":
+                data_dict[columns[0]] = {
+                    "VLLM_opencompass": columns[1],
+                    "VLLM_SGLang": columns[2]
+                }
+            else:
+                raise ValueError(f"不支持的引擎类型: {engine}，支持的值为: SigInfer, VLLM")
 
-wb.save(output_file)
-print(f"数据已写入 {output_file}")
+generate_model_comparison_excel(output_file, engine)
+fill_model_comparison_data(output_file, data_dict, engine)

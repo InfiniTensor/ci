@@ -6,12 +6,13 @@ server_list=($2)
 candidate_models=$3
 job_count=$4
 TEST_TYPE=$5
+ENGINE_TYPE=$6
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$6
-    version=$7
+    TEST_PARAM=$7
+    version=$8
 else
-    version=$6
+    version=$7
 fi
 
 model_list_for_A800=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
@@ -66,25 +67,62 @@ if [ -z $server_list ]; then
     exit 1
 fi
 
-# 设置清理函数，确保异常退出时释放锁
-cleanup_locks() {
-    echo "siginfer_nvidia_test.sh退出, 释放GPU锁......"
+# 存储 Docker 容器名称
+declare -a DOCKER_CONTAINER_NAMES
 
-    if [ ! -v model ]; then
-        echo "model is Not set, return"
-        return
+# 从数组中删除指定元素的辅助函数
+remove_container_from_array() {
+    local value_to_remove=$1
+    local new_array=()
+    
+    for item in "${DOCKER_CONTAINER_NAMES[@]}"; do
+        if [ "$item" != "$value_to_remove" ]; then
+            new_array+=("$item")
+        fi
+    done
+    
+    DOCKER_CONTAINER_NAMES=("${new_array[@]}")
+    echo "已从跟踪列表中删除容器: $value_to_remove"
+}
+
+# 统一的清理函数 - 同时处理 NPU 锁、本地容器和远程容器
+cleanup_all_resources() {
+    echo ""
+    echo "=========================================="
+    echo "siginfer_ascend_test.sh 退出，开始清理资源..."
+    echo "=========================================="
+    
+    # 1. 清理本地 Docker 容器
+    if [ ${#DOCKER_CONTAINER_NAMES[@]} -gt 0 ]; then
+        echo "正在清理本地 Docker 容器..."
+        for container_name in "${DOCKER_CONTAINER_NAMES[@]}"; do
+            if [ ! -z "$container_name" ]; then
+                echo "  停止容器: $container_name"
+                docker stop "$container_name" 2>/dev/null || true
+                # docker rm -f "$container_name" 2>/dev/null || true
+            fi
+        done
+        echo "本地容器清理完成"
     fi
     
-    for ip in ${server_list[@]}; do
+    # 2. 释放 NPU 锁
+    if [ -v model ]; then
+        echo "正在释放 NPU 锁..."
         source $curr_dir/npu_lock_manager.sh
-        SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
-        echo "release_npu_locks_batch $SERVER_NAME 0 1 2 3 4 5 6 7 ${TEST_TYPE}Test_${model}_${job_count}"
-        release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
-    done
+        for ip in ${server_list[@]}; do
+            SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
+            release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
+        done
+        echo "NPU 锁释放完成"
+    fi
+    
+    echo "=========================================="
+    echo "资源清理完成"
+    echo "=========================================="
 }
 
 # 注册退出时的清理函数
-trap cleanup_locks EXIT INT TERM
+trap cleanup_all_resources SIGINT SIGTERM EXIT
 
 model_list=()
 
@@ -358,33 +396,53 @@ for option in "${schedule_policies[@]}"; do
                     done
 
                     full_cmd=${exec_cmd%??}
+                    container_name="OpenaiTest_$$"
+                    DOCKER_CONTAINER_NAMES+=("$container_name")
 
                     if [ $gpu_model == "H20" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
+                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "A800" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
+                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "H100" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
+                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "L20" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
+                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     elif [ $gpu_model == "H800" ]; then
-                        echo "docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
+                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\""
                     fi
+
+                    # Smoke 测试的容器是同步运行的，运行完成后从数组中删除
+                    remove_container_from_array "$container_name"
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
                     declare -A pid_map
+
                     # 开始执行测试
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
-                    pid_map[$!]="evalscope_mmlu,ceval"
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
-                    pid_map[$!]="evalscope_gsm8k,ARC_c"
-                    docker run -i --rm --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
-                    pid_map[$!]="SGLang_mmlu,gsm8k"
+                    # 容器1: Evalscope mmlu,ceval
+                    container_name_1="Evalscope_mmlu_ceval_$$"
+                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
+                    pid1=$!
+                    pid_map[$pid1]="$container_name_1"
+                    DOCKER_CONTAINER_NAMES+=("$container_name_1")
+
+                    # 容器2: Evalscope gsm8k,ARC_c
+                    container_name_2="Evalscope_gsm8k_ARC_c_$$"
+                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
+                    pid2=$!
+                    pid_map[$pid2]="$container_name_2"
+                    DOCKER_CONTAINER_NAMES+=("$container_name_2")
+
+                    # 容器3: SGLang mmlu,gsm8k
+                    container_name_3="SGLang_mmlu_gsm8k_$$"
+                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
+                    pid3=$!
+                    pid_map[$pid3]="$container_name_3"
+                    DOCKER_CONTAINER_NAMES+=("$container_name_3")
                     
                     # 等待所有后台测试任务结束
                     remaining=3
@@ -395,6 +453,12 @@ for option in "${schedule_policies[@]}"; do
                         echo "测试任务：${pid_map[$done_pid]}结束!"
                         if [ $err -ne 0 ]; then
                             echo "测试结果失败！请检查......"
+                        fi
+
+                        # 从跟踪数组中删除已完成的容器
+                        if [ -v pid_map[$done_pid] ]; then
+                            remove_container_from_array "${pid_map[$done_pid]}"
+                            unset pid_map[$done_pid]
                         fi
 
                         ((remaining--))
@@ -512,15 +576,15 @@ for option in "${schedule_policies[@]}"; do
                         # 生成本次测试的Excel报告
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache --engine ${ENGINE_TYPE}
                             else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache_Swap-space
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache_Swap-space --engine ${ENGINE_TYPE}
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option} --engine ${ENGINE_TYPE}
                             else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Swap-space
+                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Swap-space --engine ${ENGINE_TYPE}
                             fi
                         fi
                     fi

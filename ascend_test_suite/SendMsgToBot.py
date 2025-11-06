@@ -1,6 +1,7 @@
 import requests
 import sys
 import re
+import os
 from datetime import datetime
 
 current_time = datetime.now().strftime("%Y%m%d")
@@ -86,16 +87,17 @@ def save_summary_to_log(version_text, model_name, summary_text, failed_count):
 
     print(summary_text)
     
+    curr_dir = os.getcwd()
     filename = f"report_{current_time}.txt"
     
-    with open(f"/home/s_limingge/ascend_test_suite/{filename}", 'a') as file:
+    with open(f"{curr_dir}/{filename}", 'a') as file:
         file.write('Docker image version: ' + version_text + '\n')
         file.write('Model name: ' + model_name + '\n')
         file.write(summary_text + '\n\n')
 
     statistics_filename = f"statistics_{current_time}.txt"
     
-    with open(f"/home/s_limingge/ascend_test_suite/{statistics_filename}", 'a') as file:
+    with open(f"{curr_dir}/{statistics_filename}", 'a') as file:
         file.write(model_name + ':' + str(failed_count) + '\n')
 
 def main():
