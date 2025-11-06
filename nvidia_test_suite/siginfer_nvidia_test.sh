@@ -251,24 +251,19 @@ for option in "${schedule_policies[@]}"; do
                     wait -n -p done_pid
                     err=$?
                     
-                    echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
-
-                    if [ $err -ne 0 ]; then
-                        if [ $err -eq 10 ]; then
-                            echo "${pid_map[$done_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
-                        else
-                            echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
-                        fi
+                    if [ -v pid_map[$done_pid] ]; then
+                        echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
                         
-                        # 启动失败，清理工作
-                        for ip in ${server_list[@]}; do
-                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
-                        done
-
-                        ret_code=$err
-                        success=1
-                        break
+                        if [ $err -ne 0 ]; then
+                            if [ $err -eq 10 ]; then
+                                echo "${pid_map[$done_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
+                            else
+                                echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
+                            fi
+                            
+                            ret_code=$err
+                            success=1
+                        fi
                     fi
 
                     ((remaining--))
@@ -276,6 +271,11 @@ for option in "${schedule_policies[@]}"; do
 
                 # 任务启动失败
                 if [ $success -eq 1 ]; then
+                    # 清理工作
+                    for ip in ${server_list[@]}; do
+                        ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                        ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${job_count}
+                    done
                     continue
                 fi
 
@@ -450,13 +450,12 @@ for option in "${schedule_policies[@]}"; do
                         wait -n -p done_pid
                         err=$?
 
-                        echo "测试任务：${pid_map[$done_pid]}结束!"
-                        if [ $err -ne 0 ]; then
-                            echo "测试结果失败！请检查......"
-                        fi
-
-                        # 从跟踪数组中删除已完成的容器
                         if [ -v pid_map[$done_pid] ]; then
+                            echo "测试任务：${pid_map[$done_pid]}结束!"
+                            if [ $err -ne 0 ]; then
+                                echo "测试结果失败！请检查......"
+                            fi
+                            # 从跟踪数组中删除已完成的容器
                             remove_container_from_array "${pid_map[$done_pid]}"
                             unset pid_map[$done_pid]
                         fi

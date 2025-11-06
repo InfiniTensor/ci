@@ -32,7 +32,7 @@ declare -A npu_server_list=(
 for key in "${!npu_server_list[@]}"; do
     echo "$key => ${npu_server_list[$key]}"
     if [ $key == 'aicc001' ]; then
-        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list['aicc001']} "# 处理${TEST_TYPE} Test容器
+        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list['aicc001']} "# 处理${TEST_TYPE} Test容器
             container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
             for container in \$container_list; do
                 if [ $SHUTDOWN -eq 1 ]; then
@@ -49,7 +49,7 @@ for key in "${!npu_server_list[@]}"; do
             echo "服务器访问失败！"
         fi
     else
-        ssh -o ConnectionAttempts=3 s_limingge@${npu_server_list[$key]} "# 处理${TEST_TYPE} Test容器
+        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list[$key]} "# 处理${TEST_TYPE} Test容器
             container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
             for container in \$container_list; do
                 if [ $SHUTDOWN -eq 1 ]; then

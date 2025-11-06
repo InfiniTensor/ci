@@ -254,29 +254,19 @@ for option in "${schedule_policies[@]}"; do
                     wait -n -p done_pid
                     err=$?
                     
-                    echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
+                    if [ -v pid_map[$done_pid] ]; then
+                        echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
 
-                    if [ $err -ne 0 ]; then
-                        if [ $err -eq 10 ]; then
-                            echo "${pid_map[$done_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
-                        else
-                            echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
-                        fi
-                        
-                        # 启动失败，清理工作
-                        for ip in ${server_list[@]}; do
-                            if [ $ip == "10.9.1.6" ]; then
-                                sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        if [ $err -ne 0 ]; then
+                            if [ $err -eq 10 ]; then
+                                echo "${pid_map[$done_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
                             else
-                                ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
                             fi
-                        done
-
-                        ret_code=$err
-                        success=1
-                        break
+                            
+                            ret_code=$err
+                            success=1
+                        fi
                     fi
 
                     ((remaining--))
@@ -284,6 +274,16 @@ for option in "${schedule_policies[@]}"; do
 
                 # 任务启动失败
                 if [ $success -eq 1 ]; then
+                    # 清理工作
+                    for ip in ${server_list[@]}; do
+                        if [ $ip == "10.9.1.6" ]; then
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        else
+                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                            ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        fi
+                    done
                     continue
                 fi
 
@@ -414,21 +414,21 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     # 容器1: Evalscope mmlu,ceval
                     container_name_1="Evalscope_mmlu_ceval_$$"
-                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
                     pid1=$!
                     pid_map[$pid1]="$container_name_1"
                     DOCKER_CONTAINER_NAMES+=("$container_name_1")
                     
                     # 容器2: Evalscope gsm8k,ARC_c
                     container_name_2="Evalscope_gsm8k_ARC_c_$$"
-                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
                     pid2=$!
                     pid_map[$pid2]="$container_name_2"
                     DOCKER_CONTAINER_NAMES+=("$container_name_2")
                     
                     # 容器3: SGLang mmlu,gsm8k
                     container_name_3="SGLang_mmlu_gsm8k_$$"
-                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0616 -M $model --port $((9701+$job_count)) --host $local_master_ip > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host $local_master_ip > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
                     pid3=$!
                     pid_map[$pid3]="$container_name_3"
                     DOCKER_CONTAINER_NAMES+=("$container_name_3")
@@ -439,13 +439,12 @@ for option in "${schedule_policies[@]}"; do
                         wait -n -p done_pid
                         err=$?
 
-                        echo "测试任务：${pid_map[$done_pid]}结束!"
-                        if [ $err -ne 0 ]; then
-                            echo "测试结果失败！请检查......"
-                        fi
-                        
-                        # 从跟踪数组中删除已完成的容器
                         if [ -v pid_map[$done_pid] ]; then
+                            echo "测试任务：${pid_map[$done_pid]}结束!"
+                            if [ $err -ne 0 ]; then
+                                echo "测试结果失败！请检查......"
+                            fi
+                            # 从跟踪数组中删除已完成的容器
                             remove_container_from_array "${pid_map[$done_pid]}"
                             unset pid_map[$done_pid]
                         fi

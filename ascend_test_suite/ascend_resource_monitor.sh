@@ -388,7 +388,7 @@ while true; do
                 last_pid=$!
                 ALL_CHILD_PIDS+=($last_pid)  # 记录子进程PID
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`\
+                status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
             else
                 echo "测试类型错误！"
                 exit 1
