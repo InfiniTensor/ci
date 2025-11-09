@@ -512,7 +512,19 @@ for option in "${schedule_policies[@]}"; do
                     eval_res_2=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_2.log")
                     sglang_res_3=$(tail -n 5 "$curr_dir/logs/accuracy/${filename}_SGLang_3.log")
                     
-                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                    if [ $use_prefix_cache_flag -eq 1 ]; then
+                        if [ $swap_space -eq 0 ]; then
+                            echo "${model}_${option}_Use-prefix-cache+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        else
+                            echo "${model}_${option}_Use-prefix-cache_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        fi
+                    else
+                        if [ $swap_space -eq 0 ]; then
+                            echo "${model}_${option}+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        else
+                            echo "${model}_${option}_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        fi
+                    fi
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
                     # ......
@@ -617,21 +629,6 @@ for option in "${schedule_policies[@]}"; do
                                 if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
                                 fi
-                            fi
-                        fi
-                    elif [ $TEST_TYPE == "Accuracy" ]; then
-                        # 生成本次测试的Excel报告
-                        if [ $use_prefix_cache_flag -eq 1 ]; then
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache --engine ${ENGINE_TYPE}
-                            else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache_Swap-space --engine ${ENGINE_TYPE}
-                            fi
-                        else
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option} --engine ${ENGINE_TYPE}
-                            else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Swap-space --engine ${ENGINE_TYPE}
                             fi
                         fi
                     fi
