@@ -431,32 +431,32 @@ for option in "${schedule_policies[@]}"; do
                     declare -A pid_map
 
                     if [ $gpu_model == "H20" ]; then
-                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "A800" ]; then
-                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "H100" ]; then
-                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "L20" ]; then
-                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "H800" ]; then
-                        echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model $model --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
@@ -525,7 +525,21 @@ for option in "${schedule_policies[@]}"; do
                     eval_res_2=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_2.log")
                     sglang_res_3=$(tail -n 5 "$curr_dir/logs/accuracy/${filename}_SGLang_3.log")
                     
-                    echo "$model+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                    # 生成本次测试的Excel报告
+                    if [ $use_prefix_cache_flag -eq 1 ]; then
+                        if [ $swap_space -eq 0 ]; then
+                            echo "${model}_${option}_Use-prefix-cache+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        else
+                            echo "${model}_${option}_Use-prefix-cache_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        fi
+                    else
+                        if [ $swap_space -eq 0 ]; then
+                            python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option} --engine ${ENGINE_TYPE}
+                            echo "${model}_${option}+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        else
+                            echo "${model}_${option}_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                        fi
+                    fi
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
                     # ......
@@ -625,21 +639,6 @@ for option in "${schedule_policies[@]}"; do
                                 python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}" "$curr_dir/logs/smoke/$filename"
                             else
                                 python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Swap-space" "$curr_dir/logs/smoke/$filename"
-                            fi
-                        fi
-                    elif [ $TEST_TYPE == "Accuracy" ]; then
-                        # 生成本次测试的Excel报告
-                        if [ $use_prefix_cache_flag -eq 1 ]; then
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache --engine ${ENGINE_TYPE}
-                            else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Use-prefix-cache_Swap-space --engine ${ENGINE_TYPE}
-                            fi
-                        else
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option} --engine ${ENGINE_TYPE}
-                            else
-                                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework ${model}_${option}_Swap-space --engine ${ENGINE_TYPE}
                             fi
                         fi
                     fi

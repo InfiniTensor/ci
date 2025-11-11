@@ -675,6 +675,9 @@ while true; do
     fi
 done
 
-# python3 $curr_dir/send_bot.py ${version}
+if [ $TEST_TYPE == "Accuracy" ]; then
+    # 生成测试的Excel报告
+    python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework Nvidia --engine ${ENGINE_TYPE}
+fi
 
 exit 0

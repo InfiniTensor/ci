@@ -342,8 +342,8 @@ for option in "${schedule_policies[@]}"; do
                     unset pid_map
                     declare -A pid_map
                     
-                    echo "docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd \"$full_cmd\""
-                    docker run --rm --name $container_name --entrypoint /test/start.sh openai:0826 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
+                    echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd \"$full_cmd\""
+                    docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model $model --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
                     pid=$!
                     pid_map[$pid]="$container_name"
                     DOCKER_CONTAINER_NAMES+=("$container_name")
