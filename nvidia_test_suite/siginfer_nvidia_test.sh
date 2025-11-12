@@ -654,6 +654,10 @@ for option in "${schedule_policies[@]}"; do
                                 python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}:${gpu_model}_${option}_Swap-space" "$curr_dir/logs/smoke/$filename"
                             fi
                         fi
+                    elif [ $TEST_TYPE == "Accuracy" ]; then
+                        # 保存docker镜像版本信息
+                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
                     fi
                 fi
                 

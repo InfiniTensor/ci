@@ -646,6 +646,10 @@ for option in "${schedule_policies[@]}"; do
                                 fi
                             fi
                         fi
+                    elif [ $TEST_TYPE == "Accuracy" ]; then
+                        # 保存docker镜像版本信息
+                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
                     fi
                 fi
                 

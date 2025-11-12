@@ -406,6 +406,28 @@ while true; do
 
     if [[ ${#temp_list[@]} -eq 0 ]]; then
         echo "全部测试完成！"
+        if [ $TEST_TYPE == "Accuracy" ]; then
+            python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework Ascend_910B1 --engine ${ENGINE_TYPE}
+        elif [ $TEST_TYPE == "Smoke" ]; then
+            if [ -f $curr_dir/report_${log_name_suffix}/version.txt ]; then
+                latest_tag=$(cat $curr_dir/report_${log_name_suffix}/version.txt)
+            else
+                latest_tag="unknown"
+            fi
+            
+            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/summary_${log_name_suffix}.txt"
+
+            last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
+            if [ -f $curr_dir/report_${last_date}/version.txt ]; then
+                last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+            else
+                last_version="unknown"
+            fi
+            
+            if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/summary_${last_date}.txt" ]; then
+                python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            fi
+        fi
         break
     else
         GPU_resource_demand=("${temp_list[@]}")
@@ -414,10 +436,5 @@ while true; do
         echo
     fi
 done
-
-if [ $TEST_TYPE == "Accuracy" ]; then
-    # 生成测试的Excel报告
-    python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework Ascend_910B1 --engine ${ENGINE_TYPE}
-fi
 
 exit 0
