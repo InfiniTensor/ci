@@ -84,8 +84,6 @@ def send_summary_to_server(version_text, model_name, summary_text):
 
     print(summary_text)
     
-    return
-    
     server_url = 'https://open.feishu.cn/open-apis/bot/v2/hook/9c267c92-100a-40c6-ab32-cc1ca57df84e'  # 替换为实际的服务端 URL
 
     try:
@@ -204,10 +202,10 @@ def compare_summary_files(version_text1, file_path1, version_text2, file_path2):
             item2 = data2[i]
             
             # 计算差异
-            diff_passed = item2['passed'] - item1['passed']
-            diff_failed = item2['failed'] - item1['failed']
-            diff_warning = item2['warning'] - item1['warning']
-            diff_skipped = item2['skipped'] - item1['skipped']
+            diff_passed = item1['passed'] - item2['passed']
+            diff_failed = item1['failed'] - item2['failed']
+            diff_warning = item1['warning'] - item2['warning']
+            diff_skipped = item1['skipped'] - item2['skipped']
             
             # 检查是否有差异
             if diff_passed != 0 or diff_failed != 0 or diff_warning != 0 or diff_skipped != 0:
