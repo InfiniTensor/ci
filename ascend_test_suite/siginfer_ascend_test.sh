@@ -181,10 +181,14 @@ echo "*************开始执行${TEST_TYPE}测试任务，日期时间:$(date +"
 echo "测试模型列表: ${model_list[@]}"
 
 if [ -z $version ]; then
-    echo "推理引擎版本: Latest"
-else
-    echo "推理引擎版本: ${version}"
+    version=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-aarch64-ascend/tags/list | jq -r '.tags[]' \
+                        | xargs -I% sh -c "echo -n \"%  \"; \
+                            jfrog rt curl --server-id=my-jcr \
+                            /api/storage/docker-local/siginfer-aarch64-ascend/% \
+                        | jq -r '.created'" | sort -k2 -r | grep main- | head -n1 | awk '{print $1}')
 fi
+
+echo "推理引擎版本: ${version}"
 
 test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
 processed_models="${curr_dir}/logs/${test_type}/processed_models_${log_name_suffix}"
@@ -564,30 +568,11 @@ for option in "${schedule_policies[@]}"; do
                 
                 # 发送测试报告
                 if [ $send_report -eq 1 ]; then
-                    if [ -z $version ]; then
-                        latest_tag=$(jfrog rt curl --server-id=my-jcr /api/docker/docker-local/v2/siginfer-aarch64-ascend/tags/list | jq -r '.tags[]' \
-                        | xargs -I% sh -c "echo -n \"%  \"; \
-                            jfrog rt curl --server-id=my-jcr \
-                            /api/storage/docker-local/siginfer-aarch64-ascend/% \
-                        | jq -r '.created'" | sort -k2 -r | grep main- | head -n1 | awk '{print $1}')
-                    else
-                        latest_tag=$version
-                    fi
-
+                    latest_tag=$version
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        if [ $use_prefix_cache_flag -eq 1 ]; then
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache" "$curr_dir/logs/smoke/$filename"
-                            else
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Use-prefix-cache_Swap-space" "$curr_dir/logs/smoke/$filename"
-                            fi
-                        else
-                            if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}" "$curr_dir/logs/smoke/$filename"
-                            else
-                                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "${model}_${option}_Swap-space" "$curr_dir/logs/smoke/$filename"
-                            fi
-                        fi
+                        # 保存docker镜像版本信息
+                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
                     elif [ $TEST_TYPE == "Performance" ]; then
                         # 保存docker镜像版本信息
                         touch "$curr_dir/report_${log_name_suffix}/version.txt"
@@ -646,10 +631,6 @@ for option in "${schedule_policies[@]}"; do
                                 fi
                             fi
                         fi
-                    elif [ $TEST_TYPE == "Accuracy" ]; then
-                        # 保存docker镜像版本信息
-                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
-                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
                     fi
                 fi
                 

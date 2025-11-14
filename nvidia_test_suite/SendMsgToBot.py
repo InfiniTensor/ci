@@ -158,6 +158,9 @@ def compare_summary_files(version_text1, file_path1, version_text2, file_path2):
                         print(f"Warning: Invalid number format in line: {line}")
                         continue
         
+        # 按 model_name 进行字母排序（不区分大小写）
+        parsed_data.sort(key=lambda x: x['model_name'].lower())
+        
         return parsed_data
     
     # 解析两个文件
@@ -173,13 +176,17 @@ def compare_summary_files(version_text1, file_path1, version_text2, file_path2):
     result += f"  当前版本：{version_text1}\n"
     result += f"  上一版本：{version_text2}\n"
     
-    # 比较数据
-    max_len = max(len(data1), len(data2))
-    max_model_name_length = 0
+    # 将数据转换为字典，以 model_name 为键，方便查找
+    dict1 = {item['model_name']: item for item in data1}
+    dict2 = {item['model_name']: item for item in data2}
     
+    # 获取所有唯一的 model_name，并排序
+    all_model_names = sorted(set(list(dict1.keys()) + list(dict2.keys())), key=str.lower)
+    
+    max_model_name_length = 0
     # 计算最长模型名称长度（用于格式化输出）
-    for item in data1 + data2:
-        max_model_name_length = max(max_model_name_length, len(item['model_name']))
+    for model_name in all_model_names:
+        max_model_name_length = max(max_model_name_length, len(model_name))
     
     # 格式化差异值（正数显示+，负数显示-）
     def format_diff(val):
@@ -194,12 +201,13 @@ def compare_summary_files(version_text1, file_path1, version_text2, file_path2):
     header = f"{'Model Name':<{max_model_name_length}} | {'Passed':>8} {'Failed':>8} {'Warning':>8} {'Skipped':>8}"
     result += header + "\n"
     
-    # 逐行比较
+    # 按 model_name 逐个比较（只比较相同 model_name 的指标）
     has_diff = False
-    for i in range(max_len):
-        if i < len(data1) and i < len(data2):
-            item1 = data1[i]
-            item2 = data2[i]
+    for model_name in all_model_names:
+        if model_name in dict1 and model_name in dict2:
+            # 两个文件中都有该模型，进行比较
+            item1 = dict1[model_name]
+            item2 = dict2[model_name]
             
             # 计算差异
             diff_passed = item1['passed'] - item2['passed']
@@ -211,22 +219,19 @@ def compare_summary_files(version_text1, file_path1, version_text2, file_path2):
             if diff_passed != 0 or diff_failed != 0 or diff_warning != 0 or diff_skipped != 0:
                 has_diff = True
                 # 打印比较结果（只显示Diff）
-                model_name = item1['model_name'] if item1['model_name'] == item2['model_name'] else f"{item1['model_name']} vs {item2['model_name']}"
                 line = (f"{model_name:<{max_model_name_length}} | "
                     f"{format_diff(diff_passed):>8} {format_diff(diff_failed):>8} {format_diff(diff_warning):>8} {format_diff(diff_skipped):>8}")
                 result += line + "\n"
-        elif i < len(data1):
+        elif model_name in dict1:
             has_diff = True
             # 只在文件1中存在
-            item1 = data1[i]
-            line = (f"{item1['model_name']:<{max_model_name_length}} | "
+            line = (f"{model_name:<{max_model_name_length}} | "
                  f"{'N/A':>8} {'N/A':>8} {'N/A':>8} {'N/A':>8}")
             result += line + "\n"
-        elif i < len(data2):
+        elif model_name in dict2:
             has_diff = True
             # 只在文件2中存在
-            item2 = data2[i]
-            line = (f"{item2['model_name']:<{max_model_name_length}} | "
+            line = (f"{model_name:<{max_model_name_length}} | "
                  f"{'N/A':>8} {'N/A':>8} {'N/A':>8} {'N/A':>8}")
             result += line + "\n"
     

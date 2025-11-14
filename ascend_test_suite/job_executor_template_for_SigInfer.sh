@@ -172,6 +172,7 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${JOB_COUNT} \
      --device=/dev/devmm_svm       \
      --device=/dev/hisi_hdc        \
      --ipc=host	\
+     -e HCCL_SOCKET_IFNAME=enp67s0f0 \
      -e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES    \
      docker.xcoresigma.com/docker/siginfer-aarch64-ascend:$LATEST_TAG"
 
