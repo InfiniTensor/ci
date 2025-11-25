@@ -11,8 +11,14 @@ ENGINE_TYPE=$6
 if [ $TEST_TYPE == "Performance" ]; then
     TEST_PARAM=$7
     version=$8
+    num_of_prefix_cache_options=1
 else
     version=$7
+    if [ $TEST_TYPE == "Stability" ]; then
+        num_of_prefix_cache_options=1
+    else
+        num_of_prefix_cache_options=2
+    fi
 fi
 
 full_model_list=(DeepSeek-R1-0528:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 DeepSeek-R1:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-V3.1-Terminus-Channel-int8:16)
@@ -21,37 +27,27 @@ curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
 
 declare -A npu_server_list=(
-    ["10.9.1.6"]="AICC_001"
-    ["10.9.1.74"]="AICC_003"
-    ["10.9.1.34"]="AICC_004"
-    ["10.9.1.26"]="AICC_005"
-    ["10.9.1.46"]="AICC_006"
-    ["10.9.1.58"]="AICC_007"
-    ["10.9.1.30"]="AICC_008"
-    ["10.9.1.38"]="AICC_009"
-    ["10.9.1.70"]="AICC_010"
-    ["10.9.1.42"]="AICC_011"
-    ["10.9.1.66"]="AICC_012"
-    ["10.9.1.50"]="AICC_013"
-    ["10.9.1.62"]="AICC_014"
-    ["10.9.1.54"]="AICC_015"
+    ["10.9.1.78"]="AICC_001"
+    ["10.9.1.106"]="AICC_003"
+    ["10.9.1.114"]="AICC_004"
+    ["10.9.1.98"]="AICC_005"
+    ["10.9.1.110"]="AICC_006"
+    ["10.9.1.86"]="AICC_007"
+    ["10.9.1.94"]="AICC_008"
+    ["10.9.1.82"]="AICC_009"
+    ["10.9.1.102"]="AICC_010"
 )
 
 declare -A local_ip_map=(
-    ["10.9.1.6"]="192.168.0.156"
-    ["10.9.1.74"]="192.168.0.123"
-    ["10.9.1.34"]="192.168.0.77"
-    ["10.9.1.26"]="192.168.0.247"
-    ["10.9.1.46"]="192.168.0.93"
-    ["10.9.1.58"]="192.168.0.100"
-    ["10.9.1.30"]="192.168.0.87"
-    ["10.9.1.38"]="192.168.0.236"
-    ["10.9.1.70"]="192.168.0.185"
-    ["10.9.1.42"]="192.168.0.61"
-    ["10.9.1.66"]="192.168.0.166"
-    ["10.9.1.50"]="192.168.0.127"
-    ["10.9.1.62"]="192.168.0.171"
-    ["10.9.1.54"]="192.168.0.246"
+    ["10.9.1.78"]="10.0.0.13"
+    ["10.9.1.106"]="10.0.0.3"
+    ["10.9.1.114"]="10.0.0.43"
+    ["10.9.1.98"]="10.0.0.40"
+    ["10.9.1.110"]="10.0.0.37"
+    ["10.9.1.86"]="10.0.0.27"
+    ["10.9.1.94"]="10.0.0.4"
+    ["10.9.1.82"]="10.0.0.53"
+    ["10.9.1.102"]="10.0.0.20"
 )
 
 if [ -z $send_report ]; then
@@ -199,8 +195,8 @@ schedule_policies=('DynamicSplitFuseV2')
 ret_code=0
 
 for option in "${schedule_policies[@]}"; do
-    use_prefix_cache_flag=1
-    for ((i=1; i<=2; i=i+1)); do
+    use_prefix_cache_flag=0
+    for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do

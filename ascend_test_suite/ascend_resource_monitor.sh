@@ -39,20 +39,15 @@ fi
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     declare -A npu_server_list=(
-        # ["aicc001"]="10.9.1.6"
-        ["aicc003"]="10.9.1.74"
-        ["aicc004"]="10.9.1.34"
-        ["aicc005"]="10.9.1.26"
-        ["aicc006"]="10.9.1.46"
-        ["aicc007"]="10.9.1.58"
-        ["aicc008"]="10.9.1.30"
-        ["aicc009"]="10.9.1.38"
-        ["aicc010"]="10.9.1.70"
-        ["aicc011"]="10.9.1.42"
-        ["aicc012"]="10.9.1.66"
-        ["aicc013"]="10.9.1.50"
-        # ["aicc014"]="10.9.1.62"
-        # ["aicc015"]="10.9.1.54"
+        ["aicc001"]="10.9.1.78"
+        ["aicc003"]="10.9.1.106"
+        ["aicc004"]="10.9.1.114"
+        ["aicc005"]="10.9.1.98"
+        ["aicc006"]="10.9.1.110"
+        ["aicc007"]="10.9.1.86"
+        ["aicc008"]="10.9.1.94"
+        ["aicc009"]="10.9.1.82"
+        ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
         python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
@@ -61,20 +56,15 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
-        # ["aicc001"]="10.9.1.6"
-        ["aicc003"]="10.9.1.74"
-        ["aicc004"]="10.9.1.34"
-        ["aicc005"]="10.9.1.26"
-        ["aicc006"]="10.9.1.46"
-        ["aicc007"]="10.9.1.58"
-        ["aicc008"]="10.9.1.30"
-        ["aicc009"]="10.9.1.38"
-        ["aicc010"]="10.9.1.70"
-        ["aicc011"]="10.9.1.42"
-        ["aicc012"]="10.9.1.66"
-        ["aicc013"]="10.9.1.50"
-        # ["aicc014"]="10.9.1.62"
-        # ["aicc015"]="10.9.1.54"
+        ["aicc001"]="10.9.1.78"
+        ["aicc003"]="10.9.1.106"
+        ["aicc004"]="10.9.1.114"
+        ["aicc005"]="10.9.1.98"
+        ["aicc006"]="10.9.1.110"
+        ["aicc007"]="10.9.1.86"
+        ["aicc008"]="10.9.1.94"
+        ["aicc009"]="10.9.1.82"
+        ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
         python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
@@ -93,14 +83,12 @@ fi
 # full_model_list=(DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Llama-8B:1 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2)
 # full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 Qwen3-30B-A3B:2 DeepSeek-R1:16 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8)
 full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8)
-# full_model_list_for_smoke=(Qwen3-235B-A22B:8)
-# full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct-AWQ:2)
-full_model_list_for_performance=(DeepSeek-R1-AWQ:8)
+full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct-AWQ:2)
 # full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-Distill-Qwen-32B:2)
 # full_model_list_for_stability=(DeepSeek-R1-Distill-Llama-70B:4 DeepSeek-R1-Distill-Qwen-32B:2 Qwen2.5-32B-Instruct-AWQ:1)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-W8A8:16)
-full_model_list_for_stability=(DeepSeek-R1-AWQ:8)
+full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16)
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -114,21 +102,25 @@ if [ $TEST_TYPE == "Smoke" ]; then
     rm -rf $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_* $curr_dir/logs/smoke/processed_models_*
     processed_models=${curr_dir}/logs/smoke/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
     full_model_list=(${full_model_list_for_performance[@]})
     rm -rf $curr_dir/logs/performance/*.log $curr_dir/logs/performance/processed_models_*
     processed_models=${curr_dir}/logs/performance/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Stability" ]; then
     full_model_list=(${full_model_list_for_stability[@]})
     rm -rf $curr_dir/logs/stability/*.log $curr_dir/logs/stability/processed_models_*
     processed_models=${curr_dir}/logs/stability/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Accuracy" ]; then
     full_model_list=(${full_model_list_for_accuracy[@]})
     rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/accuracy/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=2
 fi
 
 search_servers() {
@@ -250,8 +242,8 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=1
-        for ((i=1; i<=2; i=i+1)); do
+        use_prefix_cache_flag=0
+        for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个

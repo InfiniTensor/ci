@@ -56,10 +56,10 @@ fi
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct:4:H20)
 # full_model_list=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct:4:H20 Qwen3-235B-A22B-FP8:4:H20)
 # full_model_list=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100)
-full_model_list_for_smoke=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-V3.1:8:H20)
+full_model_list_for_smoke=(DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H100 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-32B-Instruct_L-Series:4:L20 QwQ-32B_L-Series:4:L20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ_L-Series:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-72B-Instruct_L-Series:4:L20)
 full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
 # full_model_list=(DeepSeek-R1:8:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20)
-full_model_list_for_stability=(DeepSeek-V3.1:8:H20)
+full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -73,21 +73,25 @@ if [ $TEST_TYPE == "Smoke" ]; then
     rm -rf $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_* $curr_dir/logs/smoke/processed_models_*
     processed_models=${curr_dir}/logs/smoke/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
     full_model_list=(${full_model_list_for_performance[@]})
     rm -rf $curr_dir/logs/performance/*.log $curr_dir/logs/performance/processed_models_*
     processed_models=${curr_dir}/logs/performance/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Stability" ]; then
     full_model_list=(${full_model_list_for_stability[@]})
     rm -rf $curr_dir/logs/stability/*.log $curr_dir/logs/stability/processed_models_*
     processed_models=${curr_dir}/logs/stability/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Accuracy" ]; then
     full_model_list=(${full_model_list_for_accuracy[@]})
     rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/accuracy/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/"processed_models"_${log_name_suffix}
     touch ${processed_models}
+    num_of_prefix_cache_options=2
 fi
 
 declare -A A800_server_list=(
@@ -513,8 +517,8 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=1
-        for ((i=1; i<=2; i=i+1)); do
+        use_prefix_cache_flag=0
+        for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个
