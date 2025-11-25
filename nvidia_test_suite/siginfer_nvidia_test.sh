@@ -21,6 +21,9 @@ else
     fi
 fi
 
+curr_dir=$(pwd)
+log_name_suffix=${TASK_START_TIME}
+
 if true; then
     if [ -z $version ]; then
         model_list_for_A800=($(python3 $curr_dir/parse_model_list.py A800 $curr_dir/latest/model_list.xlsx))
@@ -44,8 +47,6 @@ else
 fi
 
 full_model_list=(${model_list_for_A800[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
-curr_dir=$(pwd)
-log_name_suffix=${TASK_START_TIME}
 
 declare -A A800_server_list=(
     ["10.208.130.44"]="A800-001"
@@ -218,7 +219,7 @@ ret_code=0
 # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
 for option in "${schedule_policies[@]}"; do
     use_prefix_cache_flag=0
-    for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
+    for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do

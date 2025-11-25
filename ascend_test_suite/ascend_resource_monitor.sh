@@ -134,8 +134,8 @@ search_servers() {
     servers_found=()
     for key in "${!npu_server_list[@]}"; do
         echo "$key => ${npu_server_list[$key]}"
-        if [ $key == 'aicc001' ]; then
-            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list['aicc001']} "# 目标空闲 GPU 数量
+        if [ $key == 'aicc002' ]; then
+            sshpass -p 's_limingge' ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list['aicc002']} "# 目标空闲 GPU 数量
                 source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
@@ -171,7 +171,7 @@ search_servers() {
                 servers_found+=(${npu_server_list[$key]})
             fi
         else
-            ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list[$key]} "# 目标空闲 GPU 数量
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list[$key]} "# 目标空闲 GPU 数量
                 source /home/s_limingge/npu_lock_manager.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
@@ -220,9 +220,9 @@ search_servers() {
 
 for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
-    if [ $name == 'aicc001' ]; then
-        sshpass -p 's_limingge' scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc001']}:/home/s_limingge
-        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list['aicc001']}:/home/s_limingge
+    if [ $name == 'aicc002' ]; then
+        sshpass -p 's_limingge' scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
+        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
     else
         scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
         scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
@@ -237,7 +237,7 @@ for item in "${full_model_list[@]}"; do
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
         use_prefix_cache_flag=0
-        for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
+        for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
                 # 模型已经测试过了，检查下一个

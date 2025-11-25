@@ -3,6 +3,42 @@ import re
 import os
 import sys
 
+def clean_card_type(card_type):
+    """清理卡型，去掉括号中的内容和额外描述"""
+    if not card_type:
+        return None
+    
+    card_type = str(card_type).strip()
+    # 去掉括号及其内容，例如 'H20 (96G)' -> 'H20'
+    card_type = re.sub(r'\s*\([^)]*\)', '', card_type)
+    # 去掉额外的描述文本（如"长上下文"等）
+    # 只保留卡型名称部分（通常是字母数字组合，可能包含斜杠）
+    card_type = re.sub(r'\s+[^\w/]+.*$', '', card_type)
+    return card_type.strip()
+
+def extract_card_types(card_type_str):
+    """从卡型字符串中提取所有卡型（可能包含多个，用顿号分隔）"""
+    if not card_type_str:
+        return []
+    
+    card_type_str = str(card_type_str).strip()
+    # 按顿号分割
+    card_types = [ct.strip() for ct in card_type_str.split('、')]
+    
+    # 清理每个卡型并过滤
+    cleaned_cards = []
+    for ct in card_types:
+        cleaned = clean_card_type(ct)
+        if cleaned:
+            # 如果卡型包含斜杠（如H100/A100），需要分别处理
+            if '/' in cleaned:
+                parts = [p.strip() for p in cleaned.split('/')]
+                for part in parts:
+                    cleaned_cards.append(part)
+            else:
+                cleaned_cards.append(cleaned)
+    
+    return cleaned_cards
 
 def main():
     verison = ""
@@ -77,19 +113,19 @@ def main():
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
         result = re.sub(r"--served-model-name\s+\S+", f"--served-model-name {name}", result)
         
-        if start:
-            src_code += f"if [ $MODEL == \\\"{name}\\\" ]; then\n"
-            start = False
-        else:
-            src_code += f"elif [ $MODEL == \\\"{name}\\\" ]; then\n"
-        src_code += "    echo \\\"vllm serve "
-        src_code += result
-        src_code += "\\\"\n"
-        
-        src_code += "    nohup env CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
-        src_code += result
-        src_code += " > $LOG_NAME 2>&1 &\n"
-        
+        card_types = extract_card_types(GPU)
+        for card_type in card_types:
+            if start:
+                src_code += f"if [ $MODEL == \\\"{name}_{card_type}\\\" ]; then\n"
+                start = False
+            else:
+                src_code += f"elif [ $MODEL == \\\"{name}_{card_type}\\\" ]; then\n"
+            src_code += "    echo \\\"vllm serve "
+            src_code += result
+            src_code += "\\\"\n"
+            src_code += "    nohup env CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
+            src_code += result
+            src_code += " > $LOG_NAME 2>&1 &\n"
     src_code += "fi\n"
 
     # print(src_code)

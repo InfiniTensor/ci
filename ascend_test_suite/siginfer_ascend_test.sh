@@ -21,6 +21,9 @@ else
     fi
 fi
 
+curr_dir=$(pwd)
+log_name_suffix=${TASK_START_TIME}
+
 if true; then
     if [ -z $version ]; then
         full_model_list=($(python3 $curr_dir/parse_model_list.py $curr_dir/latest/model_list.xlsx))
@@ -30,9 +33,6 @@ if true; then
 else
     full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1:16 DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-V3.1-Terminus-Channel-int8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-AWQ:1 Qwen1.5-1.8B-Chat:1 ChatGLM-6B:1 chatglm2-6b:1 chatglm3-6b:1 baichuan-7B:1 Baichuan2-7B-Chat:1)
 fi
-
-curr_dir=$(pwd)
-log_name_suffix=${TASK_START_TIME}
 
 declare -A npu_server_list=(
     ["10.9.1.78"]="AICC_001"
@@ -134,7 +134,7 @@ cleanup_all_resources() {
                 fi
             "
         else
-            ssh -o ConnectionAttempts=3 s_limingge@$ip "
+            ssh -q -o ConnectionAttempts=3 s_limingge@$ip "
                 name=siginfer_ascend_${TEST_TYPE}Test_${job_count}
                 if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                     docker stop \$name
@@ -204,7 +204,7 @@ ret_code=0
 
 for option in "${schedule_policies[@]}"; do
     use_prefix_cache_flag=0
-    for ((i=1; i<=num_of_prefix_cache_options; i=i+1)); do
+    for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
             for item in "${model_list[@]}"; do
@@ -277,7 +277,7 @@ for option in "${schedule_policies[@]}"; do
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
                             pid_map[$!]="10.9.1.6"
                         else
-                            ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
                             pid_map[$!]=$ip
                         fi
                     else
@@ -285,7 +285,7 @@ for option in "${schedule_policies[@]}"; do
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
                             pid_map[$!]="10.9.1.6"
                         else
-                            ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
                             pid_map[$!]=$ip
                         fi
                     fi
@@ -316,8 +316,8 @@ for option in "${schedule_policies[@]}"; do
                                     sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
                                     sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
                                 else
-                                    ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                    ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
                                 fi
                             done
                             
@@ -417,7 +417,7 @@ for option in "${schedule_policies[@]}"; do
                         #     "126000:2048"
                         # )
                         # Random
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                             docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
@@ -459,7 +459,7 @@ for option in "${schedule_policies[@]}"; do
                     else
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                             docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
@@ -565,8 +565,8 @@ for option in "${schedule_policies[@]}"; do
                         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
                         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
                     else
-                        ssh -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        ssh -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
                     fi
                 done
                 
