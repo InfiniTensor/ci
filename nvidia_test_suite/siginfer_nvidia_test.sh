@@ -218,7 +218,7 @@ ret_code=0
 
 # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
 for option in "${schedule_policies[@]}"; do
-    use_prefix_cache_flag=0
+    use_prefix_cache_flag=-1
     for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
@@ -289,7 +289,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
+                        ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version >> "$curr_dir/logs/smoke/${filename}_${seq_num}" &
                         pid_map[$!]=$ip
                     else
                         ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $version &
@@ -326,9 +326,11 @@ for option in "${schedule_policies[@]}"; do
                             success=1
                             break
                         fi
-                    fi
 
-                    ((remaining--))
+                        ((remaining--))
+                    else
+                        echo "PID=${done_pid}不在pid_map中, 致命错误!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                    fi
                 done
 
                 # 任务启动失败

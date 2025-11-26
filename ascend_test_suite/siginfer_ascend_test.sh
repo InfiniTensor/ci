@@ -203,7 +203,7 @@ schedule_policies=('DynamicSplitFuseV2')
 ret_code=0
 
 for option in "${schedule_policies[@]}"; do
-    use_prefix_cache_flag=0
+    use_prefix_cache_flag=-1
     for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
         swap_space=40
         for ((j=1; j<=1; j=j+1)); do
@@ -274,7 +274,7 @@ for option in "${schedule_policies[@]}"; do
 
                     if [ $TEST_TYPE == "Smoke" ]; then
                         if [ $ip == "10.9.1.6" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version >> "$curr_dir/logs/smoke/${filename}_${seq_num}" &
                             pid_map[$!]="10.9.1.6"
                         else
                             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
@@ -325,9 +325,11 @@ for option in "${schedule_policies[@]}"; do
                             success=1
                             break
                         fi
-                    fi
 
-                    ((remaining--))
+                        ((remaining--))
+                    else
+                        echo "PID=${done_pid}不在pid_map中, 致命错误!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+                    fi
                 done
 
                 # 任务启动失败

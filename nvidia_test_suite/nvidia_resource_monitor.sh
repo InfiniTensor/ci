@@ -511,7 +511,7 @@ for item in "${full_model_list[@]}"; do
     found=0
     # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
     for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=0
+        use_prefix_cache_flag=-1
         for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
             swap_space=40
             for ((j=1; j<=1; j=j+1)); do
