@@ -500,8 +500,6 @@ for name in "${!H800_server_list[@]}"; do
     scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
 done
 
-> "$curr_dir/report/${log_name_suffix}_result.txt"
-
 GPU_resource_demand=()
 
 for item in "${full_model_list[@]}"; do

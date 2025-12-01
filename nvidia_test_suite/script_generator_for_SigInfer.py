@@ -115,10 +115,10 @@ def main():
         card_types = extract_card_types(GPU)
         for card_type in card_types:
             if start:
-                src_code += f"if [ \"$MODEL_$GPU_MODEL\" == \"{name}_{card_type}\" ]; then\n"
+                src_code += f"if [ \"${{MODEL}}_${{GPU_MODEL}}\" == \"{name}_{card_type}\" ]; then\n"
                 start = False
             else:
-                src_code += f"elif [ \"$MODEL_$GPU_MODEL\" == \"{name}_{card_type}\" ]; then\n"
+                src_code += f"elif [ \"${{MODEL}}_${{GPU_MODEL}}\" == \"{name}_{card_type}\" ]; then\n"
             src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh"
             src_code += result
             src_code += "\"\n"
