@@ -34,36 +34,26 @@ def main():
         src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
-        src_code += "docker exec siginfer_nvidia_SmokeTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
         src_code += "PORT=$((8765+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
-        src_code += "docker exec siginfer_nvidia_PerformanceTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
         src_code += "PORT=$((8000+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28880+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((9032+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_StabilityTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
-        src_code += "docker exec siginfer_nvidia_StabilityTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
         src_code += "PORT=$((9701+${JOB_COUNT}))\n"
         src_code += "PROMETHEUS_PORT=$((28771+${JOB_COUNT}))\n"
         src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
         src_code += "LOG_NAME=\"server_log_AccuracyTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
-        src_code += "docker exec siginfer_nvidia_AccuracyTest_${JOB_COUNT} /bin/bash -c \"\n"
         target_file = "job_executor_for_AccuracyTest.sh"
-    
-    src_code += "export CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES\n"
-    src_code += "export CUDA_DEVICE_ORDER=PCI_BUS_ID\n\n"
-    src_code += "echo \$CUDA_VISIBLE_DEVICES\n"
-    src_code += "echo \$CUDA_DEVICE_ORDER\n\n"
-    src_code += "pip install \\\"numpy<2\\\"\n\n"
-    
+
     start = True
     for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
         # print(row)  # 每行数据以元组形式返回
@@ -78,17 +68,17 @@ def main():
         result = re.sub(r"--served-model-name\s+\S+", f"--served-model-name {name}", result)
         
         if start:
-            src_code += f"if [ $model == \\\"{name}\\\" ]; then\n"
+            src_code += f"if [ $MODEL == \"{name}\" ]; then\n"
             start = False
         else:
-            src_code += f"elif [ $model == \\\"{name}\\\" ]; then\n"
-        src_code += "    echo \\\"vllm serve "
+            src_code += f"elif [ $MODEL == \"{name}\" ]; then\n"
+        src_code += "    echo \"vllm serve"
         src_code += result
-        src_code += "\\\"\n"
+        src_code += "\"\n"
         
-        src_code += "    nohup vllm serve "
+        src_code += "    EXEC_COMMAND+=\" vllm serve"
         src_code += result
-        src_code += " > $LOG_NAME 2>&1 &\n"
+        src_code += " > $LOG_NAME 2>&1 &\"\n"
         
     src_code += "fi\n"
 

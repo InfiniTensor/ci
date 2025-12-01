@@ -271,7 +271,6 @@ docker create --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
     --network host \
     --pid=host \
     --shm-size="80g" \
-    --volume /home:/home \
     --volume /dev:/dev \
     --volume /home/weight:/home/weight \
     --volume /nfs2/weight:/nfs2/weight \

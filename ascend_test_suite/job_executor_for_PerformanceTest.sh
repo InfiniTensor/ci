@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# 确保使用真正的 docker 命令而不是 docker-wrapper
+# 将 /usr/bin 放在 PATH 前面，优先于 /usr/local/bin
+export PATH="/usr/bin:/usr/local/bin:$PATH"
+
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"

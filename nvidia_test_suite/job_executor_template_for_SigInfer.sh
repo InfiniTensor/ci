@@ -284,7 +284,6 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
     --network host \
     --pid=host \
     --shm-size="80g" \
-    --volume /home:/home \
     --volume /dev:/dev \
     --volume /home/weight:/home/weight \
     --ipc=host	\
