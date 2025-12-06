@@ -163,12 +163,30 @@ handle_interrupt() {
     INTERRUPTED=1
     echo ""
     echo "收到中断信号，正在向所有远程进程发送中断信号..."
-    # 向所有后台 ssh 进程发送 SIGINT，让信号传递到远程脚本
+    # 从 SSH_PID_MAP 中收集唯一的 IP 地址
+    declare -A unique_ips
     for pid in "${!SSH_PID_MAP[@]}"; do
-        if kill -0 "$pid" 2>/dev/null; then
-            echo "  向 ssh 进程 $pid (服务器: ${SSH_PID_MAP[$pid]}) 发送 SIGINT"
-            kill -SIGINT "$pid" 2>/dev/null || true
-        fi
+        remote_ip="${SSH_PID_MAP[$pid]}"
+        unique_ips["$remote_ip"]=1
+    done
+    # 对每个唯一的 IP 地址，通过 ssh 找到并终止远程脚本进程
+    for remote_ip in "${!unique_ips[@]}"; do
+        echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
+        # 通过 ssh 找到远程脚本进程并发送信号
+        ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 s_limingge@$remote_ip "
+            pids=\$(ps -ef --forest | grep 'job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
+            if [ ! -z \"\$pids\" ]; then
+                for pid in \$pids; do
+                    # 检查进程是否仍在运行
+                    if kill -0 \$pid 2>/dev/null; then
+                        echo \"找到远程脚本进程 PID: \$pid, 发送 SIGINT 信号\"
+                        kill -TERM -\$pid 2>/dev/null || true
+                    fi
+                done
+            else
+                echo \"未找到远程脚本进程（可能已结束）\"
+            fi
+        " 2>/dev/null || true
     done
     # 等待一小段时间，让远程脚本有机会处理信号
     sleep 2
@@ -420,18 +438,18 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        concurrency_list=(1 5 10 20 50 100 150)
-                        # concurrency_list=(5 10 50)
+                        # concurrency_list=(1 5 10 20 50 100 150)
+                        concurrency_list=(100 150 200 250 300)
                         length_pairs=(
                           "128:128"
                           "128:1024"
-                          "128:2048"
-                          "1024:1024"
-                          "2048:2048"
-                          "4096:1024"
-                          "1024:4096"
-                          "30000:2048"
-                          "126000:2048"
+                        #   "128:2048"
+                        #   "1024:1024"
+                        #   "2048:2048"
+                        #   "4096:1024"
+                        #   "1024:4096"
+                        #   "30000:2048"
+                        #   "126000:2048"
                         )
                         # concurrency_list=(1 2 4 8 16 32)
                         # length_pairs=(
