@@ -74,6 +74,9 @@ fi
 # 存储 Docker 容器名称
 declare -a DOCKER_CONTAINER_NAMES
 
+# 存储后台 ssh 进程 PID，用于信号传递
+declare -A SSH_PID_MAP
+
 # 从数组中删除指定元素的辅助函数
 remove_container_from_array() {
     local value_to_remove=$1
@@ -158,6 +161,17 @@ cleanup_all_resources() {
 # 信号处理函数
 handle_interrupt() {
     INTERRUPTED=1
+    echo ""
+    echo "收到中断信号，正在向所有远程进程发送中断信号..."
+    # 向所有后台 ssh 进程发送 SIGINT，让信号传递到远程脚本
+    for pid in "${!SSH_PID_MAP[@]}"; do
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "  向 ssh 进程 $pid (服务器: ${SSH_PID_MAP[$pid]}) 发送 SIGINT"
+            kill -SIGINT "$pid" 2>/dev/null || true
+        fi
+    done
+    # 等待一小段时间，让远程脚本有机会处理信号
+    sleep 2
     cleanup_all_resources
 }
 
@@ -275,18 +289,26 @@ for option in "${schedule_policies[@]}"; do
                     if [ $TEST_TYPE == "Smoke" ]; then
                         if [ $ip == "10.9.1.6" ]; then
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version >> "$curr_dir/logs/smoke/${filename}_${seq_num}" &
-                            pid_map[$!]="10.9.1.6"
+                            ssh_pid=$!
+                            pid_map[$ssh_pid]="10.9.1.6"
+                            SSH_PID_MAP[$ssh_pid]="10.9.1.6"
                         else
                             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
-                            pid_map[$!]=$ip
+                            ssh_pid=$!
+                            pid_map[$ssh_pid]=$ip
+                            SSH_PID_MAP[$ssh_pid]=$ip
                         fi
                     else
                         if [ $ip == "10.9.1.6" ]; then
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                            pid_map[$!]="10.9.1.6"
+                            ssh_pid=$!
+                            pid_map[$ssh_pid]="10.9.1.6"
+                            SSH_PID_MAP[$ssh_pid]="10.9.1.6"
                         else
                             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                            pid_map[$!]=$ip
+                            ssh_pid=$!
+                            pid_map[$ssh_pid]=$ip
+                            SSH_PID_MAP[$ssh_pid]=$ip
                         fi
                     fi
                     
@@ -303,6 +325,9 @@ for option in "${schedule_policies[@]}"; do
                     if [ -v pid_map[$done_pid] ]; then
                         echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
 
+                        # 从 SSH_PID_MAP 中移除已完成的进程
+                        unset SSH_PID_MAP[$done_pid]
+                        
                         if [ $err -ne 0 ]; then
                             if [ $err -eq 10 ]; then
                                 echo "${pid_map[$done_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
@@ -394,7 +419,7 @@ for option in "${schedule_policies[@]}"; do
                     
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
-                        multiplier=2
+                        multiplier=4
                         concurrency_list=(1 5 10 20 50 100 150)
                         # concurrency_list=(5 10 50)
                         length_pairs=(
@@ -403,10 +428,10 @@ for option in "${schedule_policies[@]}"; do
                           "128:2048"
                           "1024:1024"
                           "2048:2048"
-                        #   "4096:1024"
-                        #   "1024:4096"
-                        #   "30000:2048"
-                        #   "126000:2048"
+                          "4096:1024"
+                          "1024:4096"
+                          "30000:2048"
+                          "126000:2048"
                         )
                         # concurrency_list=(1 2 4 8 16 32)
                         # length_pairs=(
