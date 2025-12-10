@@ -59,8 +59,8 @@ def is_numeric(value):
         return False
 
 def compare_two_sheets(sheet1_data, sheet2_data, image_version_1, image_version_2, threshold, model_name):
-    sheet1_name = f"文件1-${image_version_1}"
-    sheet2_name = f"文件2-${image_version_2}"
+    sheet1_name = f"文件1-{image_version_1}"
+    sheet2_name = f"文件2-{image_version_2}"
     
     """比较两个sheet的数据，检查数值的差值是否在阈值内"""
     print(f"\n{'='*100}")
