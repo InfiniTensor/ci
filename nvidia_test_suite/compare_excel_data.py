@@ -249,7 +249,7 @@ def main():
         sheets_data2[sheet_names2[0]], 
         image_version_1,
         image_version_2,
-        0.20,
+        0.05,
         model_name
     )
     

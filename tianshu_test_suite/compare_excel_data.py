@@ -245,7 +245,7 @@ def main():
         sheets_data2[sheet_names2[0]], 
         f"文件1-{sheet_names1[0]}" if file_path1 != file_path2 else "基准",
         f"文件2-{sheet_names2[0]}" if file_path1 != file_path2 else "对比",
-        0.20,
+        0.05,
         docker_image_version,
         model_name
     )
