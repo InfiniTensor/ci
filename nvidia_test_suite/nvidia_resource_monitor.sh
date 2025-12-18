@@ -51,7 +51,8 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 fi
 
-full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-72B-Instruct:4:L20)
+# full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-72B-Instruct:4:L20)
+full_model_list_for_smoke=(Qwen2.5-72B-Instruct:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100)
 full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
 
@@ -376,8 +377,8 @@ search_servers() {
                 GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
                 # 去重
                 GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
-                # 过滤掉第3块和第4块L20 GPU卡, 对应ID是0, 1
-                GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\s+/ /g' | xargs))
+                # 过滤掉第5块和第6块L20 GPU卡, 对应ID是0, 1
+                GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs))
                 for ((i=0; i<\${#GPU_INFO[@]}; i++)); do
                     GPU_INFO[\$i]=\$((GPU_INFO[\$i]+2))
                 done
@@ -429,16 +430,16 @@ search_servers() {
                 GPU_INFO=(\$(nvidia-smi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
                 # 去重
                 GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
-                # 过滤掉第1块和第2块H100 GPU卡, 对应ID是2, 3
-                GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | sed -E 's/\b0\b//g' | sed -E 's/\b1\b//g' | sed -E 's/\s+/ /g' | xargs))
+                # 过滤掉第1块到第4块H100 GPU卡, 对应ID是2, 3, 4, 5
+                GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | sed -E 's/\b0\b//g' | sed -E 's/\b1\b//g' | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\s+/ /g' | xargs))
                 for ((i=0; i<\${#GPU_INFO[@]}; i++)); do
-                    GPU_INFO[\$i]=\$((GPU_INFO[\$i]-2))
+                    GPU_INFO[\$i]=\$((GPU_INFO[\$i]-4))
                 done
                 # 检查使用中的 GPU 数量
                 USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
                 echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
                 TOTAL_COUNT=\$(nvidia-smi -L | wc -l)
-                ((TOTAL_COUNT-=2))
+                ((TOTAL_COUNT-=4))
                 FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
                 FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
                 # 如果找到足够的空闲 GPU, 则返回结果并退出

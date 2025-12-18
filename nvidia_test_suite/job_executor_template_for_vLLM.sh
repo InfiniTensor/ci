@@ -122,11 +122,11 @@ while true; do
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
     if [ $GPU_MODEL == "H100" ]; then
-        # 过滤掉第3块和第4块L20 GPU卡, 对应ID是2, 3
-        GPU_INFO=($(echo "${GPU_INFO[@]}" | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\s+/ /g' | xargs))
+        # 过滤掉第5块和第6块L20 GPU卡, 对应ID是4, 5
+        GPU_INFO=($(echo "${GPU_INFO[@]}" | sed -E 's/\b4\b//g' | sed -E 's/\b5\b//g' | sed -E 's/\s+/ /g' | xargs))
     elif [ $GPU_MODEL == "L20" ]; then
-        # 过滤掉第1块和第2块H100 GPU卡, 对应ID是0, 1
-        GPU_INFO=($(echo "${GPU_INFO[@]}" | sed -E 's/\b0\b//g' | sed -E 's/\b1\b//g' | sed -E 's/\s+/ /g' | xargs))
+        # 过滤掉第1块到第4块H100 GPU卡, 对应ID是0, 1, 2, 3
+        GPU_INFO=($(echo "${GPU_INFO[@]}" | sed -E 's/\b0\b//g' | sed -E 's/\b1\b//g' | sed -E 's/\b2\b//g' | sed -E 's/\b3\b//g' | sed -E 's/\s+/ /g' | xargs))
     fi
 
     # 检查使用中的 GPU 数量
@@ -153,9 +153,9 @@ while true; do
             fi
         fi
     elif [ $GPU_MODEL == "L20" ]; then
-        ((TOTAL_COUNT-=2))
+        ((TOTAL_COUNT-=4))
         FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
-        FREE_GPU_INFO=($(seq 2 $(($TOTAL_COUNT+1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
+        FREE_GPU_INFO=($(seq 4 $(($TOTAL_COUNT+3)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
             # 只取需要的数量
