@@ -382,7 +382,7 @@ for option in "${schedule_policies[@]}"; do
                 echo "开始执行模型${TEST_TYPE}测试任务......"
 
                 if [ $TEST_TYPE == "Performance" ]; then
-                    if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-FP8" ]; then
+                    if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-FP8" ] || [ $model == "Qwen3-32B-AWQ" ]; then
                         data_path="/home/weight/Qwen3"
                     elif [ $model == "QwQ-32B" ] || [ $model == "QwQ-32B-AWQ" ]; then
                         data_path="/home/weight/Qwen"
@@ -652,52 +652,64 @@ for option in "${schedule_policies[@]}"; do
                         # 获取测试命令，并做为参数传入
                         test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         # 生成本次测试的Excel报告，并比较上一次Excel报告
+                        server_name="unknown"
+                        if [ $gpu_model == "H20" ]; then
+                            server_name=${H20_server_list[$local_master_ip]}
+                        elif [ $gpu_model == "A800" ]; then
+                            server_name=${A800_server_list[$local_master_ip]}
+                        elif [ $gpu_model == "H100" ]; then
+                            server_name=${H100_server_list[$local_master_ip]}
+                        elif [ $gpu_model == "L20" ]; then
+                            server_name=${L20_server_list[$local_master_ip]}
+                        elif [ $gpu_model == "H800" ]; then
+                            server_name=${H800_server_list[$local_master_ip]}
+                        fi
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}_${option}_Use-prefix-cache" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f $curr_dir/report_${last_date}/version.txt ]; then
                                     last_version=$(cat $curr_dir/report_${last_date}/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Use-prefix-cache.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}#${gpu_model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}#${gpu_model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Use-prefix-cache.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}_${option}_Use-prefix-cache_Swap-space" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f $curr_dir/report_${last_date}/version.txt ]; then
                                     last_version=$(cat $curr_dir/report_${last_date}/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}#${gpu_model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}#${gpu_model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Use-prefix-cache_Swap-space.xlsx"
                                 fi
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}_${option}" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f $curr_dir/report_${last_date}/version.txt ]; then
                                     last_version=$(cat $curr_dir/report_${last_date}/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}#${gpu_model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}#${gpu_model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}_${option}_Swap-space" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
                                 if [ -f $curr_dir/report_${last_date}/version.txt ]; then
                                     last_version=$(cat $curr_dir/report_${last_date}/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}#${gpu_model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}#${gpu_model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}#${gpu_model}_${option}_Swap-space.xlsx"
                                 fi
                             fi
                         fi
