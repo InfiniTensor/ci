@@ -97,9 +97,10 @@ INTERRUPTED=0
 
 # 统一的清理函数 - 同时处理 NPU 锁、本地容器和远程容器
 cleanup_all_resources() {
+    engine_type=$(echo "${ENGINE_TYPE}" | tr '[:upper:]' '[:lower:]')
     echo ""
     echo "=========================================="
-    echo "siginfer_ascend_test.sh 退出，开始清理资源..."
+    echo "${engine_type}_ascend_test.sh 退出，开始清理资源..."
     echo "=========================================="
     
     # 1. 清理本地 Docker 容器
@@ -130,7 +131,7 @@ cleanup_all_resources() {
     for ip in ${server_list[@]}; do
         if [ $ip == "10.9.1.6" ]; then
             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 "
-                name=siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                name=${engine_type}_ascend_${TEST_TYPE}Test_${job_count}
                 if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                     docker stop \$name
                     docker rm \$name
@@ -138,7 +139,7 @@ cleanup_all_resources() {
             "
         else
             ssh -q -o ConnectionAttempts=3 s_limingge@$ip "
-                name=siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                name=${engine_type}_ascend_${TEST_TYPE}Test_${job_count}
                 if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                     docker stop \$name
                     docker rm \$name
@@ -356,11 +357,21 @@ for option in "${schedule_policies[@]}"; do
                             # 启动失败，清理工作
                             for ip in ${server_list[@]}; do
                                 if [ $ip == "10.9.1.6" ]; then
-                                    sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                    sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    if [ $ENGINE_TYPE == "SigInfer" ]; then
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    elif [ $ENGINE_TYPE == "vLLM" ]; then
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                    fi
                                 else
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    if [ $ENGINE_TYPE == "SigInfer" ]; then
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                                    elif [ $ENGINE_TYPE == "vLLM" ]; then
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                    fi
                                 fi
                             done
                             
@@ -434,20 +445,28 @@ for option in "${schedule_policies[@]}"; do
                     else
                         data_path="/home/weight"
                     fi
+
+                    if [ $ENGINE_TYPE == "SigInfer" ]; then
+                        engine_type="siginfer"
+                        benchmark_cmd="python3 /SigInfer/script/benchmark/benchmark_serving.py"
+                    elif [ $ENGINE_TYPE == "vLLM" ]; then
+                        engine_type="vllm"
+                        benchmark_cmd="vllm bench serve"
+                    fi
                     
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        # concurrency_list=(1 5 10 20 50 100 150)
-                        concurrency_list=(100 150 200 250 300)
+                        concurrency_list=(1 5 10 20 50 100 150)
+                        # concurrency_list=(100 150 200 250 300)
                         length_pairs=(
-                          "128:128"
-                          "128:1024"
+                        #  "128:128"
+                           "128:1024"
                         #   "128:2048"
                         #   "1024:1024"
                         #   "2048:2048"
                         #   "4096:1024"
-                        #   "1024:4096"
+                           "1024:4096"
                         #   "30000:2048"
                         #   "126000:2048"
                         )
@@ -463,8 +482,10 @@ for option in "${schedule_policies[@]}"; do
                         # )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
-                            docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
-                                pip3 install dataSets pillow aiohttp
+                            docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                                if [ ${engine_type} == "siginfer" ]; then
+                                    pip3 install dataSets pillow aiohttp
+                                fi
 
                                 for pair in ${length_pairs[@]}; do
                                     input_len=\\\$(echo \\\$pair | cut -d ':' -f 1)
@@ -481,9 +502,9 @@ for option in "${schedule_policies[@]}"; do
                                         
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
-                                        python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                        ${benchmark_cmd} \
                                         --backend openai \
                                         --port \\\$((8765+${job_count})) \
                                         --host 0.0.0.0 \
@@ -505,15 +526,17 @@ for option in "${schedule_policies[@]}"; do
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
-                            docker exec siginfer_ascend_PerformanceTest_${job_count} /bin/bash -c \"
-                                pip3 install dataSets pillow aiohttp
+                            docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                                if [ ${engine_type} == "siginfer" ]; then
+                                    pip3 install dataSets pillow aiohttp
+                                fi
 
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * 4))
                                     echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                    echo \\\"python3 /SigInfer/script/benchmark/benchmark_serving.py --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
+                                    echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
-                                    python3 /SigInfer/script/benchmark/benchmark_serving.py \
+                                    ${benchmark_cmd} \
                                     --backend openai \
                                     --port \\\$((8765+${job_count})) \
                                     --host 127.0.0.1 \
@@ -607,11 +630,21 @@ for option in "${schedule_policies[@]}"; do
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
                     if [ $ip == "10.9.1.6" ]; then
-                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        if [ $ENGINE_TYPE == "SigInfer" ]; then
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        elif [ $ENGINE_TYPE == "vLLM" ]; then
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                        fi
                     else
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        if [ $ENGINE_TYPE == "SigInfer" ]; then
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
+                        elif [ $ENGINE_TYPE == "vLLM" ]; then
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                        fi
                     fi
                 done
                 
