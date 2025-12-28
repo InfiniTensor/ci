@@ -24,14 +24,14 @@ fi
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
 
-if true; then
+if false; then
     if [ -z $version ]; then
         full_model_list=($(python3 $curr_dir/parse_model_list.py $curr_dir/latest/model_list.xlsx))
     else
         full_model_list=($(python3 $curr_dir/parse_model_list.py $curr_dir/$version/model_list.xlsx))
     fi
 else
-    full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1:16 DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-V3.1-Terminus-Channel-int8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-AWQ:1 Qwen1.5-1.8B-Chat:1 ChatGLM-6B:1 chatglm2-6b:1 chatglm3-6b:1 baichuan-7B:1 Baichuan2-7B-Chat:1)
+    full_model_list=(DeepSeek-R1-AWQ:8 DeepSeek-R1:16 DeepSeek-R1-0528:16 DeepSeek-R1-W8A8:16 DeepSeek-V3.1-Terminus-Channel-int8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-7B:1 DeepSeek-R1-Distill-Qwen-14B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-1.5B-Instruct:1 Qwen2.5-3B-Instruct:1 Qwen2.5-7B-Instruct:1 Qwen2.5-14B-Instruct:1 Qwen2.5-32B-Instruct:2 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-1.5B-Instruct-AWQ:1 Qwen2.5-3B-Instruct-AWQ:1 Qwen2.5-7B-Instruct-AWQ:1 Qwen2.5-14B-Instruct-AWQ:1 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:16 Qwen3-32B-AWQ:1 Qwen1.5-1.8B-Chat:1 ChatGLM-6B:1 chatglm2-6b:1 chatglm3-6b:1 baichuan-7B:1 Baichuan2-7B-Chat:1)
 fi
 
 declare -A npu_server_list=(
@@ -294,6 +294,9 @@ for option in "${schedule_policies[@]}"; do
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
                 
+                # 将 server_list 数组转换为用分号分隔的字符串
+                server_list_str=$(IFS='_'; echo "${server_list[*]}")
+
                 unset pid_map
                 declare -A pid_map
                 seq_num=0
@@ -324,7 +327,11 @@ for option in "${schedule_policies[@]}"; do
                             pid_map[$ssh_pid]="10.9.1.6"
                             SSH_PID_MAP[$ssh_pid]="10.9.1.6"
                         else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
+                            if [ $ENGINE_TYPE == "MindIE" ]; then
+                                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $version &
+                            else
+                                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
+                            fi
                             ssh_pid=$!
                             pid_map[$ssh_pid]=$ip
                             SSH_PID_MAP[$ssh_pid]=$ip
@@ -363,6 +370,9 @@ for option in "${schedule_policies[@]}"; do
                                     elif [ $ENGINE_TYPE == "vLLM" ]; then
                                         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
                                         sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                    elif [ $ENGINE_TYPE == "MindIE" ]; then
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
+                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
                                     fi
                                 else
                                     if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -371,6 +381,9 @@ for option in "${schedule_policies[@]}"; do
                                     elif [ $ENGINE_TYPE == "vLLM" ]; then
                                         ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
                                         ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                                    elif [ $ENGINE_TYPE == "MindIE" ]; then
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
+                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
                                     fi
                                 fi
                             done
@@ -452,12 +465,15 @@ for option in "${schedule_policies[@]}"; do
                     elif [ $ENGINE_TYPE == "vLLM" ]; then
                         engine_type="vllm"
                         benchmark_cmd="vllm bench serve"
+                    elif [ $ENGINE_TYPE == "MindIE" ]; then
+                        engine_type="mindie"
+                        benchmark_cmd="/vllm-workspace/benchmarks/benchmark_serving.py"
                     fi
                     
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        concurrency_list=(1 5 10 20 50 100 150)
+                        concurrency_list=(1 5 10 20)
                         # concurrency_list=(100 150 200 250 300)
                         length_pairs=(
                         #  "128:128"
@@ -485,6 +501,12 @@ for option in "${schedule_policies[@]}"; do
                             docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
                                 if [ ${engine_type} == "siginfer" ]; then
                                     pip3 install dataSets pillow aiohttp
+                                elif [ ${engine_type} == "mindie" ]; then
+                                    if [ ! -d /vllm-workspace ]; then
+                                        wget -q https://github.com/vllm-project/vllm/archive/refs/heads/main.zip -O /tmp/vllm.zip
+                                        python3 -c \"import zipfile; zipfile.ZipFile('/tmp/vllm.zip').extractall('/tmp'); import shutil; shutil.move('/tmp/vllm-main', '/vllm-workspace')\"
+                                        rm -f /tmp/vllm.zip
+                                    fi
                                 fi
 
                                 for pair in ${length_pairs[@]}; do
@@ -636,6 +658,9 @@ for option in "${schedule_policies[@]}"; do
                         elif [ $ENGINE_TYPE == "vLLM" ]; then
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
                             sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                        elif [ $ENGINE_TYPE == "MindIE" ]; then
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
+                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
                         fi
                     else
                         if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -644,6 +669,9 @@ for option in "${schedule_policies[@]}"; do
                         elif [ $ENGINE_TYPE == "vLLM" ]; then
                             ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
                             ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
+                        elif [ $ENGINE_TYPE == "MindIE" ]; then
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
+                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
                         fi
                     fi
                 done

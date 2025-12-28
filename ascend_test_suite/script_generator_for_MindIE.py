@@ -5,50 +5,64 @@ import sys
 
 
 def main():
-    verison = ""
-    if len(sys.argv) != 2:
-        print("Usage: python script_generator <test_type>")
+    if len(sys.argv) != 3:
+        print("Usage: python script_generator_for_MindIE.py <test_type> <version>")
         sys.exit(1)
     
     test_type = sys.argv[1]
+    version = sys.argv[2]
     
     curr_dir = os.getcwd()
+    
+    # 加载 Excel 文件
+    file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
+    workbook = load_workbook(file_path)
+
+    # 选择工作表
+    sheet = workbook['MindIE']
+
+    # 获取行数
+    row_count = sheet.max_row
+    print(f"总行数: {row_count}")
     
     target_file = ""
     src_code = ""
     
     if test_type == "Smoke":
-        src_code += "docker exec siginfer_ascend_SmokeTest_${JOB_COUNT} /bin/bash -c \"\n"
+        port_num = "$((6543+${JOB_COUNT}))"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        src_code += "docker exec siginfer_ascend_PerformanceTest_${JOB_COUNT} /bin/bash -c \"\n"
+        port_num = "$((8765+${JOB_COUNT}))"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        src_code += "docker exec siginfer_ascend_StabilityTest_${JOB_COUNT} /bin/bash -c \"\n"
+        port_num = "$((8000+${JOB_COUNT}))"
         target_file = "job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
-        src_code += "docker exec siginfer_ascend_AccuracyTest_${JOB_COUNT} /bin/bash -c \"\n"
+        port_num = "$((9701+${JOB_COUNT}))"
         target_file = "job_executor_for_AccuracyTest.sh"
     
-    src_code += "\
-        source /usr/local/Ascend/ascend-toolkit/set_env.sh\n\
-        source /usr/local/Ascend/nnal/atb/set_env.sh\n\
-        source /usr/local/Ascend/atb-models/set_env.sh\n\
-        source /usr/local/Ascend/mindie/set_env.sh\n\
-        export ATB_LLM_HCCL_ENABLE=1\n\
-        export ATB_LLM_COMM_BACKEND=\"hccl\"\n\
-        export HCCL_CONNECT_TIMEOUT=7200\n\
-        export WORLD_SIZE=16\n\
-        export HCCL_EXEC_TIMEOUT=0\n\
-        export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True\n\
-        export OMP_NUM_THREADS=1\n\
-        export NPU_MEMORY_FRACTION=0.96\n\
-        export RANK_TABLE_FILE=/ranktable.json\n\
-        export HCCL_DETERMINISTIC=true\n\
-        export MIES_CONTAINER_IP=\$(hostname -I | awk '{print \$1}')\n\n"
-    
-    src_code += "cd /usr/local/Ascend/mindie/latest/mindie-service/\n"
-    src_code += "nohup ./bin/mindieservice_daemon > $LOG_NAME 2>&1 &\n"
+    start = True
+    for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
+        # print(row)  # 每行数据以元组形式返回
+        name = row[0]
+        GPU = row[1]
+        args = row[2]
+        args = args.split('\n')[0]
+        
+        pattern = "--tokenizer\s+(\S+)"
+        match = re.search(pattern, args)
+        if match:
+            model_weight_path = match.group(1)
+        else:
+            model_weight_path = ""
+        
+        if start:
+            src_code += f"    if [ $MODEL == \"{name}\" ]; then\n"
+            start = False
+        else:
+            src_code += f"    elif [ $MODEL == \"{name}\" ]; then\n"
+        src_code += f"        MODEL_WEIGHT_PATH=\"{model_weight_path}\"\n"
+    src_code += "    fi\n"
     
     # print(src_code)
 
@@ -62,10 +76,6 @@ def main():
         for line in lines:
             if "<<<generated source code>>>" in line:
                 lines[line_num] = src_code
-                with open(f"{curr_dir}/{target_file}", 'w') as file:
-                    file.write(''.join(lines))
-                # print(lines)
-                break
             elif "<<<TEST_TYPE>>>" in line:
                 if test_type == "Smoke":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
@@ -75,7 +85,12 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
+            elif "<<<PORT>>>" in line:
+                lines[line_num] = line.replace("<<<PORT>>>", port_num)
             line_num += 1
+
+        with open(f"{curr_dir}/{target_file}", 'w') as file:
+            file.write(''.join(lines))
     except FileNotFoundError:
         print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
     except Exception as e:

@@ -44,8 +44,8 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         ["aicc004"]="10.9.1.114"
         ["aicc005"]="10.9.1.98"
         ["aicc006"]="10.9.1.110"
-        ["aicc007"]="10.9.1.86"
-        ["aicc008"]="10.9.1.94"
+        # ["aicc007"]="10.9.1.86"
+        # ["aicc008"]="10.9.1.94"
         # ["aicc009"]="10.9.1.82"
         # ["aicc010"]="10.9.1.102"
     )
@@ -62,7 +62,7 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
         ["aicc005"]="10.9.1.98"
         ["aicc006"]="10.9.1.110"
         ["aicc007"]="10.9.1.86"
-        ["aicc008"]="10.9.1.94"
+        # ["aicc008"]="10.9.1.94"
         # ["aicc009"]="10.9.1.82"
         # ["aicc010"]="10.9.1.102"
     )
@@ -73,14 +73,26 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
-        ["aicc009"]="10.9.1.38"
-        ["aicc010"]="10.9.1.70"
+        ["aicc001"]="10.9.1.78"
+        ["aicc003"]="10.9.1.106"
+        ["aicc004"]="10.9.1.114"
+        ["aicc005"]="10.9.1.98"
+        ["aicc006"]="10.9.1.110"
+        ["aicc007"]="10.9.1.86"
+        # ["aicc008"]="10.9.1.94"
+        # ["aicc009"]="10.9.1.82"
+        # ["aicc010"]="10.9.1.102"
     )
-    python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE}
+    if [ -z $version ]; then
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} "latest"
+    else
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} $version
+    fi
 fi
 
 full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8)
-full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct-AWQ:2)
+# full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct-AWQ:2)
+full_model_list_for_performance=(Qwen3-235B-A22B:16)
 full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16 DeepSeek-R1-AWQ:8)
 
