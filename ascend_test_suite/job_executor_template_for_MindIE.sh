@@ -297,11 +297,11 @@ create_service_config() {
     HTTPS_ENABLED="${HTTPS_ENABLED:-false}"  # 是否启用HTTPS
     MULTI_NODES_INFER_PORT="${MULTI_NODES_INFER_PORT:-1120}"  # 多节点推理端口
     INTER_NODE_TLS_ENABLED="${INTER_NODE_TLS_ENABLED:-true}"  # 节点间TLS
-    MAX_ITER_TIMES="${MAX_ITER_TIMES:-8192}"  # 最大迭代次数
-    MAX_SEQ_LEN="${MAX_SEQ_LEN:-50000}"  # 最大序列长度
-    MAX_INPUT_TOKEN_LEN="${MAX_INPUT_TOKEN_LEN:-50000}"  # 最大输入token长度
+    MAX_ITER_TIMES="${MAX_ITER_TIMES:-5120}"  # 最大迭代次数
+    MAX_SEQ_LEN="${MAX_SEQ_LEN:-5120}"  # 最大序列长度
+    MAX_INPUT_TOKEN_LEN="${MAX_INPUT_TOKEN_LEN:-5120}"  # 最大输入token长度
     TRUNCATION="${TRUNCATION:-false}"  # 是否截断
-    MAX_PREFILL_TOKENS="${MAX_PREFILL_TOKENS:-50000}"  # 最大预填充token数
+    MAX_PREFILL_TOKENS="${MAX_PREFILL_TOKENS:-5120}"  # 最大预填充token数
     
     # 构建NPU设备ID数组（根据实际使用的NPU）
     # GPU_INFO 包含实际使用的NPU索引

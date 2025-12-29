@@ -467,7 +467,7 @@ for option in "${schedule_policies[@]}"; do
                         benchmark_cmd="vllm bench serve"
                     elif [ $ENGINE_TYPE == "MindIE" ]; then
                         engine_type="mindie"
-                        benchmark_cmd="/vllm-workspace/benchmarks/benchmark_serving.py"
+                        benchmark_cmd="python3 -m vllm.entrypoints.cli.main bench serve"
                     fi
                     
                     # 开始执行测试
@@ -502,11 +502,20 @@ for option in "${schedule_policies[@]}"; do
                                 if [ ${engine_type} == "siginfer" ]; then
                                     pip3 install dataSets pillow aiohttp
                                 elif [ ${engine_type} == "mindie" ]; then
-                                    if [ ! -d /vllm-workspace ]; then
-                                        wget -q https://github.com/vllm-project/vllm/archive/refs/heads/main.zip -O /tmp/vllm.zip
-                                        python3 -c \"import zipfile; zipfile.ZipFile('/tmp/vllm.zip').extractall('/tmp'); import shutil; shutil.move('/tmp/vllm-main', '/vllm-workspace')\"
-                                        rm -f /tmp/vllm.zip
-                                    fi
+                                    # if [ ! -d /vllm-workspace ]; then
+                                    #     wget -q https://github.com/vllm-project/vllm/archive/refs/heads/main.zip -O /tmp/vllm.zip
+                                    #     python3 -c \\\"import zipfile; import os; zipfile.ZipFile('/tmp/vllm.zip').extractall('/tmp'); import shutil; shutil.move('/tmp/vllm-main', '/vllm-workspace'); os.system('chmod -R 777 /vllm-workspace')\\\"
+                                    #     rm -f /tmp/vllm.zip
+                                    #     cd /vllm-workspace
+                                    #     pip3 install -e \\\".[bench]\\\"
+                                    # fi
+                                    # Ensure torch==2.1.0 is installed and pinned to maintain compatibility with torch-npu 2.1.0.post17
+                                    pip3 install torch==2.1.0 --force-reinstall --no-deps || true
+                                    # Create a constraints file to prevent torch from being upgraded
+                                    echo \\\"torch==2.1.0\\\" > /tmp/torch_constraint.txt
+                                    # Install vllm[bench] with constraint to keep torch==2.1.0
+                                    pip3 install \\\"vllm[bench]\\\" --constraint /tmp/torch_constraint.txt || pip3 install \\\"vllm[bench]\\\" --no-deps
+                                    rm -f /tmp/torch_constraint.txt
                                 fi
 
                                 for pair in ${length_pairs[@]}; do
