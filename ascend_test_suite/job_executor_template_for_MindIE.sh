@@ -296,7 +296,7 @@ create_service_config() {
     IP_ADDRESS="${IP_ADDRESS:-$LOCAL_SERVER_IP}"  # 本机IP，默认使用LOCAL_SERVER_IP
     HTTPS_ENABLED="${HTTPS_ENABLED:-false}"  # 是否启用HTTPS
     MULTI_NODES_INFER_PORT="${MULTI_NODES_INFER_PORT:-1120}"  # 多节点推理端口
-    INTER_NODE_TLS_ENABLED="${INTER_NODE_TLS_ENABLED:-false}"  # 节点间TLS
+    INTER_NODE_TLS_ENABLED="${INTER_NODE_TLS_ENABLED:-true}"  # 节点间TLS
     MAX_ITER_TIMES="${MAX_ITER_TIMES:-8192}"  # 最大迭代次数
     MAX_SEQ_LEN="${MAX_SEQ_LEN:-50000}"  # 最大序列长度
     MAX_INPUT_TOKEN_LEN="${MAX_INPUT_TOKEN_LEN:-50000}"  # 最大输入token长度
@@ -309,13 +309,17 @@ create_service_config() {
         NPU_DEVICE_IDS_LIST=$(seq -s, 0 $((${#GPU_INFO[@]}-1)))
         # WORLD_SIZE=$((${#GPU_INFO[@]}*SERVER_COUNT))
         WORLD_SIZE=${#GPU_INFO[@]}
-        MULTI_NODES_ENABLED="True"
     else
         # 如果没有指定，使用所有NPU
         NPU_DEVICE_IDS_LIST=$(seq -s, 0 $((NUM_NPUS-1)))
         # WORLD_SIZE=$(($NUM_NPUS*SERVER_COUNT))
         WORLD_SIZE=$NUM_NPUS
-        MULTI_NODES_ENABLED="True"  # 即使单节点也设置为true，便于后续扩展
+    fi
+
+    if [ $SERVER_COUNT -gt 1 ]; then
+        MULTI_NODES_ENABLED="True"
+    else
+        MULTI_NODES_ENABLED="False"
     fi
     
     log_info "配置参数:"
