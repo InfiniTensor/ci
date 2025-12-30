@@ -467,7 +467,7 @@ for option in "${schedule_policies[@]}"; do
                         benchmark_cmd="vllm bench serve"
                     elif [ $ENGINE_TYPE == "MindIE" ]; then
                         engine_type="mindie"
-                        benchmark_cmd="python3 -m vllm.entrypoints.cli.main bench serve"
+                        benchmark_cmd="vllm bench serve"
                     fi
                     
                     # 开始执行测试
@@ -499,23 +499,13 @@ for option in "${schedule_policies[@]}"; do
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                             docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
-                                if [ ${engine_type} == "siginfer" ]; then
+                                if [ ${engine_type} == \\\"siginfer\\\" ]; then
                                     pip3 install dataSets pillow aiohttp
-                                elif [ ${engine_type} == "mindie" ]; then
-                                    # if [ ! -d /vllm-workspace ]; then
-                                    #     wget -q https://github.com/vllm-project/vllm/archive/refs/heads/main.zip -O /tmp/vllm.zip
-                                    #     python3 -c \\\"import zipfile; import os; zipfile.ZipFile('/tmp/vllm.zip').extractall('/tmp'); import shutil; shutil.move('/tmp/vllm-main', '/vllm-workspace'); os.system('chmod -R 777 /vllm-workspace')\\\"
-                                    #     rm -f /tmp/vllm.zip
-                                    #     cd /vllm-workspace
-                                    #     pip3 install -e \\\".[bench]\\\"
-                                    # fi
-                                    # Ensure torch==2.1.0 is installed and pinned to maintain compatibility with torch-npu 2.1.0.post17
-                                    pip3 install torch==2.1.0 --force-reinstall --no-deps || true
-                                    # Create a constraints file to prevent torch from being upgraded
-                                    echo \\\"torch==2.1.0\\\" > /tmp/torch_constraint.txt
-                                    # Install vllm[bench] with constraint to keep torch==2.1.0
-                                    pip3 install \\\"vllm[bench]\\\" --constraint /tmp/torch_constraint.txt || pip3 install \\\"vllm[bench]\\\" --no-deps
-                                    rm -f /tmp/torch_constraint.txt
+                                elif [ ${engine_type} == \\\"mindie\\\" ]; then
+                                    python3 -m venv venv_vllm
+                                    source venv_vllm/bin/activate
+                                    export PYTHONPATH=\\\"\\\"
+                                    pip3 install vllm
                                 fi
 
                                 for pair in ${length_pairs[@]}; do
@@ -533,12 +523,12 @@ for option in "${schedule_policies[@]}"; do
                                         
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
                                         ${benchmark_cmd} \
                                         --backend openai \
                                         --port \\\$((8765+${job_count})) \
-                                        --host 0.0.0.0 \
+                                        --host ${local_master_ip} \
                                         --model ${model} \
                                         --tokenizer ${data_path}/${model}/ \
                                         --endpoint /v1/completions \
@@ -558,19 +548,24 @@ for option in "${schedule_policies[@]}"; do
                         # Sharegpt
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                             docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
-                                if [ ${engine_type} == "siginfer" ]; then
+                                if [ ${engine_type} == \\\"siginfer\\\" ]; then
                                     pip3 install dataSets pillow aiohttp
+                                elif [ ${engine_type} == \\\"mindie\\\" ]; then
+                                    python3 -m venv venv_vllm
+                                    source venv_vllm/bin/activate
+                                    export PYTHONPATH=\\\"\\\"
+                                    pip3 install vllm
                                 fi
 
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * 4))
                                     echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                    echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
+                                    echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
                                     ${benchmark_cmd} \
                                     --backend openai \
                                     --port \\\$((8765+${job_count})) \
-                                    --host 127.0.0.1 \
+                                    --host ${local_master_ip} \
                                     --model ${model} \
                                     --tokenizer ${data_path}/${model}/ \
                                     --endpoint /v1/completions \
