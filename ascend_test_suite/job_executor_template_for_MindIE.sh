@@ -48,7 +48,7 @@ fi
 # 配置参数
 MODEL_WEIGHT_PATH=""
 PORT=<<<PORT>>>  # 服务端口
-RANK_TABLE_FILE="/home/weight/rank_table_file.json"
+RANK_TABLE_FILE="/home/s_limingge/rank_table_file.json"
 CONFIG_FILE="/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
 CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}"
 DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"

@@ -504,7 +504,7 @@ for option in "${schedule_policies[@]}"; do
                                 elif [ ${engine_type} == \\\"mindie\\\" ]; then
                                     python3 -m venv venv_vllm
                                     source venv_vllm/bin/activate
-                                    export PYTHONPATH=\\\"\\\"
+                                    unset PYTHONPATH
                                     pip3 install vllm
                                 fi
 
@@ -553,7 +553,7 @@ for option in "${schedule_policies[@]}"; do
                                 elif [ ${engine_type} == \\\"mindie\\\" ]; then
                                     python3 -m venv venv_vllm
                                     source venv_vllm/bin/activate
-                                    export PYTHONPATH=\\\"\\\"
+                                    unset PYTHONPATH
                                     pip3 install vllm
                                 fi
 
@@ -694,7 +694,11 @@ for option in "${schedule_policies[@]}"; do
                         # 获取模型启动命令，并做为参数传入
                         exec_cmd=`cat "$curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
                         # 获取测试命令，并做为参数传入
-                        test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                        if [ $ENGINE_TYPE == "SigInfer" ]; then
+                            test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                        elif [ $ENGINE_TYPE == "vLLM" ] || [ $ENGINE_TYPE == "MindIE" ]; then
+                            test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "vllm bench serve" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                        fi
                         # 生成本次测试的Excel报告，并比较上一次Excel报告
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
