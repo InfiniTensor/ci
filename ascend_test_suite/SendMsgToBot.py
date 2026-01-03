@@ -251,9 +251,14 @@ def main():
     docker_image_version = sys.argv[1]
     log_file_path = sys.argv[2]
     
+    console_output_flag = False
+    
     # 提取 summary 连同版本信息一并发送或保存到本地
     summary = read_and_format_summary(log_file_path, "siginfer-aarch64-ascend:" + docker_image_version)
-    send_summary_to_server(None, None, summary)
+    if console_output_flag == True:
+        print(summary)
+    else:
+        send_summary_to_server(None, None, summary)
     
 if __name__ == "__main__":
     main()

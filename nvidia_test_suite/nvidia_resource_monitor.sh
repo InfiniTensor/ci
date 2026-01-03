@@ -5,6 +5,7 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 TEST_TYPE=$1
 ENGINE_TYPE=$2
+MODEL_LIST=$3
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
@@ -23,9 +24,14 @@ elif [ $ENGINE_TYPE != "SigInfer" ] && [ $ENGINE_TYPE != "vLLM" ]; then
     exit 1
 fi
 
+if [ -z $MODEL_LIST ]; then
+    echo "Parameter Model List required!"
+    exit 1
+fi
+
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$3
-    version=$4
+    TEST_PARAM=$4
+    version=$5
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -34,7 +40,7 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$3
+    version=$4
 fi
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -65,7 +71,20 @@ mkdir -p $curr_dir/logs/accuracy $curr_dir/logs/stability $curr_dir/logs/perform
 mkdir -p $curr_dir/report_${log_name_suffix}
 
 if [ $TEST_TYPE == "Smoke" ]; then
-    full_model_list=(${full_model_list_for_smoke[@]})
+    if [ $MODEL_LIST == "default" ]; then
+        full_model_list=(${full_model_list_for_smoke[@]})
+    else
+        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+        full_model_list=()
+        for model in "${model_list[@]}"; do
+            for item in "${full_model_list_for_smoke[@]}"; do
+                name=`echo "$item" | awk -F : '{print $1}'`
+                if [ $model == $name ]; then
+                    full_model_list+=($item)
+                fi
+            done
+        done
+    fi
     rm -rf $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_* $curr_dir/logs/smoke/processed_models_*
     processed_models=${curr_dir}/logs/smoke/"processed_models"_${log_name_suffix}
     touch ${processed_models}
