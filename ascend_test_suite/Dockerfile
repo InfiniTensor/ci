@@ -22,7 +22,17 @@ RUN apt-get update && apt-get install -y \
     python3-pip \
     python3-venv \
     npm \
+    docker.io \
     && rm -rf /var/lib/apt/lists/*
+
+# 创建 .ssh 目录
+RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh
+
+# 拷贝私钥
+COPY id_rsa /root/.ssh/id_rsa
+
+# 设置权限
+RUN chmod 600 /root/.ssh/id_rsa
 
 # 创建一个工作目录
 WORKDIR /workspace

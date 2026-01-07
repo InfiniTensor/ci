@@ -9,6 +9,13 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
+mkdir -p ~/.ssh/
+cat > ~/.ssh/config <<EOF
+Host 10.9.1.*
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+EOF
+
 cd /workspace
 
 git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
