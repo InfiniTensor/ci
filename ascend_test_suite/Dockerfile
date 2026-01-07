@@ -25,13 +25,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建一个工作目录
-WORKDIR /autotest
+WORKDIR /workspace
 
 # 将项目代码拷贝进镜像
-COPY . /autotest
+COPY deamon.sh /workspace
+COPY requirements.txt /workspace
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-RUN chmod +x /autotest/deamon.sh
+RUN chmod +x /workspace/deamon.sh
 
-ENTRYPOINT ["/autotest/deamon.sh"]
+ENTRYPOINT ["/workspace/deamon.sh"]

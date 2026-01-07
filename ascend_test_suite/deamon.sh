@@ -9,17 +9,14 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
-cd /autotest
+cd /workspace
 
-ls -lah 
+git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
 
-git fetch --all
-git reset --hard origin/main
-git pull origin main
-
-mkdir -p main-${COMMIT_SHORT_SHA}
+cd ci_autotest/ascend_test_suite
+mkdir -p $4
 sed -i '254s/False/True/' SendMsgToBot.py
-cp latest/model_list.xlsx main-${COMMIT_SHORT_SHA}
+cp latest/model_list.xlsx $4
 
 ./ascend_resource_monitor.sh $@ &
 CHILD_PID=$!
