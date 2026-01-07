@@ -34,4 +34,4 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 RUN chmod +x /autotest/deamon.sh
 
-ENTRYPOINT ["/deamon.sh"]
+ENTRYPOINT ["/autotest/deamon.sh"]
