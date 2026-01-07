@@ -10,6 +10,9 @@ cleanup() {
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
 cd /autotest
+
+ls -lah 
+
 git fetch --all
 git reset --hard origin/main
 git pull origin main
