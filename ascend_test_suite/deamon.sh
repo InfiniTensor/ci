@@ -9,6 +9,11 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
+git fetch --all
+git reset --hard origin/main
+git pull origin main
+
+cd ./ascend_test_suite
 ./ascend_resource_monitor.sh $@ &
 CHILD_PID=$!
 
