@@ -1,0 +1,8 @@
+requests
+pyyaml
+numpy
+pandas
+tabulate
+rich
+openpyxl
+json
