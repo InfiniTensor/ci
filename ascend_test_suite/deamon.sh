@@ -9,11 +9,15 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
+cd /autotest
 git fetch --all
 git reset --hard origin/main
 git pull origin main
 
-cd ./ascend_test_suite
+mkdir -p main-${COMMIT_SHORT_SHA}
+sed -i '254s/False/True/' SendMsgToBot.py
+cp latest/model_list.xlsx main-${COMMIT_SHORT_SHA}
+
 ./ascend_resource_monitor.sh $@ &
 CHILD_PID=$!
 
