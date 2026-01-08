@@ -11,7 +11,7 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
-docker run --name="lmg_test" -v /home/s_limingge/.npu_locks:/home/s_limingge/.npu_locks -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $@ &
+docker run --rm --name="lmg_test" -v /home/s_limingge/.npu_locks:/home/s_limingge/.npu_locks -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $@ &
 CHILD_PID=$!
 
 echo -n "Running"
