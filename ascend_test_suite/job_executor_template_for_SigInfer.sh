@@ -45,7 +45,7 @@ host_port_assign() {
 
     for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
         if ! lsof -i :"$port" >/dev/null 2>&1; then
-            cat "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            echo "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
             echo "$port"
             break
         fi
