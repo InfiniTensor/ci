@@ -13,6 +13,7 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 TEST_TYPE=$1
 ENGINE_TYPE=$2
 MODEL_LIST=$3
+SESSION_ID=$4
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
@@ -37,8 +38,8 @@ if [ -z $MODEL_LIST ]; then
 fi
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$4
-    version=$5
+    TEST_PARAM=$5
+    version=$6
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -47,7 +48,7 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$4
+    version=$5
 fi
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -194,7 +195,8 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    SESSION_ID=\$(ps -o sid= -p $$)
+                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} \${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -234,7 +236,8 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    SESSION_ID=\$(ps -o sid= -p $$)
+                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} \${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -341,22 +344,22 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Smoke" ]; then
-                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Accuracy" ]; then
-                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${version} > $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`

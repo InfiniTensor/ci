@@ -3,6 +3,7 @@
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"
+LOCK_DIR="/home/s_limingge/.npu_locks"
 
 # 接收参数
 MODEL=$1
@@ -13,7 +14,8 @@ SWAP_SPACE=$5
 MASTER_IP=$6
 NODE_RANK=$7
 JOB_COUNT=$8
-VERSION=$9
+SESSION_ID=$9
+VERSION=${10}
 
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
@@ -25,8 +27,9 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_NPUS" ]; then
+            rm -f "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
             echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
-            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID"
+            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
         echo "正常退出（退出码: 0），保留NPU锁"
@@ -35,6 +38,19 @@ cleanup_locks() {
 
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
+
+host_port_assign() {
+    PORT_RANGE_START=20000
+    PORT_RANGE_END=20999
+
+    for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
+        if ! lsof -i :"$port" >/dev/null 2>&1; then
+            cat "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            echo "$port"
+            break
+        fi
+    done
+}
 
 if [ $USE_PREFIX_CACHE -eq 1 ]; then
     USE_PREFIX_CACHE="--use-prefix-cache"
@@ -61,10 +77,10 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-ret=`docker ps -a | grep vllm_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}`
+ret=`docker ps -a | grep vllm_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-    docker stop vllm_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}
-    docker rm vllm_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}
+    docker stop vllm_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+    docker rm vllm_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -113,7 +129,7 @@ while true; do
         echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定: ${SELECTED_GPUS}"
 
         # 尝试原子性地获取所有NPU的锁
-        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
             LOCKED_NPUS="$SELECTED_GPUS"
             GPU_INFO=($SELECTED_GPUS)
@@ -133,7 +149,7 @@ echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-EXEC_COMMAND="docker run --name=vllm_ascend_<<<TEST_TYPE>>>_${JOB_COUNT} \
+EXEC_COMMAND="docker run --name=vllm_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
   --network host \
   --pid host \
   --ipc shareable \
@@ -141,6 +157,7 @@ EXEC_COMMAND="docker run --name=vllm_ascend_<<<TEST_TYPE>>>_${JOB_COUNT} \
   --security-opt label=disable \
   --shm-size=10995116277 \
   --workdir /workspace \
+  -p $(host_port_assign):<<<PORT>>> \
   -v /dev/davinci0:/dev/davinci0 \
   -v /dev/davinci1:/dev/davinci1 \
   -v /dev/davinci2:/dev/davinci2 \

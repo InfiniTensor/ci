@@ -3,6 +3,7 @@
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"
+LOCK_DIR="/home/s_limingge/.npu_locks"
 
 # 接收参数
 MODEL=$1
@@ -10,13 +11,15 @@ GPU_QUANITY=$2
 SERVER_LIST=$3
 NODE_RANK=$4
 JOB_COUNT=$5
-VERSION=$6
+SESSION_ID=$6
+VERSION=$7
 
 echo "MODEL=$MODEL"
 echo "GPU_QUANITY=$GPU_QUANITY"
 echo "SERVER_LIST=$SERVER_LIST"
 echo "NODE_RANK=$NODE_RANK"
 echo "JOB_COUNT=$JOB_COUNT"
+echo "SESSION_ID=$SESSION_ID"
 echo "VERSION=$VERSION"
 
 # 生成唯一的任务ID
@@ -29,8 +32,9 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_NPUS" ]; then
+            rm -f "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
             echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
-            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID"
+            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
         echo "正常退出（退出码: 0），保留NPU锁"
@@ -39,6 +43,19 @@ cleanup_locks() {
 
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
+
+host_port_assign() {
+    PORT_RANGE_START=20000
+    PORT_RANGE_END=20999
+
+    for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
+        if ! lsof -i :"$port" >/dev/null 2>&1; then
+            cat "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            echo "$port"
+            break
+        fi
+    done
+}
 
 if [ -z $VERSION ]; then
     echo "MindIE version is not specified!"
@@ -50,7 +67,7 @@ MODEL_WEIGHT_PATH=""
 PORT=<<<PORT>>>  # 服务端口
 RANK_TABLE_FILE="/home/s_limingge/rank_table_file.json"
 CONFIG_FILE="/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
-CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}"
+CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
 DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"
 SHM_SIZE="500g"
 NUM_NPUS=8
@@ -266,6 +283,7 @@ start_container() {
         --device=/dev/davinci_manager \
         --device=/dev/hisi_hdc \
         --device=/dev/devmm_svm \
+        -p $(host_port_assign):<<<PORT>>> \
         -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
         -v /usr/local/Ascend/driver/include:/usr/local/Ascend/driver/include \
         -v /usr/local/Ascend/driver/tools:/usr/local/Ascend/driver/tools \
@@ -557,10 +575,10 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-ret=`docker ps -a | grep mindie_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}`
+ret=`docker ps -a | grep mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-    docker stop mindie_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}
-    docker rm mindie_ascend_<<<TEST_TYPE>>>_${JOB_COUNT}
+    docker stop mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+    docker rm mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # 设置超时时间(单位:秒, 1小时 = 3600秒)
@@ -602,7 +620,7 @@ while true; do
         echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定: ${SELECTED_GPUS}"
 
         # 尝试原子性地获取所有NPU的锁
-        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
             LOCKED_NPUS="$SELECTED_GPUS"
             GPU_INFO=($SELECTED_GPUS)

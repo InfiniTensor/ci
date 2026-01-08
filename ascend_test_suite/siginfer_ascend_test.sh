@@ -7,13 +7,14 @@ candidate_models=$3
 job_count=$4
 TEST_TYPE=$5
 ENGINE_TYPE=$6
+session_id=$7
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$7
-    version=$8
+    TEST_PARAM=$8
+    version=$9
     num_of_prefix_cache_options=1
 else
-    version=$7
+    version=$8
     if [ $TEST_TYPE == "Stability" ]; then
         num_of_prefix_cache_options=1
     else
@@ -23,6 +24,7 @@ fi
 
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
+LOCK_DIR="/home/s_limingge/.npu_locks"
 
 if true; then
     if [ -z $version ]; then
@@ -121,31 +123,22 @@ cleanup_all_resources() {
         echo "正在释放 NPU 锁..."
         source $curr_dir/npu_lock_manager.sh
         for ip in ${server_list[@]}; do
+            rm -f "${LOCK_DIR}/job_${session_id}_${job_count}"
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
-            release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}"
+            release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}" "${session_id}"
         done
         echo "NPU 锁释放完成"
     fi
     
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
-        if [ $ip == "10.9.1.6" ]; then
-            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 "
-                name=${engine_type}_ascend_${TEST_TYPE}Test_${job_count}
-                if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
-                    docker stop \$name
-                    docker rm \$name
-                fi
-            "
-        else
-            ssh -q -o ConnectionAttempts=3 s_limingge@$ip "
-                name=${engine_type}_ascend_${TEST_TYPE}Test_${job_count}
-                if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
-                    docker stop \$name
-                    docker rm \$name
-                fi
-            "
-        fi
+        ssh -q -o ConnectionAttempts=3 s_limingge@$ip "
+            name=${engine_type}_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+            if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
+                docker stop \$name
+                docker rm \$name
+            fi
+        "
     done
     
     echo "=========================================="
@@ -309,33 +302,19 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        if [ $ip == "10.9.1.6" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version >> "$curr_dir/logs/smoke/${filename}_${seq_num}" &
-                            ssh_pid=$!
-                            pid_map[$ssh_pid]="10.9.1.6"
-                            SSH_PID_MAP[$ssh_pid]="10.9.1.6"
-                        else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
-                            ssh_pid=$!
-                            pid_map[$ssh_pid]=$ip
-                            SSH_PID_MAP[$ssh_pid]=$ip
-                        fi
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
+                        ssh_pid=$!
+                        pid_map[$ssh_pid]=$ip
+                        SSH_PID_MAP[$ssh_pid]=$ip
                     else
-                        if [ $ip == "10.9.1.6" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@10.9.1.6 /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                            ssh_pid=$!
-                            pid_map[$ssh_pid]="10.9.1.6"
-                            SSH_PID_MAP[$ssh_pid]="10.9.1.6"
+                        if [ $ENGINE_TYPE == "MindIE" ]; then
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
                         else
-                            if [ $ENGINE_TYPE == "MindIE" ]; then
-                                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $version &
-                            else
-                                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $version &
-                            fi
-                            ssh_pid=$!
-                            pid_map[$ssh_pid]=$ip
-                            SSH_PID_MAP[$ssh_pid]=$ip
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version &
                         fi
+                        ssh_pid=$!
+                        pid_map[$ssh_pid]=$ip
+                        SSH_PID_MAP[$ssh_pid]=$ip
                     fi
                     
                     ((seq_num++))
@@ -363,28 +342,15 @@ for option in "${schedule_policies[@]}"; do
                             
                             # 启动失败，清理工作
                             for ip in ${server_list[@]}; do
-                                if [ $ip == "10.9.1.6" ]; then
-                                    if [ $ENGINE_TYPE == "SigInfer" ]; then
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                    elif [ $ENGINE_TYPE == "vLLM" ]; then
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
-                                    elif [ $ENGINE_TYPE == "MindIE" ]; then
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
-                                        sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
-                                    fi
-                                else
-                                    if [ $ENGINE_TYPE == "SigInfer" ]; then
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                                    elif [ $ENGINE_TYPE == "vLLM" ]; then
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
-                                    elif [ $ENGINE_TYPE == "MindIE" ]; then
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
-                                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
-                                    fi
+                                if [ $ENGINE_TYPE == "SigInfer" ]; then
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                                elif [ $ENGINE_TYPE == "vLLM" ]; then
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                                elif [ $ENGINE_TYPE == "MindIE" ]; then
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
                                 fi
                             done
                             
@@ -401,6 +367,23 @@ for option in "${schedule_policies[@]}"; do
 
                 # 任务启动失败
                 if [ $success -eq 1 ]; then
+                    continue
+                fi
+
+                if [ -f "${LOCK_DIR}/job_${session_id}_${job_count}" ]; then
+                    server_port=`cat "${LOCK_DIR}/job_${session_id}_${job_count}"`
+                else
+                    echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
+                    if [ $ENGINE_TYPE == "SigInfer" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                    elif [ $ENGINE_TYPE == "vLLM" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                    elif [ $ENGINE_TYPE == "MindIE" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                    fi
                     continue
                 fi
 
@@ -434,8 +417,8 @@ for option in "${schedule_policies[@]}"; do
                     unset pid_map
                     declare -A pid_map
                     
-                    echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
-                    docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:$((6543+${job_count}))/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
+                    echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
+                    docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
                     pid=$!
                     pid_map[$pid]="$container_name"
                     DOCKER_CONTAINER_NAMES+=("$container_name")
@@ -498,7 +481,7 @@ for option in "${schedule_policies[@]}"; do
                         # )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
-                            docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                            docker exec ${engine_type}_ascend_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
                                 if [ ${engine_type} == \\\"siginfer\\\" ]; then
                                     pip3 install dataSets pillow aiohttp
                                 elif [ ${engine_type} == \\\"mindie\\\" ]; then
@@ -523,11 +506,11 @@ for option in "${schedule_policies[@]}"; do
                                         
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"${benchmark_cmd} --backend openai --port ${server_port} --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
                                         ${benchmark_cmd} \
                                         --backend openai \
-                                        --port \\\$((8765+${job_count})) \
+                                        --port ${server_port} \
                                         --host ${local_master_ip} \
                                         --model ${model} \
                                         --tokenizer ${data_path}/${model}/ \
@@ -547,7 +530,7 @@ for option in "${schedule_policies[@]}"; do
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
-                            docker exec ${engine_type}_ascend_PerformanceTest_${job_count} /bin/bash -c \"
+                            docker exec ${engine_type}_ascend_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
                                 if [ ${engine_type} == \\\"siginfer\\\" ]; then
                                     pip3 install dataSets pillow aiohttp
                                 elif [ ${engine_type} == \\\"mindie\\\" ]; then
@@ -560,11 +543,11 @@ for option in "${schedule_policies[@]}"; do
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * 4))
                                     echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                    echo \\\"${benchmark_cmd} --backend openai --port \\\$((8765+${job_count})) --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
+                                    echo \\\"${benchmark_cmd} --backend openai --port ${server_port} --host ${local_master_ip} --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
                                     ${benchmark_cmd} \
                                     --backend openai \
-                                    --port \\\$((8765+${job_count})) \
+                                    --port ${server_port} \
                                     --host ${local_master_ip} \
                                     --model ${model} \
                                     --tokenizer ${data_path}/${model}/ \
@@ -585,21 +568,21 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     # 容器1: Evalscope mmlu,ceval
                     container_name_1="Evalscope_mmlu_ceval_$$"
-                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host ${server_list[0]} --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
                     pid1=$!
                     pid_map[$pid1]="$container_name_1"
                     DOCKER_CONTAINER_NAMES+=("$container_name_1")
                     
                     # 容器2: Evalscope gsm8k,ARC_c
                     container_name_2="Evalscope_gsm8k_ARC_c_$$"
-                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host ${server_list[0]} --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
                     pid2=$!
                     pid_map[$pid2]="$container_name_2"
                     DOCKER_CONTAINER_NAMES+=("$container_name_2")
                     
                     # 容器3: SGLang mmlu,gsm8k
                     container_name_3="SGLang_mmlu_gsm8k_$$"
-                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port $((9701+$job_count)) --host ${server_list[0]} > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
                     pid3=$!
                     pid_map[$pid3]="$container_name_3"
                     DOCKER_CONTAINER_NAMES+=("$container_name_3")
@@ -655,28 +638,15 @@ for option in "${schedule_policies[@]}"; do
 
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
-                    if [ $ip == "10.9.1.6" ]; then
-                        if [ $ENGINE_TYPE == "SigInfer" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        elif [ $ENGINE_TYPE == "vLLM" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
-                        elif [ $ENGINE_TYPE == "MindIE" ]; then
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
-                            sshpass -p 's_limingge' ssh -o ConnectionAttempts=3 s_limingge@10.9.1.6 docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
-                        fi
-                    else
-                        if [ $ENGINE_TYPE == "SigInfer" ]; then
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${job_count}
-                        elif [ $ENGINE_TYPE == "vLLM" ]; then
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${job_count}
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${job_count}
-                        elif [ $ENGINE_TYPE == "MindIE" ]; then
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${job_count}
-                            ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${job_count}
-                        fi
+                    if [ $ENGINE_TYPE == "SigInfer" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                    elif [ $ENGINE_TYPE == "vLLM" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                    elif [ $ENGINE_TYPE == "MindIE" ]; then
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm mindie_ascend_${TEST_TYPE}Test_${session_id}_${job_count}
                     fi
                 done
                 

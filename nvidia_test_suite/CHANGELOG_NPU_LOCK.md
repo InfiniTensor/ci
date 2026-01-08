@@ -102,7 +102,7 @@ fi
       └── info                    # 锁信息文件
           ├── task_id             # 任务ID
           ├── timestamp           # 创建时间戳
-          ├── pid                 # 进程ID
+          ├── session_id          # shell session ID
           └── hostname            # 主机名
 ```
 

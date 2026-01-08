@@ -67,6 +67,7 @@ show_status() {
             # 读取锁信息
             local task_id=$(grep "^task_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
             local timestamp=$(grep "^timestamp=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
+            local session_id=$(grep "^session_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
             local hostname=$(grep "^hostname=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
             
             # 计算持续时间
@@ -86,7 +87,7 @@ show_status() {
                 fi
             fi
             
-            server_locks["$server"]+="  NPU $npu_id | $status | 持续: $duration | 任务: $task_id | 主机: $hostname\n"
+            server_locks["$server"]+="  NPU $npu_id | $status | 持续: $duration | 任务: $task_id | 主机: $hostname | Session: $session_id\n"
         fi
     done
     

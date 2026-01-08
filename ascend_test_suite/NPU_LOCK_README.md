@@ -53,7 +53,7 @@ job_executor_*Test.sh  - 已集成锁机制的任务执行脚本
 ```
 task_id=SmokeTest_DeepSeek-R1_0_12345
 timestamp=1697456789
-pid=12345
+session_id=12345
 hostname=aicc003
 ```
 
