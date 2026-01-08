@@ -197,7 +197,7 @@ check_npu_locks_batch() {
     local npu_list=$2
     local task_id=$3
     local session_id=$4
-    local -n npu_list_found=$4     # 传名引用
+    local -n npu_list_found=$5     # 传名引用
     
     npu_list_found=()
     for npu_id in $npu_list; do

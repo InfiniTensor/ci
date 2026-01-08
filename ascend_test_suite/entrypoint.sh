@@ -19,6 +19,8 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
+echo "Args from docker run: $@"
+
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
 Host 10.9.1.*
@@ -31,9 +33,9 @@ cd /workspace
 git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
 
 cd ci_autotest/ascend_test_suite
-mkdir -p $4
+mkdir -p $5
 sed -i '254s/False/True/' SendMsgToBot.py
-cp latest/model_list.xlsx $4
+cp latest/model_list.xlsx $5
 
 ./ascend_resource_monitor.sh $@ &
 CHILD_PID=$!

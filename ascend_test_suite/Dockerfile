@@ -47,5 +47,5 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 
 RUN chmod +x /workspace/entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/workspace/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/workspace/entrypoint.sh"]
+CMD []
