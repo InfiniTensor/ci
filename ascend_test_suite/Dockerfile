@@ -40,7 +40,7 @@ RUN chmod 600 /root/.ssh/id_rsa
 WORKDIR /workspace
 
 # 将项目代码拷贝进镜像
-COPY deamon.sh /workspace
+COPY entrypoint.sh /workspace
 COPY requirements.txt /workspace
 
 RUN pip3 install --no-cache-dir -r requirements.txt

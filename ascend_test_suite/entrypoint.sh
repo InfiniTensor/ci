@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -m
 
+# trap 'echo "[PID $$] received SIGTERM"; exit 0' TERM
+# trap 'echo "[PID $$] received SIGINT"; exit 0' INT
+
+# echo "PID 1 started: $$"
+
+# while true; do
+#     echo "Running..."
+#     sleep 5
+# done
+
 cleanup() {
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
     kill -SIGTERM -$CHILD_PID
