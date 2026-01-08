@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     npm \
     docker.io \
+    tini \
+    openssh-server \
     && rm -rf /var/lib/apt/lists/*
 
 # 创建 .ssh 目录
@@ -43,6 +45,7 @@ COPY requirements.txt /workspace
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-RUN chmod +x /workspace/deamon.sh
+RUN chmod +x /workspace/entrypoint.sh
 
-ENTRYPOINT ["/workspace/deamon.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["/workspace/entrypoint.sh"]
