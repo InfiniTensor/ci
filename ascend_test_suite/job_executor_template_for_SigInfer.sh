@@ -183,7 +183,6 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${
      --volume /home:/home   \
      --volume /home/weight/:/home/weight/    \
      --volume /shared/weights:/shared/weights    \
-     --network host      \
      --privileged \
      --device=/dev/davinci_manager \
      --device=/dev/devmm_svm       \
