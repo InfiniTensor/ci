@@ -154,6 +154,7 @@ cleanup_all_resources() {
 
 # 信号处理函数
 handle_interrupt() {
+    touch siginfer.txt
     INTERRUPTED=1
     echo ""
     echo "收到中断信号，正在向所有远程进程发送中断信号..."
