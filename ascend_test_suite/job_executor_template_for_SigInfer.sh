@@ -11,8 +11,7 @@ GPU_QUANITY=$2
 USE_PREFIX_CACHE=$3
 SCHEDULE_POLICY=$4
 SWAP_SPACE=$5
-# MASTER_IP=$6
-MASTER_IP="0.0.0.0"
+MASTER_IP=$6
 NODE_RANK=$7
 JOB_COUNT=$8
 SESSION_ID=$9
@@ -40,13 +39,18 @@ cleanup_locks() {
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
 
-host_port_assign() {
-    PORT_RANGE_START=20000
-    PORT_RANGE_END=20999
+server_ports=()
+
+get_free_port() {
+    local PORT_RANGE_START=20000
+    local PORT_RANGE_END=20999
 
     for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
         if ! lsof -i :"$port" >/dev/null 2>&1; then
-            echo "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            if [[ " ${server_ports[@]} " =~ " $port " ]]; then
+                continue
+            fi
+            server_ports+=($port)
             echo "$port"
             break
         fi
@@ -164,6 +168,10 @@ ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
+PORT=$(get_free_port)
+echo "$PORT" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+PROMETHEUS_PORT=$(get_free_port)
+MASTER_PORT=$(get_free_port)
 
 EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
      -u root  \
@@ -184,6 +192,7 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${
      --volume /home:/home   \
      --volume /home/weight/:/home/weight/    \
      --volume /shared/weights:/shared/weights    \
+     --network host      \
      --privileged \
      --device=/dev/davinci_manager \
      --device=/dev/devmm_svm       \

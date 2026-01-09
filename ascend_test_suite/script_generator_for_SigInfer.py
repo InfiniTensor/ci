@@ -30,11 +30,11 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        port_num = "$((6543+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((8321+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((8438+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
+        # port_num = "$((6543+${JOB_COUNT}))"
+        # src_code += f"PORT={port_num}\n"
+        # src_code += "PROMETHEUS_PORT=$((8321+${JOB_COUNT}))\n"
+        # src_code += "MASTER_PORT=$((8438+${JOB_COUNT}))\n"
+        # src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
         port_num = "$((8765+${JOB_COUNT}))"
@@ -121,8 +121,8 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
-            elif "<<<PORT>>>" in line:
-                lines[line_num] = line.replace("<<<PORT>>>", port_num)
+            # elif "<<<PORT>>>" in line:
+            #     lines[line_num] = line.replace("<<<PORT>>>", port_num)
             line_num += 1
     except FileNotFoundError:
         print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
