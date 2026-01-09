@@ -188,7 +188,6 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${
      -v /dev/davinci5:/dev/davinci5      \
      -v /dev/davinci6:/dev/davinci6      \
      -v /dev/davinci7:/dev/davinci7      \
-     -p $(host_port_assign):<<<PORT>>>   \
      --volume /home:/home   \
      --volume /home/weight/:/home/weight/    \
      --volume /shared/weights:/shared/weights    \
