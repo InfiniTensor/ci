@@ -37,7 +37,7 @@ mkdir -p $5
 sed -i '254s/False/True/' SendMsgToBot.py
 cp latest/model_list.xlsx $5
 
-./ascend_resource_monitor.sh $@ &
+exec ./ascend_resource_monitor.sh $@ &
 CHILD_PID=$!
 
 echo -n "Running"
