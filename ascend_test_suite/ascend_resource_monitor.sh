@@ -3,6 +3,7 @@
 # 捕获 SIGINT (Ctrl+C)、SIGTERM、SIGHUP (SSH Disconn)、SIGPIPE 和 EXIT 信号
 # trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 cleanup() {
+    touch ci_test.txt
     trap - SIGINT SIGTERM SIGHUP SIGPIPE EXIT
     kill -- -$$
     exit 130
