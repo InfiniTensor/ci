@@ -12,14 +12,14 @@ set -m
 # done
 
 cleanup() {
+    touch entrypoint.txt
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
-    kill -SIGTERM $CHILD_PID
+    kill -SIGTERM -$CHILD_PID
+    sleep 60
     exit 130
 }
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
-
-echo "Args from docker run: $@"
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
@@ -33,11 +33,11 @@ cd /workspace
 git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
 
 cd ci_autotest/ascend_test_suite
-mkdir -p $5
+mkdir -p main-cf45306e
 sed -i '254s/False/True/' SendMsgToBot.py
-cp latest/model_list.xlsx $5
+cp latest/model_list.xlsx main-cf45306e
 
-exec ./ascend_resource_monitor.sh $@ &
+./ascend_resource_monitor.sh Smoke SigInfer DeepSeek-R1-AWQ "83245" main-cf45306e &
 CHILD_PID=$!
 
 echo -n "Running"

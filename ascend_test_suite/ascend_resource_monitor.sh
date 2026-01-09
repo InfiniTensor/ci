@@ -5,7 +5,7 @@
 cleanup() {
     touch ascend_resource_monitor.txt
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
-    kill -SIGTERM -$$
+    kill -- -$$
     exit 130
 }
 
