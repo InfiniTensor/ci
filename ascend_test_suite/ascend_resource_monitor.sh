@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # 捕获 SIGINT (Ctrl+C)、SIGTERM、SIGHUP (SSH Disconn)、SIGPIPE 和 EXIT 信号
-# trap "touch ascend_resource_monitor.txt && trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+# trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 cleanup() {
-    touch ascend_resource_monitor.txt
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
     kill -- -$$
     exit 130
