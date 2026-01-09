@@ -40,6 +40,7 @@ cleanup_locks() {
 trap cleanup_locks EXIT INT TERM
 
 server_ports=()
+FREE_PORT=""
 
 get_free_port() {
     local PORT_RANGE_START=20000
@@ -51,7 +52,7 @@ get_free_port() {
                 continue
             fi
             server_ports+=($port)
-            echo "$port"
+            FREE_PORT="$port"
             break
         fi
     done
@@ -168,10 +169,13 @@ ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
-PORT=$(get_free_port)
+get_free_port || exit 1
+PORT=$FREE_PORT
 echo "$PORT" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
-PROMETHEUS_PORT=$(get_free_port)
-MASTER_PORT=$(get_free_port)
+get_free_port || exit 1
+PROMETHEUS_PORT=$FREE_PORT
+get_free_port || exit 1
+MASTER_PORT=$FREE_PORT
 
 EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
      -u root  \
