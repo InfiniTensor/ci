@@ -3,9 +3,9 @@ set -m
 
 cleanup() {
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
-    docker stop --time 60 lmg_test
-    # docker kill --signal=SIGTERM lmg_test
-    # docker kill -s TERM lmg_test
+    docker stop --time 60 CI_test_job_${CI_job_id}
+    # docker kill --signal=SIGTERM CI_test_job_${CI_job_id}
+    # docker kill -s TERM CI_test_job_${CI_job_id}
     exit 130
 }
 
@@ -17,7 +17,7 @@ model_list=$3
 CI_job_id=$4
 version=$5
 
-docker run --name="CI_test_job_${CI_job_id}" -v /home/s_limingge/.npu_locks:/home/s_limingge/.npu_locks -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $test_type $engine $model_list $CI_job_id $version &
+docker run --name="CI_test_job_${CI_job_id}" -v /home/s_limingge/.npu_locks:/home/s_limingge/.npu_locks auto-test:latest $test_type $engine $model_list $CI_job_id $version &
 CHILD_PID=$!
 
 echo -n "Running"
