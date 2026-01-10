@@ -114,8 +114,8 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-mkdir -p $curr_dir/logs/accuracy $curr_dir/logs/stability $curr_dir/logs/performance $curr_dir/logs/smoke
-mkdir -p $curr_dir/report_${log_name_suffix}
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID
+mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
     if [ $MODEL_LIST == "default" ]; then
@@ -132,26 +132,26 @@ if [ $TEST_TYPE == "Smoke" ]; then
             done
         done
     fi
-    rm -rf $curr_dir/logs/smoke/*.log $curr_dir/logs/smoke/*.log_* $curr_dir/logs/smoke/processed_models_*
-    processed_models=${curr_dir}/logs/smoke/"processed_models"_${log_name_suffix}
+    rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
     num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
     full_model_list=(${full_model_list_for_performance[@]})
-    rm -rf $curr_dir/logs/performance/*.log $curr_dir/logs/performance/processed_models_*
-    processed_models=${curr_dir}/logs/performance/"processed_models"_${log_name_suffix}
+    rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
     num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Stability" ]; then
     full_model_list=(${full_model_list_for_stability[@]})
-    rm -rf $curr_dir/logs/stability/*.log $curr_dir/logs/stability/processed_models_*
-    processed_models=${curr_dir}/logs/stability/"processed_models"_${log_name_suffix}
+    rm -rf $curr_dir/logs/stability/$SESSION_ID/*.log $curr_dir/logs/stability/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/stability/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
     num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Accuracy" ]; then
     full_model_list=(${full_model_list_for_accuracy[@]})
-    rm -rf $curr_dir/logs/accuracy/*.log $curr_dir/logs/accuracy/processed_models_*
-    processed_models=${curr_dir}/logs/accuracy/"processed_models"_${log_name_suffix}
+    rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
     num_of_prefix_cache_options=2
 fi
@@ -344,25 +344,25 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Smoke" ]; then
-                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/smoke/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Accuracy" ]; then
-                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/accuracy/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
             else
                 echo "测试类型错误！"
                 exit 1
@@ -434,25 +434,25 @@ while true; do
     if [[ ${#temp_list[@]} -eq 0 ]]; then
         echo "全部测试完成！"
         if [ $TEST_TYPE == "Accuracy" ]; then
-            python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt" --framework Ascend_910B1 --engine ${ENGINE_TYPE}
+            python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Ascend_910B1 --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
         elif [ $TEST_TYPE == "Smoke" ]; then
-            if [ -f $curr_dir/report_${log_name_suffix}/version.txt ]; then
-                latest_tag=$(cat $curr_dir/report_${log_name_suffix}/version.txt)
+            if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
+                latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
             else
                 latest_tag="unknown"
             fi
             
-            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/summary_${log_name_suffix}.txt"
+            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
 
             last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
-            if [ -f $curr_dir/report_${last_date}/version.txt ]; then
-                last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+            if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
+                last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
             else
                 last_version="unknown"
             fi
             
-            if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/summary_${last_date}.txt" ]; then
-                python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
+                python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
             fi
         fi
         break

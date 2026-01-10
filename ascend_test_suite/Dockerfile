@@ -37,14 +37,14 @@ COPY id_rsa /root/.ssh/id_rsa
 RUN chmod 600 /root/.ssh/id_rsa
 
 # 创建一个工作目录
-WORKDIR /workspace
+WORKDIR /CI_Workspace
 
 # 将项目代码拷贝进镜像
-COPY entrypoint.sh /workspace
-COPY requirements.txt /workspace
+COPY entrypoint.sh /CI_Workspace
+COPY requirements.txt /CI_Workspace
 
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-RUN chmod +x /workspace/entrypoint.sh
+RUN chmod +x /CI_Workspace/entrypoint.sh
 
-ENTRYPOINT ["/usr/bin/tini", "--", "/workspace/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/CI_Workspace/entrypoint.sh"]

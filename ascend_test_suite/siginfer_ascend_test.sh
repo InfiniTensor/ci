@@ -221,7 +221,7 @@ fi
 echo "推理引擎版本: ${version}"
 
 test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
-processed_models="${curr_dir}/logs/${test_type}/processed_models_${log_name_suffix}"
+processed_models="${curr_dir}/logs/${test_type}/$session_id/processed_models_${log_name_suffix}"
 touch ${processed_models}
 
 # schedule_policies=('DynamicSplitFuseV2' 'PrefillFirst')
@@ -302,7 +302,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/${filename}_${seq_num}" &
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
@@ -393,7 +393,7 @@ for option in "${schedule_policies[@]}"; do
                     # 获取模型启动命令，并做为参数传入
                     exec_cmd=""
                     for ((k=0; k<$seq_num; k=k+1)); do
-                        launch_cmd=`tail -n 4 "$curr_dir/logs/smoke/${filename}_${k}" | head -n 1`
+                        launch_cmd=`tail -n 4 "$curr_dir/logs/smoke/$session_id/${filename}_${k}" | head -n 1`
                         exec_cmd+="$launch_cmd\n"
                     done
 
@@ -417,8 +417,8 @@ for option in "${schedule_policies[@]}"; do
                     unset pid_map
                     declare -A pid_map
                     
-                    echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
-                    docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
+                    echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
+                    docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
                     pid=$!
                     pid_map[$pid]="$container_name"
                     DOCKER_CONTAINER_NAMES+=("$container_name")
@@ -525,7 +525,7 @@ for option in "${schedule_policies[@]}"; do
                                     done
                                 done
                             \"
-                        " > "$curr_dir/logs/performance/$filename"
+                        " > "$curr_dir/logs/performance/$session_id/$filename"
                     else
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
@@ -559,7 +559,7 @@ for option in "${schedule_policies[@]}"; do
                                     --max-concurrency \\\$concurrency
                                 done
                             \"
-                        " > "$curr_dir/logs/performance/$filename"
+                        " > "$curr_dir/logs/performance/$session_id/$filename"
                     fi
                 elif [ $TEST_TYPE == "Accuracy" ]; then
                     unset pid_map
@@ -568,21 +568,21 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     # 容器1: Evalscope mmlu,ceval
                     container_name_1="Evalscope_mmlu_ceval_$$"
-                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_1.log" 2>&1 &
                     pid1=$!
                     pid_map[$pid1]="$container_name_1"
                     DOCKER_CONTAINER_NAMES+=("$container_name_1")
                     
                     # 容器2: Evalscope gsm8k,ARC_c
                     container_name_2="Evalscope_gsm8k_ARC_c_$$"
-                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_2.log" 2>&1 &
                     pid2=$!
                     pid_map[$pid2]="$container_name_2"
                     DOCKER_CONTAINER_NAMES+=("$container_name_2")
                     
                     # 容器3: SGLang mmlu,gsm8k
                     container_name_3="SGLang_mmlu_gsm8k_$$"
-                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} > "$curr_dir/logs/accuracy/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port ${server_port} --host ${server_list[0]} > "$curr_dir/logs/accuracy/$session_id/${filename}_SGLang_3.log" 2>&1 &
                     pid3=$!
                     pid_map[$pid3]="$container_name_3"
                     DOCKER_CONTAINER_NAMES+=("$container_name_3")
@@ -606,23 +606,23 @@ for option in "${schedule_policies[@]}"; do
                         ((remaining--))
                     done
 
-                    touch "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                    touch "$curr_dir/report_${log_name_suffix}/$session_id/${log_name_suffix}_result.txt"
 
-                    eval_res_1=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_1.log")
-                    eval_res_2=$(tail -n 1 "$curr_dir/logs/accuracy/${filename}_evalscope_2.log")
-                    sglang_res_3=$(tail -n 5 "$curr_dir/logs/accuracy/${filename}_SGLang_3.log")
+                    eval_res_1=$(tail -n 1 "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_1.log")
+                    eval_res_2=$(tail -n 1 "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_2.log")
+                    sglang_res_3=$(tail -n 5 "$curr_dir/logs/accuracy/$session_id/${filename}_SGLang_3.log")
                     
                     if [ $use_prefix_cache_flag -eq 1 ]; then
                         if [ $swap_space -eq 0 ]; then
-                            echo "${model}_${option}_Use-prefix-cache+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                            echo "${model}_${option}_Use-prefix-cache+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/$session_id/${log_name_suffix}_result.txt"
                         else
-                            echo "${model}_${option}_Use-prefix-cache_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                            echo "${model}_${option}_Use-prefix-cache_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/$session_id/${log_name_suffix}_result.txt"
                         fi
                     else
                         if [ $swap_space -eq 0 ]; then
-                            echo "${model}_${option}+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                            echo "${model}_${option}+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/$session_id/${log_name_suffix}_result.txt"
                         else
-                            echo "${model}_${option}_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/${log_name_suffix}_result.txt"
+                            echo "${model}_${option}_Swap-space+$eval_res_1 $eval_res_2+${sglang_res_3//$'\n'/}" >> "$curr_dir/report_${log_name_suffix}/$session_id/${log_name_suffix}_result.txt"
                         fi
                     fi
                 elif [ $TEST_TYPE == "Stability" ]; then
@@ -655,67 +655,67 @@ for option in "${schedule_policies[@]}"; do
                     latest_tag=$version
                     if [ $TEST_TYPE == "Smoke" ]; then
                         # 保存docker镜像版本信息
-                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
-                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
+                        touch "$curr_dir/report_${log_name_suffix}/$session_id/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/$session_id/version.txt"
                     elif [ $TEST_TYPE == "Performance" ]; then
                         # 保存docker镜像版本信息
-                        touch "$curr_dir/report_${log_name_suffix}/version.txt"
-                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/version.txt"
+                        touch "$curr_dir/report_${log_name_suffix}/$session_id/version.txt"
+                        echo "$latest_tag" > "$curr_dir/report_${log_name_suffix}/$session_id/version.txt"
                         # 获取模型启动命令，并做为参数传入
-                        exec_cmd=`cat "$curr_dir/logs/performance/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
+                        exec_cmd=`cat "$curr_dir/logs/performance/$session_id/cron_job_${log_name_suffix}_${job_count}.log" | grep "docker run"`
                         # 获取测试命令，并做为参数传入
                         if [ $ENGINE_TYPE == "SigInfer" ]; then
-                            test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                            test_cmd=`cat "$curr_dir/logs/performance/$session_id/$filename" | grep "benchmark_serving.py" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         elif [ $ENGINE_TYPE == "vLLM" ] || [ $ENGINE_TYPE == "MindIE" ]; then
-                            test_cmd=`cat "$curr_dir/logs/performance/$filename" | grep "vllm bench serve" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
+                            test_cmd=`cat "$curr_dir/logs/performance/$session_id/$filename" | grep "vllm bench serve" | head -n 1 | sed -E 's/--(random-input-len|random-output-len|num-prompts|max-concurrency)\s+[0-9]+/--\1 xxx/g'`
                         fi
                         # 生成本次测试的Excel报告，并比较上一次Excel报告
                         if [ $use_prefix_cache_flag -eq 1 ]; then
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache" "$session_id" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
-                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                if [ -f $curr_dir/report_${last_date}/$session_id/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/$session_id/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Use-prefix-cache_Swap-space" "$session_id" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
-                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                if [ -f $curr_dir/report_${last_date}/$session_id/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/$session_id/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
                                 fi
                             fi
                         else
                             if [ $swap_space -eq 0 ]; then
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}" "$session_id" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
-                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                if [ -f $curr_dir/report_${last_date}/$session_id/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/$session_id/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}.xlsx"
                                 fi
                             else
-                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$filename"
+                                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}_${option}_Swap-space" "$session_id" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
                                 last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
-                                if [ -f $curr_dir/report_${last_date}/version.txt ]; then
-                                    last_version=$(cat $curr_dir/report_${last_date}/version.txt)
+                                if [ -f $curr_dir/report_${last_date}/$session_id/version.txt ]; then
+                                    last_version=$(cat $curr_dir/report_${last_date}/$session_id/version.txt)
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx" ]; then
-                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/${model}_${option}_Swap-space.xlsx"
+                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Swap-space.xlsx" ]; then
+                                    python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Swap-space.xlsx"
                                 fi
                             fi
                         fi

@@ -6,15 +6,16 @@ from generate_excel_template import generate_excel, fill_benchmark_results
 
 
 def main():
-    if len(sys.argv) != 6:
-        print("Usage: python3 WriteReportToExcel.py <test_type> <model_name> <exec_cmd> <test_cmd> <log_file_path>")
+    if len(sys.argv) != 7:
+        print("Usage: python3 WriteReportToExcel.py <test_type> <model_name> <session_id> <exec_cmd> <test_cmd> <log_file_path>")
         sys.exit(1)
 
     test_type = sys.argv[1]
     model_name = sys.argv[2]
-    exec_cmd = sys.argv[3]
-    test_cmd = sys.argv[4]
-    log_file_path = sys.argv[5]
+    session_id = sys.argv[3]
+    exec_cmd = sys.argv[4]
+    test_cmd = sys.argv[5]
+    log_file_path = sys.argv[6]
 
     # context_lengths = ["128+128", "128+1024", "128+2048", "1024+1024", "2048+2048", "4096+1024", "1024+4096", "30000+2048", "126000+2048"]
     # batch_sizes = [1, 5, 10, 20, 50, 100, 150]
@@ -115,10 +116,10 @@ def main():
     # 生成模板
     unique_batch_sizes = sorted(set(batch_sizes))  # 去重并排序
     generate_excel(model_name, exec_cmd, test_cmd, context_lengths, tuple(unique_batch_sizes), 
-                   multiplier, f"./report_{os.environ['TASK_START_TIME']}/" + model_name + '.xlsx')
+                   multiplier, f"./report_{os.environ['TASK_START_TIME']}/{session_id}/" + model_name + '.xlsx')
     # 填充数据
     fill_benchmark_results(
-            f"./report_{os.environ['TASK_START_TIME']}/" + model_name + '.xlsx', results, context_lengths, unique_batch_sizes)
+            f"./report_{os.environ['TASK_START_TIME']}/{session_id}/" + model_name + '.xlsx', results, context_lengths, unique_batch_sizes)
 
 if __name__ == "__main__":
     main()

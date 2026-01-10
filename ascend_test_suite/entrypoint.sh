@@ -23,7 +23,7 @@ Host 10.9.1.*
     UserKnownHostsFile /dev/null
 EOF
 
-cd /workspace
+cd /CI_Workspace
 
 git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
 
