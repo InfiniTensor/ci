@@ -25,9 +25,17 @@ EOF
 
 cd /CI_Workspace
 
-git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
+if [ ! -d ci_autotest ]; then
+    git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
+    cd ci_autotest
+else
+    cd ci_autotest
+    git fetch --all
+    git reset --hard origin/main
+    git pull origin main
+fi
 
-cd ci_autotest/ascend_test_suite
+cd ascend_test_suite
 mkdir -p $version
 sed -i '254s/False/True/' SendMsgToBot.py
 cp latest/model_list.xlsx $version
