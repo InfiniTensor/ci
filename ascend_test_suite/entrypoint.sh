@@ -37,7 +37,6 @@ fi
 
 cd ascend_test_suite
 mkdir -p $version
-sed -i '254s/False/True/' SendMsgToBot.py
 cp latest/model_list.xlsx $version
 
 ./ascend_resource_monitor.sh $test_type $engine $model_list $CI_job_id $version &
