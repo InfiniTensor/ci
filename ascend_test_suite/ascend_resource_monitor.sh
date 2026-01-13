@@ -195,8 +195,7 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    SESSION_ID=\$(ps -o sid= -p $$)
-                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} \${SESSION_ID} NPU_LIST_FOUND
+                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -236,8 +235,7 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    SESSION_ID=\$(ps -o sid= -p $$)
-                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} \${SESSION_ID} NPU_LIST_FOUND
+                    check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
