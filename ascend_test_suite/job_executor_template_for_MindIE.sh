@@ -32,7 +32,7 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_NPUS" ]; then
-            rm -f "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
             echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
@@ -50,7 +50,7 @@ host_port_assign() {
 
     for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
         if ! lsof -i :"$port" >/dev/null 2>&1; then
-            echo "$port" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            echo "$port" > "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
             echo "$port"
             break
         fi

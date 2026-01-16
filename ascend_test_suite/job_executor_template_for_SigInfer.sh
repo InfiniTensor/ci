@@ -27,7 +27,7 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_NPUS" ]; then
-            rm -f "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
             echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
@@ -171,7 +171,7 @@ echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 get_free_port || exit 1
 PORT=$FREE_PORT
-echo "$PORT" > "${LOCK_DIR}/job_${SESSION_ID}_${JOB_COUNT}"
+echo "$PORT" > "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
 get_free_port || exit 1
 PROMETHEUS_PORT=$FREE_PORT
 get_free_port || exit 1

@@ -123,7 +123,7 @@ cleanup_all_resources() {
         echo "正在释放 NPU 锁..."
         source $curr_dir/npu_lock_manager.sh
         for ip in ${server_list[@]}; do
-            rm -f "${LOCK_DIR}/job_${session_id}_${job_count}"
+            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}"
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
             release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}" "${session_id}"
         done
@@ -370,8 +370,8 @@ for option in "${schedule_policies[@]}"; do
                     continue
                 fi
 
-                if [ -f "${LOCK_DIR}/job_${session_id}_${job_count}" ]; then
-                    server_port=`cat "${LOCK_DIR}/job_${session_id}_${job_count}"`
+                if [ -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}" ]; then
+                    server_port=`cat "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}"`
                 else
                     echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
                     if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -679,7 +679,7 @@ for option in "${schedule_policies[@]}"; do
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache.xlsx" ]; then
+                                if [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Use-prefix-cache.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache.xlsx"
                                 fi
                             else
@@ -690,7 +690,7 @@ for option in "${schedule_policies[@]}"; do
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
+                                if [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "${model}_${option}_Use-prefix-cache_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Use-prefix-cache_Swap-space.xlsx"
                                 fi
                             fi
@@ -703,7 +703,7 @@ for option in "${schedule_policies[@]}"; do
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}.xlsx" ]; then
+                                if [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "${model}_${option}" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}.xlsx"
                                 fi
                             else
@@ -714,7 +714,7 @@ for option in "${schedule_policies[@]}"; do
                                 else
                                     last_version="unknown"
                                 fi
-                                if [ $latest_tag != $last_version ] && [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Swap-space.xlsx" ]; then
+                                if [ -f "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Swap-space.xlsx" ]; then
                                     python3 $curr_dir/compare_excel_data.py "${model}_${option}_Swap-space" "$latest_tag" "$curr_dir/report_${log_name_suffix}/$session_id/${model}_${option}_Swap-space.xlsx" "$last_version" "$curr_dir/report_${last_date}/$session_id/${model}_${option}_Swap-space.xlsx"
                                 fi
                             fi

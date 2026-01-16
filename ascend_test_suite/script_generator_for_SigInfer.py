@@ -37,11 +37,11 @@ def main():
         # src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        port_num = "$((8765+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
+        # port_num = "$((8765+${JOB_COUNT}))"
+        # src_code += f"PORT={port_num}\n"
+        # src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
+        # src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
+        # src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
         port_num = "$((8000+${JOB_COUNT}))"
