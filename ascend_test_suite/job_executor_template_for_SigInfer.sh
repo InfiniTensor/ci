@@ -4,6 +4,7 @@
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"
 LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_FILE="server_config.lock"
 
 # 接收参数
 MODEL=$1
@@ -19,6 +20,7 @@ VERSION=${10}
 
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
+JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
@@ -27,8 +29,17 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_NPUS" ]; then
-            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
-            echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
+            echo "检测到异常退出（退出码: $exit_code），正在释放Server Config文件锁: ${LOCK_DIR}/${LOCK_FILE}"
+            # 获取文件锁（阻塞）
+            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            if ! flock -x 200; then    # 获取独占锁
+                echo "无法获取锁，退出..."
+            fi
+            # 删除Server端配置信息，如果存在的话
+            sed -i "/${LOCAL_IP}:${JOB_ID}/d" /dev/fd/200
+            # 锁会自动在脚本退出或文件描述符关闭时释放
+            exec 200>&-  # 关闭文件描述符
+            echo "正在释放NPU锁: ${LOCKED_NPUS}"
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
@@ -39,8 +50,7 @@ cleanup_locks() {
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
 
-server_ports=()
-FREE_PORT=""
+free_port=""
 
 get_free_port() {
     local PORT_RANGE_START=20000
@@ -52,10 +62,11 @@ get_free_port() {
                 continue
             fi
             server_ports+=($port)
-            FREE_PORT="$port"
-            break
+            free_port="$port"
+            return
         fi
     done
+    free_port=""
 }
 
 if [ $USE_PREFIX_CACHE -eq 1 ]; then
@@ -169,13 +180,31 @@ ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
-get_free_port || exit 1
-PORT=$FREE_PORT
-echo "$PORT" > "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
-get_free_port || exit 1
-PROMETHEUS_PORT=$FREE_PORT
-get_free_port || exit 1
-MASTER_PORT=$FREE_PORT
+
+# 获取文件锁（阻塞）
+exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+if ! flock -x 200; then    # 获取独占锁
+    echo "无法获取锁，退出..."
+    exit 1
+fi
+
+server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+
+get_free_port
+PORT=$free_port
+get_free_port
+PROMETHEUS_PORT=$free_port
+get_free_port
+MASTER_PORT=$free_port
+
+if [ -z $PORT ] || [ -z $PROMETHEUS_PORT ] || [ -z $MASTER_PORT ]; then
+    exit 1
+fi
+
+echo "$LOCAL_IP:$JOB_ID:$PORT $PROMETHEUS_PORT $MASTER_PORT" >> /dev/fd/200
+
+# 锁会自动在脚本退出或文件描述符关闭时释放
+exec 200>&-  # 关闭文件描述符
 
 EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
      -u root  \

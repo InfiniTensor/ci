@@ -102,7 +102,7 @@ acquire_npu_locks_batch() {
     # 如果没有全部成功，释放已获取的锁
     if [ "$all_success" = false ]; then
         for npu_id in "${acquired_locks[@]}"; do
-            release_npu_lock "$server" "$npu_id" "$task_id"
+            release_npu_lock "$server" "$npu_id" "$task_id" "$session_id"
         done
         return 1
     fi
@@ -285,31 +285,31 @@ main() {
     case "$command" in
         acquire)
             if [ $# -lt 3 ]; then
-                echo "用法: $0 acquire <server> <npu_id> <task_id>"
+                echo "用法: $0 acquire <server> <npu_id> <task_id> <session_id>"
                 exit 1
             fi
-            acquire_npu_lock "$1" "$2" "$3"
+            acquire_npu_lock "$1" "$2" "$3" "$4"
             ;;
         acquire_batch)
             if [ $# -lt 3 ]; then
-                echo "用法: $0 acquire_batch <server> '<npu_list>' <task_id>"
+                echo "用法: $0 acquire_batch <server> '<npu_list>' <task_id> <session_id>"
                 exit 1
             fi
-            acquire_npu_locks_batch "$1" "$2" "$3"
+            acquire_npu_locks_batch "$1" "$2" "$3" "$4"
             ;;
         release)
             if [ $# -lt 2 ]; then
-                echo "用法: $0 release <server> <npu_id> [task_id]"
+                echo "用法: $0 release <server> <npu_id> <task_id> <session_id>"
                 exit 1
             fi
-            release_npu_lock "$1" "$2" "$3"
+            release_npu_lock "$1" "$2" "$3" "$4"
             ;;
         release_batch)
             if [ $# -lt 3 ]; then
-                echo "用法: $0 release_batch <server> '<npu_list>' <task_id>"
+                echo "用法: $0 release_batch <server> '<npu_list>' <task_id> <session_id>"
                 exit 1
             fi
-            release_npu_locks_batch "$1" "$2" "$3"
+            release_npu_locks_batch "$1" "$2" "$3" "$4"
             ;;
         check)
             if [ $# -lt 2 ]; then

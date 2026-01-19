@@ -25,6 +25,7 @@ fi
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
 LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_FILE="server_config.lock"
 
 if true; then
     if [ -z $version ]; then
@@ -123,11 +124,23 @@ cleanup_all_resources() {
         echo "正在释放 NPU 锁..."
         source $curr_dir/npu_lock_manager.sh
         for ip in ${server_list[@]}; do
-            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}"
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
             release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}" "${session_id}"
         done
         echo "NPU 锁释放完成"
+        # 获取文件锁（阻塞）
+        exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        if ! flock -x 200; then    # 获取独占锁
+            echo "无法获取锁，退出..."
+        fi
+        for ip in ${server_list[@]}; do
+            job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
+            # 删除Server端配置信息
+            sed -i "/${local_ip_map[$ip]}:${job_id}/d" /dev/fd/200
+        done
+        # 锁会自动在脚本退出或文件描述符关闭时释放
+        exec 200>&-  # 关闭文件描述符
+        echo "Server Config文件锁释放完成"
     fi
     
     # 3. 清理远程 Docker 容器
@@ -370,8 +383,18 @@ for option in "${schedule_policies[@]}"; do
                     continue
                 fi
 
-                if [ -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}" ]; then
-                    server_port=`cat "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${session_id}_${job_count}"`
+                if [ -f "${LOCK_DIR}/${LOCK_FILE}" ]; then
+                    # 获取文件锁（阻塞）
+                    exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+                    if ! flock -x 200; then    # 获取独占锁
+                        echo "无法获取锁，退出..."
+                        exit 1
+                    fi
+                    # 读取Server端配置信息
+                    job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
+                    server_port=`cat /dev/fd/200 | grep "${local_master_ip}:${job_id}" | awk -F ':' '{print $3}'` | awk '{print $1}'`
+                    # 锁会自动在脚本退出或文件描述符关闭时释放
+                    exec 200>&-  # 关闭文件描述符
                 else
                     echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
                     if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -456,29 +479,18 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        concurrency_list=(1 5 10 20)
-                        # concurrency_list=(100 150 200 250 300)
+                        concurrency_list=(1 5 10 20 50 100 150)
                         length_pairs=(
-                        #  "128:128"
-                           "128:1024"
-                        #   "128:2048"
-                        #   "1024:1024"
-                        #   "2048:2048"
-                        #   "4096:1024"
-                           "1024:4096"
-                        #   "30000:2048"
-                        #   "126000:2048"
+                            "128:128"
+                            "128:1024"
+                            "128:2048"
+                            "1024:1024"
+                            "2048:2048"
+                            "4096:1024"
+                            "1024:4096"
+                            "30000:2048"
+                            "126000:2048"
                         )
-                        # concurrency_list=(1 2 4 8 16 32)
-                        # length_pairs=(
-                        #     "16000:2048"
-                        #     "1024:1024"
-                        #     "2048:2048"
-                        #     "4096:1024"
-                        #     "1024:4096"
-                        #     "30000:2048"
-                        #     "126000:2048"
-                        # )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
                             docker exec ${engine_type}_ascend_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"

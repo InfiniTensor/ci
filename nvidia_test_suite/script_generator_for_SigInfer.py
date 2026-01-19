@@ -66,16 +66,16 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        src_code += "PORT=$((8000+${JOB_COUNT}))\n"
-        src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
+        # src_code += "PORT=$((8000+${JOB_COUNT}))\n"
+        # src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
+        # src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
+        # src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        src_code += "PORT=$((8765+${JOB_COUNT}))\n"
-        src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
+        # src_code += "PORT=$((8765+${JOB_COUNT}))\n"
+        # src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
+        # src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
+        # src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
         src_code += "PORT=$((8000+${JOB_COUNT}))\n"

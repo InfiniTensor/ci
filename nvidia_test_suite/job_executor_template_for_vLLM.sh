@@ -3,6 +3,7 @@
 # 导入GPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"
+LOCK_DIR="/home/s_limingge/.npu_locks"
 
 # 接收参数
 MODEL=$1
@@ -14,7 +15,8 @@ MASTER_IP=$6
 NODE_RANK=$7
 JOB_COUNT=$8
 GPU_MODEL=$9
-VERSION=${10}
+SESSION_ID=${10}
+VERSION=${11}
 
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
@@ -26,8 +28,9 @@ cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
         if [ ! -z "$LOCKED_GPUS" ]; then
+            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
             echo "检测到异常退出（退出码: $exit_code），正在释放GPU锁: ${LOCKED_GPUS}"
-            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_GPUS" "$TASK_ID"
+            release_npu_locks_batch "$SERVER_NAME" "$LOCKED_GPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
         echo "正常退出（退出码: 0），保留GPU锁"
@@ -36,6 +39,19 @@ cleanup_locks() {
 
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
+
+host_port_assign() {
+    PORT_RANGE_START=20000
+    PORT_RANGE_END=20999
+
+    for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
+        if ! lsof -i :"$port" >/dev/null 2>&1; then
+            echo "$port" > "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
+            echo "$port"
+            break
+        fi
+    done
+}
 
 if [ $USE_PREFIX_CACHE -eq 1 ]; then
     USE_PREFIX_CACHE="--use-prefix-cache"
@@ -50,37 +66,22 @@ fi
 
 LATEST_TAG=""
 if [ -z $VERSION ]; then
-    # 先拿到所有 tag 并按字母升序
-    TAGS=$(/home/s_limingge/jfrog rt curl \
-        --server-id=my-jcr \
-        /api/docker/docker-local/v2/siginfer-x86_64-nvidia/tags/list \
-    | jq -r '.tags[]' | sort)
-
-    # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
-    for tag in $TAGS; do
-    created=$(/home/s_limingge/jfrog rt curl \
-        --server-id=my-jcr \
-        /api/storage/docker-local/siginfer-x86_64-nvidia/$tag \
-        | jq -r '.created')
-    echo "$tag $created"
-    done > tag_dates.txt
-
-    LATEST_TAG=$(sort -k2 -r tag_dates.txt | grep main- | head -n1 | awk '{print $1}')
-    echo "The latest version : $LATEST_TAG"
+    echo "vLLM version is not specified!"
+    exit 1;
 else
     LATEST_TAG=$VERSION
     echo "The specified version : $LATEST_TAG"
 fi
 
-docker pull docker.xcoresigma.com/docker/vllm/vllm-openai:$LATEST_TAG
+docker pull quay.io/nvidia/vllm-nvidia:$LATEST_TAG
 if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-ret=`docker ps -a | grep siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}`
+ret=`docker ps -a | grep vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}
-  docker rm siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}
+  docker stop vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+  docker rm vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -144,7 +145,7 @@ while true; do
             echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
             CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
             # 尝试原子性地获取所有GPU的锁
-            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                 echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                 LOCKED_GPUS="$SELECTED_GPUS"
                 break
@@ -163,7 +164,7 @@ while true; do
             echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
             CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
             # 尝试原子性地获取所有GPU的锁
-            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                 echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                 LOCKED_GPUS="$SELECTED_GPUS"
                 break
@@ -183,7 +184,7 @@ while true; do
                     echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
                     CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
                     # 尝试原子性地获取所有GPU的锁
-                    if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                    if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                         echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                         LOCKED_GPUS="$SELECTED_GPUS"
                         break
@@ -212,7 +213,7 @@ while true; do
                         echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
                         CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
                         # 尝试原子性地获取所有GPU的锁
-                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                             LOCKED_GPUS="$SELECTED_GPUS"
                             break
@@ -227,7 +228,7 @@ while true; do
                         echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
                         CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
                         # 尝试原子性地获取所有GPU的锁
-                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                             LOCKED_GPUS="$SELECTED_GPUS"
                             break
@@ -245,7 +246,7 @@ while true; do
                 echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
                 CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
                 # 尝试原子性地获取所有GPU的锁
-                if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID"; then
+                if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
                     echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
                     LOCKED_GPUS="$SELECTED_GPUS"
                     break
@@ -257,14 +258,14 @@ while true; do
     fi
 
     # 等待一段时间后重新扫描（例如 10 秒）
-    echo "未找到足够的空闲 GPU, 10秒后重试..."
+    echo "未找到足够的空闲 GPU, 10秒后重试......"
     sleep 10
 done
 
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-docker create --name=siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT} \
+docker create --name=vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
     --gpus all \
     --privileged \
     --cap-add=ALL \
@@ -285,7 +286,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-docker start siginfer_nvidia_<<<TEST_TYPE>>>_${JOB_COUNT}
+docker start siginfer_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
 
 <<<generated source code>>>
 
