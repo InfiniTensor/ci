@@ -136,11 +136,13 @@ cleanup_all_resources() {
         for ip in ${server_list[@]}; do
             job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
             # 删除Server端配置信息
-            sed -i "/${local_ip_map[$ip]}:${job_id}/d" /dev/fd/200
+            new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/${LOCK_FILE}"`
+            echo -n $new_config > "${LOCK_DIR}/${LOCK_FILE}"
         done
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
         echo "Server Config文件锁释放完成"
+        exec 300>&-  # 关闭文件描述符
     fi
     
     # 3. 清理远程 Docker 容器
@@ -315,7 +317,11 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                        if [ $ENGINE_TYPE == "MindIE" ]; then
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                        else
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                        fi
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
@@ -332,6 +338,41 @@ for option in "${schedule_policies[@]}"; do
                     
                     ((seq_num++))
                 done
+
+                # 接收各个节点的rank_table.json并进行合并与分发
+                if [ $ENGINE_TYPE == "MindIE" ]; then
+                    job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
+                    mkdir -p $curr_dir/controller/$job_id
+                    cd $curr_dir/controller/$job_id
+                    rm -rf *
+                    npm init -y
+                    npm install express multer
+                    cp $curr_dir/controller.js .
+                    # 获取文件锁（阻塞），防止多任务并发执行时发生端口冲突
+                    exec 300>"${LOCK_DIR}/http_port_$((8080+$job_count)).lock"    # 打开文件描述符 300
+                    if ! flock -x 300; then    # 获取独占锁
+                        echo "无法获取锁，退出..."
+                        exit 1
+                    fi
+                    node controller.js $((8080+$job_count)) ${#server_list[@]}
+                    # 锁会自动在脚本退出或文件描述符关闭时释放
+                    exec 300>&-  # 关闭文件描述符
+                    arguments=""
+                    for ip in ${server_list[@]}; do
+                        node_name=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
+                        arguments+=" ./ranks/${node_name}.json"
+                    done
+                    python3 $curr_dir/merge_hccl.py $arguments
+                    merged_rank_table=`ls hccl_*.json`
+                    if [ ! -f $merged_rank_table ]; then
+                        echo "Rank Table文件合并失败，无法找到输出文件..."
+                        exit 1
+                    fi
+                    for ip in ${server_list[@]}; do
+                        scp $merged_rank_table s_limingge@$ip:/home/s_limingge/rank_table/$job_id/merged_rank_table.json
+                    done
+                    cd $curr_dir
+                fi
 
                 success=0
                 # 等待所有服务器任务启动完成
@@ -392,7 +433,7 @@ for option in "${schedule_policies[@]}"; do
                     fi
                     # 读取Server端配置信息
                     job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
-                    server_port=`cat /dev/fd/200 | grep "${local_master_ip}:${job_id}" | awk -F ':' '{print $3}'` | awk '{print $1}'`
+                    server_port=`cat /dev/fd/200 | grep "${local_master_ip}:${job_id}:" | awk -F ':' '{print $3}' | awk '{print $1}' | tail -n 1`
                     # 锁会自动在脚本退出或文件描述符关闭时释放
                     exec 200>&-  # 关闭文件描述符
                 else

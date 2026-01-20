@@ -29,16 +29,12 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        port_num = "$((6543+${JOB_COUNT}))"
         target_file = "job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        port_num = "$((8765+${JOB_COUNT}))"
         target_file = "job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        port_num = "$((8000+${JOB_COUNT}))"
         target_file = "job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
-        port_num = "$((9701+${JOB_COUNT}))"
         target_file = "job_executor_for_AccuracyTest.sh"
     
     start = True
@@ -85,8 +81,6 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
-            elif "<<<PORT>>>" in line:
-                lines[line_num] = line.replace("<<<PORT>>>", port_num)
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:

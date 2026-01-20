@@ -4,6 +4,7 @@
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager.sh"
 LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_FILE="server_config.lock"
 
 # 接收参数
 MODEL=$1
@@ -24,6 +25,7 @@ echo "VERSION=$VERSION"
 
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
+JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
@@ -31,9 +33,20 @@ SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
+        echo "中止job executor测试任务......"
         if [ ! -z "$LOCKED_NPUS" ]; then
-            rm -f "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
-            echo "检测到异常退出（退出码: $exit_code），正在释放NPU锁: ${LOCKED_NPUS}"
+            echo "检测到异常退出（退出码: $exit_code），正在释放Server Config文件锁: ${LOCK_DIR}/${LOCK_FILE}"
+            # 获取文件锁（阻塞）
+            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            if ! flock -x 200; then    # 获取独占锁
+                echo "无法获取锁，退出..."
+            fi
+            # 删除Server端配置信息，如果存在的话
+            new_config=`sed "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/${LOCK_FILE}"`
+            echo -n $new_config > "${LOCK_DIR}/${LOCK_FILE}"
+            # 锁会自动在脚本退出或文件描述符关闭时释放
+            exec 200>&-  # 关闭文件描述符
+            echo "正在释放NPU锁: ${LOCKED_NPUS}"
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
@@ -44,28 +57,33 @@ cleanup_locks() {
 # 注册退出时的清理函数
 trap cleanup_locks EXIT INT TERM
 
-host_port_assign() {
-    PORT_RANGE_START=20000
-    PORT_RANGE_END=20999
-
-    for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
-        if ! lsof -i :"$port" >/dev/null 2>&1; then
-            echo "$port" > "${LOCK_DIR}/job_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
-            echo "$port"
-            break
-        fi
-    done
-}
-
 if [ -z $VERSION ]; then
     echo "MindIE version is not specified!"
     exit 1;
 fi
 
+free_port=""
+
+get_free_port() {
+    local PORT_RANGE_START=20000
+    local PORT_RANGE_END=20999
+
+    for port in $(seq $PORT_RANGE_START $PORT_RANGE_END); do
+        if ! lsof -i :"$port" >/dev/null 2>&1; then
+            if [[ " ${server_ports[@]} " =~ " $port " ]]; then
+                continue
+            fi
+            server_ports+=($port)
+            free_port="$port"
+            return
+        fi
+    done
+    free_port=""
+}
+
 # 配置参数
 MODEL_WEIGHT_PATH=""
-PORT=<<<PORT>>>  # 服务端口
-RANK_TABLE_FILE="/home/s_limingge/rank_table_file.json"
+RANK_TABLE_PATH="/home/s_limingge/rank_table/$JOB_ID"
 CONFIG_FILE="/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
 CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
 DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"
@@ -166,9 +184,9 @@ check_network() {
     get_npu_ips
 }
 
-# 步骤2: 创建rank_table_file.json
+# 步骤2: 创建本地rank_table_file.json
 create_rank_table() {
-    log_info "步骤2: 创建rank_table_file.json..."
+    log_info "步骤2: 创建本地rank_table_file.json..."
     
     # 如果NPU_IPS数组为空，则获取NPU IP地址
     if [ ${#NPU_IPS[@]} -eq 0 ]; then
@@ -183,6 +201,9 @@ create_rank_table() {
 
     log_info "创建rank_table_file.json (节点${NODE_RANK}的IP: $LOCAL_SERVER_IP, NPU Rank起始: $NPU_RANK_START)..."
     
+    mkdir -p $RANK_TABLE_PATH
+    RANK_TABLE_FILE=$RANK_TABLE_PATH/rank_table_file.json
+
     if [ -f "$RANK_TABLE_FILE" ]; then
         rm -f "$RANK_TABLE_FILE"
     fi
@@ -190,36 +211,29 @@ create_rank_table() {
     # 创建JSON文件
     cat > "$RANK_TABLE_FILE" <<EOF
 {
-   "server_count": "${SERVER_COUNT}",
+   "server_count": "1",
    "server_list": [
 EOF
     
-    # 生成所有节点的配置
-    for SERVER_IP in `echo $SERVER_LIST | tr '_' '\n'`; do
-        # 生成当前节点的device配置
-        echo "      {" >> "$RANK_TABLE_FILE"
-        echo "         \"device\": [" >> "$RANK_TABLE_FILE"
-        for i in $(seq 0 $((NUM_NPUS-1))); do
-            rank_id=$((NPU_RANK_START + i))
-            echo "            {" >> "$RANK_TABLE_FILE"
-            echo "               \"device_id\": \"$i\"," >> "$RANK_TABLE_FILE"
-            echo "               \"device_ip\": \"${NPU_IPS[$i]}\"," >> "$RANK_TABLE_FILE"
-            echo "               \"rank_id\": \"$rank_id\"" >> "$RANK_TABLE_FILE"
-            if [ $i -lt $((NUM_NPUS-1)) ]; then
-                echo "            }," >> "$RANK_TABLE_FILE"
-            else
-                echo "            }" >> "$RANK_TABLE_FILE"
-            fi
-        done
-        echo "         ]," >> "$RANK_TABLE_FILE"
-        echo "         \"server_id\": \"$LOCAL_SERVER_IP\"," >> "$RANK_TABLE_FILE"
-        echo "         \"container_ip\": \"$CONTAINER_IP\"" >> "$RANK_TABLE_FILE"
-        if [ $SERVER_IP != `echo $SERVER_LIST | tr '_' '\n' | tail -n 1` ]; then
-            echo "      }," >> "$RANK_TABLE_FILE"
+    # 生成当前节点的device配置
+    echo "      {" >> "$RANK_TABLE_FILE"
+    echo "         \"device\": [" >> "$RANK_TABLE_FILE"
+    for i in $(seq 0 $((NUM_NPUS-1))); do
+        rank_id=$((NPU_RANK_START + i))
+        echo "            {" >> "$RANK_TABLE_FILE"
+        echo "               \"device_id\": \"$i\"," >> "$RANK_TABLE_FILE"
+        echo "               \"device_ip\": \"${NPU_IPS[$i]}\"," >> "$RANK_TABLE_FILE"
+        echo "               \"rank_id\": \"$rank_id\"" >> "$RANK_TABLE_FILE"
+        if [ $i -lt $((NUM_NPUS-1)) ]; then
+            echo "            }," >> "$RANK_TABLE_FILE"
         else
-            echo "      }" >> "$RANK_TABLE_FILE"
+            echo "            }" >> "$RANK_TABLE_FILE"
         fi
     done
+    echo "         ]," >> "$RANK_TABLE_FILE"
+    echo "         \"server_id\": \"$LOCAL_SERVER_IP\"," >> "$RANK_TABLE_FILE"
+    echo "         \"container_ip\": \"$CONTAINER_IP\"" >> "$RANK_TABLE_FILE"
+    echo "      }" >> "$RANK_TABLE_FILE"
     echo "   ]," >> "$RANK_TABLE_FILE"
     echo "   \"status\": \"completed\"," >> "$RANK_TABLE_FILE"
     echo "   \"version\": \"1.0\"" >> "$RANK_TABLE_FILE"
@@ -232,9 +246,22 @@ EOF
     log_info "rank_table_file.json 已创建: $RANK_TABLE_FILE"
 }
 
-# 步骤3: 修改模型文件夹权限
+# 步骤3: 生成全局rank_table_file.json
+generate_merged_rank_table() {
+    log_info "步骤3: 生成全局rank_table_file.json..."
+    
+    curl -X POST http://192.168.100.106:$((8080+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
+    
+    GLOBAL_RANK_TABLE_FILE=$RANK_TABLE_PATH/merged_rank_table.json
+    
+    while [ ! -f $GLOBAL_RANK_TABLE_FILE ]; do sleep 1; done
+
+    mv $GLOBAL_RANK_TABLE_FILE $RANK_TABLE_PATH/rank_table.json
+}
+
+# 步骤4: 修改模型文件夹权限
 fix_model_permissions() {
-    log_info "步骤3: 修改模型文件夹权限..."
+    log_info "步骤4: 修改模型文件夹权限..."
     
     if [ ! -d "$MODEL_WEIGHT_PATH" ]; then
         log_error "模型路径不存在: $MODEL_WEIGHT_PATH"
@@ -250,9 +277,9 @@ fix_model_permissions() {
     log_info "模型文件夹权限设置完成"
 }
 
-# 步骤4: 加载Docker镜像
+# 步骤5: 加载Docker镜像
 load_docker_image() {
-    log_info "步骤4: 检查Docker镜像..."
+    log_info "步骤5: 检查Docker镜像..."
     
     if docker images | grep -q "${VERSION}"; then
         log_info "Docker镜像已存在: ${VERSION}"
@@ -262,9 +289,9 @@ load_docker_image() {
     fi
 }
 
-# 步骤5: 启动容器
+# 步骤6: 启动容器
 start_container() {
-    log_info "步骤5: 启动Docker容器..."
+    log_info "步骤6: 启动Docker容器..."
     log_info "创建并启动容器: $CONTAINER_NAME"
     
     docker run -itd --privileged \
@@ -283,7 +310,6 @@ start_container() {
         --device=/dev/davinci_manager \
         --device=/dev/hisi_hdc \
         --device=/dev/devmm_svm \
-        -p $(host_port_assign):<<<PORT>>> \
         -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
         -v /usr/local/Ascend/driver/include:/usr/local/Ascend/driver/include \
         -v /usr/local/Ascend/driver/tools:/usr/local/Ascend/driver/tools \
@@ -306,9 +332,37 @@ start_container() {
     fi
 }
 
-# 步骤6: 创建服务化配置文件
+# 步骤7: 创建服务化配置文件
 create_service_config() {
-    log_info "步骤6: 创建服务化配置文件..."
+    log_info "步骤7: 创建服务化配置文件..."
+
+    # 确保文件存在 & 权限正确
+    if [ ! -f "${LOCK_DIR}/${LOCK_FILE}" ]; then
+        touch "${LOCK_DIR}/${LOCK_FILE}"
+    fi
+
+    # 获取文件锁（阻塞）
+    exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+    if ! flock -x 200; then    # 获取独占锁
+        echo "无法获取锁，退出..."
+        exit 1
+    fi
+
+    server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+
+    get_free_port
+    PORT=$free_port
+    get_free_port
+    MULTI_NODES_INFER_PORT=$free_port
+
+    if [ -z $PORT ] || [ -z $MULTI_NODES_INFER_PORT ]; then
+        exit 1
+    fi
+
+    echo "$LOCAL_IP:$JOB_ID:$PORT $MULTI_NODES_INFER_PORT" >> /dev/fd/200
+
+    # 锁会自动在脚本退出或文件描述符关闭时释放
+    exec 200>&-  # 关闭文件描述符
     
     # 配置参数（可根据需要修改）
     IP_ADDRESS="${IP_ADDRESS:-$LOCAL_SERVER_IP}"  # 本机IP，默认使用LOCAL_SERVER_IP
@@ -339,7 +393,7 @@ create_service_config() {
     else
         MULTI_NODES_ENABLED="False"
     fi
-    
+
     log_info "配置参数:"
     log_info "  - ipAddress: $IP_ADDRESS"
     log_info "  - port: $PORT"
@@ -473,9 +527,9 @@ EOF
     fi
 }
 
-# 步骤7: 配置容器内环境
+# 步骤8: 配置容器内环境
 configure_container() {
-    log_info "步骤7: 配置容器内执行环境..."
+    log_info "步骤8: 配置容器内执行环境..."
     
     # log_info "进入容器并升级transformers..."
     # docker exec "$CONTAINER_NAME" pip install transformers==4.51.0 || log_warn "transformers升级失败"
@@ -507,9 +561,9 @@ configure_container() {
     log_info "容器环境配置完成"
 }
 
-# 步骤8: 启动服务化
+# 步骤9: 启动服务化
 start_service() {
-    log_info "步骤8: 启动MindIE服务化..."
+    log_info "步骤9: 启动MindIE服务化..."
     log_info "在所有机器上同时执行以下命令启动服务化..."
     log_info "日志文件: $LOG_NAME"
 
@@ -641,6 +695,7 @@ echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
 # 执行部署步骤
 # check_network
 create_rank_table
+generate_merged_rank_table
 # fix_model_permissions
 load_docker_image
 start_container
