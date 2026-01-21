@@ -18,7 +18,11 @@ else
     if [ $TEST_TYPE == "Stability" ]; then
         num_of_prefix_cache_options=1
     else
-        num_of_prefix_cache_options=2
+        if [ $ENGINE_TYPE == "SigInfer" ]; then
+            num_of_prefix_cache_options=2
+        else
+            num_of_prefix_cache_options=1
+        fi
     fi
 fi
 
@@ -302,8 +306,12 @@ for option in "${schedule_policies[@]}"; do
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
                 
-                # 将 server_list 数组转换为用分号分隔的字符串
-                server_list_str=$(IFS='_'; echo "${server_list[*]}")
+                # 将 server_list 数组合并为用下划线分隔的字符串
+                server_list_str=$(
+                    for i in "${server_list[@]}"; do
+                        printf '%s\n' "${local_ip_map[$i]}"
+                    done | paste -sd '_' -
+                )
 
                 unset pid_map
                 declare -A pid_map

@@ -341,28 +341,55 @@ create_service_config() {
         touch "${LOCK_DIR}/${LOCK_FILE}"
     fi
 
-    # 获取文件锁（阻塞）
-    exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
-    if ! flock -x 200; then    # 获取独占锁
-        echo "无法获取锁，退出..."
-        exit 1
+    MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
+    if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
+        # 获取文件锁（阻塞）
+        exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        if ! flock -x 200; then    # 获取独占锁
+            echo "无法获取锁，退出..."
+            exit 1
+        fi
+
+        server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+
+        get_free_port
+        PORT=$free_port     # ... 多个节点如何实现端口号保持一致？
+        get_free_port
+        MULTI_NODES_INFER_PORT=$free_port      # ... 如何使用多个节点的端口号保持一致？
+
+        if [ -z $PORT ] || [ -z $MULTI_NODES_INFER_PORT ]; then
+            exit 1
+        fi
+
+        echo "$LOCAL_IP:$JOB_ID:$PORT $MULTI_NODES_INFER_PORT" >> /dev/fd/200
+
+        # 锁会自动在脚本退出或文件描述符关闭时释放
+        exec 200>&-  # 关闭文件描述符
+    else    # Slave节点同步到master节点的端口配置
+        while true; do
+            # 获取文件锁（阻塞）
+            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            if ! flock -x 200; then    # 获取独占锁
+                echo "无法获取锁，退出..."
+                exit 1
+            fi
+
+            # 读取Master节点配置信息
+            server_ports=`cat /dev/fd/200 | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
+            if [ ! -z $server_ports ]; then
+                PORT=$(echo $server_ports | awk '{print $1}')
+                MULTI_NODES_INFER_PORT=$(echo $server_ports | awk '{print $2}')
+                # 锁会自动在脚本退出或文件描述符关闭时释放
+                exec 200>&-  # 关闭文件描述符
+                break
+            fi
+
+            # 锁会自动在脚本退出或文件描述符关闭时释放
+            exec 200>&-  # 关闭文件描述符
+
+            sleep 1
+        done
     fi
-
-    server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
-
-    get_free_port
-    PORT=$free_port
-    get_free_port
-    MULTI_NODES_INFER_PORT=$free_port
-
-    if [ -z $PORT ] || [ -z $MULTI_NODES_INFER_PORT ]; then
-        exit 1
-    fi
-
-    echo "$LOCAL_IP:$JOB_ID:$PORT $MULTI_NODES_INFER_PORT" >> /dev/fd/200
-
-    # 锁会自动在脚本退出或文件描述符关闭时释放
-    exec 200>&-  # 关闭文件描述符
     
     # 配置参数（可根据需要修改）
     IP_ADDRESS="${IP_ADDRESS:-$LOCAL_SERVER_IP}"  # 本机IP，默认使用LOCAL_SERVER_IP
