@@ -124,7 +124,7 @@ release_npu_lock() {
         local lock_task_id=$(grep "^task_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
         local lock_session_id=$(grep "^session_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
         if [ "$lock_task_id" != "$task_id" ] || [ "$lock_session_id" != "$session_id" ]; then
-            echo "警告: 尝试释放不属于当前任务的锁 (${server} NPU ${npu_id}), ${lock_task_id} != ${task_id}" >&2
+            echo "警告: 尝试释放不属于当前任务的锁 (${server} NPU ${npu_id}), ${lock_task_id} != ${task_id} 或者 ${lock_session_id} != ${session_id}" >&2
             return 1
         fi
     fi

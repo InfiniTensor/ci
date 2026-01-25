@@ -29,13 +29,13 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        target_file = "job_executor_for_SmokeTest.sh"
+        target_file = "MindIE_job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        target_file = "job_executor_for_PerformanceTest.sh"
+        target_file = "MindIE_job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        target_file = "job_executor_for_StabilityTest.sh"
+        target_file = "MindIE_job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
-        target_file = "job_executor_for_AccuracyTest.sh"
+        target_file = "MindIE_job_executor_for_AccuracyTest.sh"
     
     start = True
     for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):

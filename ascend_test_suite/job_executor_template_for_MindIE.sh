@@ -436,6 +436,8 @@ create_service_config() {
     docker exec -i "$CONTAINER_NAME" python3 <<EOF
 import json
 import os
+# import pwd
+# import grp
 
 config_file = "$CONFIG_FILE"
 
@@ -527,6 +529,12 @@ os.makedirs(os.path.dirname(config_file), exist_ok=True)
 # 写入配置文件
 with open(config_file, 'w', encoding='utf-8') as f:
     json.dump(config, f, indent=4, ensure_ascii=False)
+
+# uid = pwd.getpwnam("root").pw_uid
+# gid = grp.getgrnam("root").gr_gid
+# os.chown(config_file, uid, gid)
+
+# os.chmod(config_file, 0o640)
 
 print(f"配置文件已更新: {config_file}")
 EOF

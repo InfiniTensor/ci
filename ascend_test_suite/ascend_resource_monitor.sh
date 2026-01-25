@@ -58,8 +58,8 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         ["aicc004"]="10.9.1.114"
         ["aicc005"]="10.9.1.98"
         ["aicc006"]="10.9.1.110"
-        ["aicc007"]="10.9.1.86"
-        ["aicc008"]="10.9.1.94"
+        # ["aicc007"]="10.9.1.86"
+        # ["aicc008"]="10.9.1.94"
         # ["aicc009"]="10.9.1.82"
         # ["aicc010"]="10.9.1.102"
     )
@@ -87,13 +87,13 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
-        # ["aicc001"]="10.9.1.78"
-        # ["aicc003"]="10.9.1.106"
-        # ["aicc004"]="10.9.1.114"
-        # ["aicc005"]="10.9.1.98"
-        # ["aicc006"]="10.9.1.110"
+        ["aicc001"]="10.9.1.78"
+        ["aicc003"]="10.9.1.106"
+        ["aicc004"]="10.9.1.114"
+        ["aicc005"]="10.9.1.98"
+        ["aicc006"]="10.9.1.110"
         ["aicc007"]="10.9.1.86"
-        # ["aicc008"]="10.9.1.94"
+        ["aicc008"]="10.9.1.94"
         # ["aicc009"]="10.9.1.82"
         # ["aicc010"]="10.9.1.102"
     )
@@ -105,8 +105,8 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
 fi
 
 full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8)
-# full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct-AWQ:2)
-full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:2 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
+full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct:4 Qwen2.5-72B-Instruct-AWQ:2)
+# full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:2 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
 full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16 DeepSeek-R1-AWQ:8)
 
@@ -137,7 +137,20 @@ if [ $TEST_TYPE == "Smoke" ]; then
     touch ${processed_models}
     num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
-    full_model_list=(${full_model_list_for_performance[@]})
+    if [ $MODEL_LIST == "default" ]; then
+        full_model_list=(${full_model_list_for_performance[@]})
+    else
+        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+        full_model_list=()
+        for model in "${model_list[@]}"; do
+            for item in "${full_model_list_for_performance[@]}"; do
+                name=`echo "$item" | awk -F : '{print $1}'`
+                if [ $model == $name ]; then
+                    full_model_list+=($item)
+                fi
+            done
+        done
+    fi
     rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
@@ -260,10 +273,10 @@ search_servers() {
 for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
     if [ $name == 'aicc002' ]; then
-        sshpass -p 's_limingge' scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
+        sshpass -p 's_limingge' scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
         sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
     else
-        scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
+        scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
         scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
     fi
 done
@@ -345,7 +358,7 @@ while true; do
                 $curr_dir/siginfer_ascend_test.sh 0 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Stability测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
                 $curr_dir/siginfer_ascend_test.sh 1 "${servers[*]}" ${model} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!

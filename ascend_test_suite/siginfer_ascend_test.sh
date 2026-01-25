@@ -141,7 +141,7 @@ cleanup_all_resources() {
             job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
             # 删除Server端配置信息
             new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/${LOCK_FILE}"`
-            echo -n $new_config > "${LOCK_DIR}/${LOCK_FILE}"
+            echo $new_config > "${LOCK_DIR}/${LOCK_FILE}"
         done
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
@@ -187,7 +187,7 @@ handle_interrupt() {
         echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
         # 通过 ssh 找到远程脚本进程并发送信号
         ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 s_limingge@$remote_ip "
-            pids=\$(ps -ef --forest | grep 'job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
+            pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
             if [ ! -z \"\$pids\" ]; then
                 for pid in \$pids; do
                     # 检查进程是否仍在运行
@@ -203,6 +203,9 @@ handle_interrupt() {
     done
     # 等待一小段时间，让远程脚本有机会处理信号
     sleep 2
+    if [ -v JMETER_PID ]; then
+        kill -SIGTERM $JMETER_PID
+    fi
     cleanup_all_resources
 }
 
@@ -326,18 +329,18 @@ for option in "${schedule_policies[@]}"; do
 
                     if [ $TEST_TYPE == "Smoke" ]; then
                         if [ $ENGINE_TYPE == "MindIE" ]; then
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         fi
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
                     else
                         if [ $ENGINE_TYPE == "MindIE" ]; then
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
                         else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version &
                         fi
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
@@ -528,17 +531,24 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        concurrency_list=(1 5 10 20 50 100 150)
+                        # concurrency_list=(1 5 10 20 50 100 150)
+                        # length_pairs=(
+                        #     "128:128"
+                        #     "128:1024"
+                        #     "128:2048"
+                        #     "1024:1024"
+                        #     "2048:2048"
+                        #     "4096:1024"
+                        #     "1024:4096"
+                        #     "30000:2048"
+                        #     "126000:2048"
+                        # )
+                        concurrency_list=(50 100 150 200)
                         length_pairs=(
-                            "128:128"
-                            "128:1024"
-                            "128:2048"
+                            "512:512"
                             "1024:1024"
                             "2048:2048"
-                            "4096:1024"
-                            "1024:4096"
-                            "30000:2048"
-                            "126000:2048"
+                            "3072:1024"
                         )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
@@ -688,11 +698,28 @@ for option in "${schedule_policies[@]}"; do
                     fi
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
-                    # ......
-                    
-                    echo "按任意键结束......"
-                    # read -n 1 -s
-                    sleep infinity
+                    export JVM_ARGS="-Xms4g -Xmx4g -XX:+UseG1GC"
+                    jmeter -n -t smoke.jmx
+                    jmeter -n -t test.jmx -l result.jtl
+                    /opt/apache-jmeter-5.6.3/bin/jmeter \
+                        -n \
+                        -t /data/test/llm_perf.jmx \
+                        -l /data/jtl/result_$(date +\%F).jtl  \
+                        -e \
+                        -o report/  \
+                        -Jmodel=${model} \
+                        -Jbatch_size=16 \
+                        -Jcontext_len=8192 \
+                        -Jqps=30    \
+                        > /data/log/jmeter_$(date +\%F).log 2>&1 &
+
+                        # 在 JMX 中使用：
+                        # ${__P(model)}
+                        # ${__P(batch_size)}
+                        # ${__P(context_len)}
+
+                        JMETER_PID=$!
+                        wait $JMETER_PID
                 fi
 
                 echo "测试完成！"
