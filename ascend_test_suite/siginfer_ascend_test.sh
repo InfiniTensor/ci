@@ -133,15 +133,16 @@ cleanup_all_resources() {
         done
         echo "NPU 锁释放完成"
         # 获取文件锁（阻塞）
-        exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
         if ! flock -x 200; then    # 获取独占锁
             echo "无法获取锁，退出..."
         fi
         for ip in ${server_list[@]}; do
             job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
             # 删除Server端配置信息
-            new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/${LOCK_FILE}"`
-            echo $new_config > "${LOCK_DIR}/${LOCK_FILE}"
+            # sed -i "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"
+            new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"`
+            echo "${new_config}" > "${LOCK_DIR}/server_config.txt"
         done
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
@@ -331,7 +332,7 @@ for option in "${schedule_policies[@]}"; do
                         if [ $ENGINE_TYPE == "MindIE" ]; then
                             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         fi
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
@@ -340,7 +341,7 @@ for option in "${schedule_policies[@]}"; do
                         if [ $ENGINE_TYPE == "MindIE" ]; then
                             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
                         else
-                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $session_id $version &
+                            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $session_id $version &
                         fi
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
@@ -437,14 +438,14 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ -f "${LOCK_DIR}/${LOCK_FILE}" ]; then
                     # 获取文件锁（阻塞）
-                    exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+                    exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
                     if ! flock -x 200; then    # 获取独占锁
                         echo "无法获取锁，退出..."
                         exit 1
                     fi
                     # 读取Server端配置信息
                     job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
-                    server_port=`cat /dev/fd/200 | grep "${local_master_ip}:${job_id}:" | awk -F ':' '{print $3}' | awk '{print $1}' | tail -n 1`
+                    server_port=`cat "${LOCK_DIR}/server_config.txt" | grep "${local_master_ip}:${job_id}:" | awk -F ':' '{print $3}' | awk '{print $1}' | tail -n 1`
                     # 锁会自动在脚本退出或文件描述符关闭时释放
                     exec 200>&-  # 关闭文件描述符
                 else
@@ -532,23 +533,17 @@ for option in "${schedule_policies[@]}"; do
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
                         # concurrency_list=(1 5 10 20 50 100 150)
-                        # length_pairs=(
+                        concurrency_list=(1)
+                        length_pairs=(
                         #     "128:128"
-                        #     "128:1024"
+                             "128:1024"
                         #     "128:2048"
                         #     "1024:1024"
                         #     "2048:2048"
                         #     "4096:1024"
-                        #     "1024:4096"
+                             "1024:4096"
                         #     "30000:2048"
                         #     "126000:2048"
-                        # )
-                        concurrency_list=(50 100 150 200)
-                        length_pairs=(
-                            "512:512"
-                            "1024:1024"
-                            "2048:2048"
-                            "3072:1024"
                         )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "

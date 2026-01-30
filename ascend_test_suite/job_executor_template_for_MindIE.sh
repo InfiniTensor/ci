@@ -37,13 +37,14 @@ cleanup_locks() {
         if [ ! -z "$LOCKED_NPUS" ]; then
             echo "检测到异常退出（退出码: $exit_code），正在释放Server Config文件锁: ${LOCK_DIR}/${LOCK_FILE}"
             # 获取文件锁（阻塞）
-            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
             if ! flock -x 200; then    # 获取独占锁
                 echo "无法获取锁，退出..."
             fi
             # 删除Server端配置信息，如果存在的话
-            new_config=`sed "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/${LOCK_FILE}"`
-            echo -n $new_config > "${LOCK_DIR}/${LOCK_FILE}"
+            # sed -i "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/server_config.txt"
+            new_config=`sed "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/server_config.txt"`
+            echo "${new_config}" > "${LOCK_DIR}/server_config.txt"
             # 锁会自动在脚本退出或文件描述符关闭时释放
             exec 200>&-  # 关闭文件描述符
             echo "正在释放NPU锁: ${LOCKED_NPUS}"
@@ -336,21 +337,21 @@ start_container() {
 create_service_config() {
     log_info "步骤7: 创建服务化配置文件..."
 
-    # 确保文件存在 & 权限正确
-    if [ ! -f "${LOCK_DIR}/${LOCK_FILE}" ]; then
-        touch "${LOCK_DIR}/${LOCK_FILE}"
-    fi
-
     MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
     if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
         # 获取文件锁（阻塞）
-        exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
         if ! flock -x 200; then    # 获取独占锁
             echo "无法获取锁，退出..."
             exit 1
         fi
 
-        server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+        # 确保文件存在 & 权限正确
+        if [ ! -f "${LOCK_DIR}/server_config.txt" ]; then
+            touch "${LOCK_DIR}/server_config.txt"
+        fi
+
+        server_ports=(`cat "${LOCK_DIR}/server_config.txt" | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
 
         get_free_port
         PORT=$free_port     # ... 多个节点如何实现端口号保持一致？
@@ -361,21 +362,21 @@ create_service_config() {
             exit 1
         fi
 
-        echo "$LOCAL_IP:$JOB_ID:$PORT $MULTI_NODES_INFER_PORT" >> /dev/fd/200
+        echo "$LOCAL_IP:$JOB_ID:$PORT $MULTI_NODES_INFER_PORT" >> "${LOCK_DIR}/server_config.txt"
 
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
     else    # Slave节点同步到master节点的端口配置
         while true; do
             # 获取文件锁（阻塞）
-            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
             if ! flock -x 200; then    # 获取独占锁
                 echo "无法获取锁，退出..."
                 exit 1
             fi
 
             # 读取Master节点配置信息
-            server_ports=`cat /dev/fd/200 | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
+            server_ports=`cat "${LOCK_DIR}/server_config.txt" | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
             if [ ! -z $server_ports ]; then
                 PORT=$(echo $server_ports | awk '{print $1}')
                 MULTI_NODES_INFER_PORT=$(echo $server_ports | awk '{print $2}')

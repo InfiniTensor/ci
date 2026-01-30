@@ -30,34 +30,14 @@ def main():
     src_code = ""
     
     if test_type == "Smoke":
-        port_num = "$((8000+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((26541+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_SmokeTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "vLLM_job_executor_for_SmokeTest.sh"
     elif test_type == "Performance":
-        port_num = "$((8765+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((28765+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((9642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_PerformanceTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "vLLM_job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        port_num = "$((8000+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((28880+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((9032+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_StabilityTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "vLLM_job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
-        port_num = "$((9701+${JOB_COUNT}))"
-        src_code += f"PORT={port_num}\n"
-        src_code += "PROMETHEUS_PORT=$((28771+${JOB_COUNT}))\n"
-        src_code += "MASTER_PORT=$((27642+${JOB_COUNT}))\n"
-        src_code += "LOG_NAME=\"server_log_AccuracyTest_$(date +'%Y%m%d_%H%M%S').log\"\n\n"
         target_file = "vLLM_job_executor_for_AccuracyTest.sh"
-
+    
     start = True
     for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
         # print(row)  # 每行数据以元组形式返回
@@ -111,8 +91,6 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
-            elif "<<<PORT>>>" in line:
-                lines[line_num] = line.replace("<<<PORT>>>", port_num)
             line_num += 1
     except FileNotFoundError:
         print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
