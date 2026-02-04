@@ -159,15 +159,14 @@ while true; do
     echo "当前空闲 GPU 数量：$FREE_COUNT, 索引: ${GPU_INFO[@]}"
     # 如果找到足够的空闲 GPU, 则返回结果并退出
     if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-        # 只取需要的数量
-        SELECTED_GPUS="${GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
-        echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定: ${SELECTED_GPUS}"
+        echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${GPU_INFO[@]}"
+        echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
 
         # 尝试原子性地获取所有NPU的锁
-        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-            LOCKED_NPUS="$SELECTED_GPUS"
-            GPU_INFO=($SELECTED_GPUS)
+        if acquire_npu_locks_batch "$SERVER_NAME" "${GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+            LOCKED_NPUS="${ACUQIRED_LOCKS[@]}"
+            GPU_INFO=(${ACUQIRED_LOCKS[@]})
             break
         else
             echo "锁定失败（可能被其他任务占用），继续扫描......"

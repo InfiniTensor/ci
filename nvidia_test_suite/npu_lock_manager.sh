@@ -78,36 +78,33 @@ EOF
 }
 
 # 批量获取NPU锁（原子操作 - 要么全部成功，要么全部失败）
-# 参数: $1=服务器名或IP, $2=NPU索引列表（空格分隔）, $3=任务ID, $4=SessionID
+# 参数: $1=服务器名或IP, $2=NPU索引列表（空格分隔）, $3=所需数量, $4=任务ID, $5=SessionID, $6=返回结果
 # 返回: 0=成功, 1=失败
 acquire_npu_locks_batch() {
     local server=$1
     local npu_list=$2
-    local task_id=$3
-    local session_id=$4
+    local acquired_count=$3
+    local task_id=$4
+    local session_id=$5
+    local -n acquired_locks=$6     # 传名引用
 
-    local acquired_locks=()
-    local all_success=true
-    
-    # 尝试获取所有锁
+    # 尝试获取所需数量的锁
+    acquired_locks=()
     for npu_id in $npu_list; do
         if acquire_npu_lock "$server" "$npu_id" "$task_id" "$session_id"; then
             acquired_locks+=("$npu_id")
-        else
-            all_success=false
-            break
+            if [ ${#acquired_locks[@]} -eq $acquired_count ]; then
+                return 0
+            fi
         fi
     done
     
     # 如果没有全部成功，释放已获取的锁
-    if [ "$all_success" = false ]; then
-        for npu_id in "${acquired_locks[@]}"; do
-            release_npu_lock "$server" "$npu_id" "$task_id" "$session_id"
-        done
-        return 1
-    fi
+    for npu_id in "${acquired_locks[@]}"; do
+        release_npu_lock "$server" "$npu_id" "$task_id" "$session_id"
+    done
     
-    return 0
+    return 1
 }
 
 # 释放NPU锁
@@ -124,7 +121,7 @@ release_npu_lock() {
         local lock_task_id=$(grep "^task_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
         local lock_session_id=$(grep "^session_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
         if [ "$lock_task_id" != "$task_id" ] || [ "$lock_session_id" != "$session_id" ]; then
-            echo "警告: 尝试释放不属于当前任务的锁 (${server} NPU ${npu_id}), ${lock_task_id} != ${task_id}" >&2
+            echo "警告: 尝试释放不属于当前任务的锁 (${server} NPU ${npu_id}), ${lock_task_id} != ${task_id} 或者 ${lock_session_id} != ${session_id}" >&2
             return 1
         fi
     fi
@@ -191,7 +188,7 @@ check_npu_lock() {
 }
 
 # 批量检查NPU锁
-# 参数: $1=服务器名或IP, $2=NPU索引列表（空格分隔）, $3=任务ID, $4=SessionID
+# 参数: $1=服务器名或IP, $2=NPU索引列表（空格分隔）, $3=任务ID, $4=SessionID, $5=返回结果
 check_npu_locks_batch() {
     local server=$1
     local npu_list=$2
