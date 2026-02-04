@@ -386,6 +386,7 @@ while true; do
                 err=$?          # 保存上一个结束子进程的退出状态
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                        echo "没有资源，等待超时，加入队列，稍后重试......"
                         temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
                     fi
                 else
