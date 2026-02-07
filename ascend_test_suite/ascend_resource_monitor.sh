@@ -188,7 +188,7 @@ search_servers() {
         echo "$key => ${npu_server_list[$key]}"
         if [ $key == 'aicc002' ]; then
             sshpass -p 's_limingge' ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list['aicc002']} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -224,7 +224,7 @@ search_servers() {
             fi
         else
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -274,10 +274,10 @@ for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
     if [ $name == 'aicc002' ]; then
         sshpass -p 's_limingge' scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
-        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
+        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
     else
         scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
-        scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
+        scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
     fi
 done
 

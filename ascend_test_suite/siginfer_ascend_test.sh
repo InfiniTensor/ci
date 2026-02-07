@@ -126,7 +126,7 @@ cleanup_all_resources() {
     # 2. 释放 NPU 锁
     if [ -v model ]; then
         echo "正在释放 NPU 锁..."
-        source $curr_dir/npu_lock_manager.sh
+        source $curr_dir/npu_lock_manager_for_ci.sh
         for ip in ${server_list[@]}; do
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
             release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}" "${session_id}"

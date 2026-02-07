@@ -2,7 +2,7 @@
 
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-source "${SCRIPT_DIR}/npu_lock_manager.sh"
+source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
 LOCK_DIR="/home/s_limingge/.npu_locks"
 LOCK_FILE="server_config.lock"
 

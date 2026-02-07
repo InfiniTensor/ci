@@ -3,7 +3,7 @@
 # NPU锁管理工具 - 提供友好的命令行界面
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-source "${SCRIPT_DIR}/npu_lock_manager.sh"
+source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
 
 # 显示帮助信息
 show_help() {
