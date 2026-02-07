@@ -225,7 +225,7 @@ else    # Slave节点同步到master节点的端口配置
 
         # 读取Master节点配置信息
         server_ports=`cat "${LOCK_DIR}/server_config.txt" | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
-        if [ ! -z $server_ports ]; then
+        if [ ! -z "$server_ports" ]; then
             PORT=$(echo $server_ports | awk '{print $1}')
             PROMETHEUS_PORT=$(echo $server_ports | awk '{print $2}')
             MASTER_PORT=$(echo $server_ports | awk '{print $3}')
