@@ -341,6 +341,8 @@ else
     echo "推理引擎版本: ${version}"
 fi
 
+ret=0
+
 while true; do
     job_count=0
     temp_list=()
@@ -392,6 +394,7 @@ while true; do
                 else
                     echo "程序出错！"
                 fi
+                ret=1
                 continue
             else
                 echo $status_msg
@@ -481,4 +484,4 @@ while true; do
     fi
 done
 
-exit 0
+exit $ret
