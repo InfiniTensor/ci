@@ -48,3 +48,8 @@ while kill -0 $CHILD_PID 2>/dev/null; do
     echo -n "."
     sleep 1
 done
+
+wait $CHILD_PID
+EXIT_CODE=$?
+
+exit $EXIT_CODE
