@@ -30,4 +30,9 @@ while kill -0 $CHILD_PID 2>/dev/null; do
     sleep 1
 done
 
+wait $CHILD_PID
+EXIT_CODE=$?
+
 rm -rf $curr_dir
+
+exit $EXIT_CODE
