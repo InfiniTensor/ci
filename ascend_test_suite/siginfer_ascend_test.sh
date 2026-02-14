@@ -406,6 +406,8 @@ for option in "${schedule_policies[@]}"; do
                                 echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
                             fi
                             
+                            # ...
+
                             # 启动失败，清理工作
                             for ip in ${server_list[@]}; do
                                 if [ $ENGINE_TYPE == "SigInfer" ]; then
