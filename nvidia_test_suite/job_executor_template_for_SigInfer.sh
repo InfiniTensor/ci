@@ -2,7 +2,7 @@
 
 # 导入GPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-source "${SCRIPT_DIR}/npu_lock_manager.sh"
+source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
 LOCK_DIR="/home/s_limingge/.npu_locks"
 LOCK_FILE="server_config.lock"
 
@@ -12,7 +12,7 @@ GPU_QUANITY=$2
 USE_PREFIX_CACHE=$3
 SCHEDULE_POLICY=$4
 SWAP_SPACE=$5
-MASTER_IP=$6
+SERVER_LIST=$6
 NODE_RANK=$7
 JOB_COUNT=$8
 GPU_MODEL=$9
@@ -29,15 +29,18 @@ SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 cleanup_locks() {
     local exit_code=$?
     if [ $exit_code -ne 0 ]; then
+        echo "中止job executor测试任务......"
         if [ ! -z "$LOCKED_GPUS" ]; then
             echo "检测到异常退出（退出码: $exit_code），正在释放Server Config文件锁: ${LOCK_DIR}/${LOCK_FILE}"
             # 获取文件锁（阻塞）
-            exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
             if ! flock -x 200; then    # 获取独占锁
                 echo "无法获取锁，退出..."
             fi
             # 删除Server端配置信息，如果存在的话
-            sed -i "/${LOCAL_IP}:${JOB_ID}/d" /dev/fd/200
+            # sed -i "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/server_config.txt"
+            new_config=`sed "/${LOCAL_IP}:${JOB_ID}:/d" "${LOCK_DIR}/server_config.txt"`
+            echo "${new_config}" > "${LOCK_DIR}/server_config.txt"
             # 锁会自动在脚本退出或文件描述符关闭时释放
             exec 200>&-  # 关闭文件描述符
             echo "正在释放GPU锁: ${LOCKED_GPUS}"
@@ -185,14 +188,13 @@ while true; do
         FREE_GPU_INFO=($(seq 2 $(($TOTAL_COUNT+1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            # 只取需要的数量
-            SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
-            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-            CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+            echo "发现 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${FREE_GPU_INFO[@]}"
+            echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
             # 尝试原子性地获取所有GPU的锁
-            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                LOCKED_GPUS="$SELECTED_GPUS"
+            if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                 break
             else
                 echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -204,14 +206,13 @@ while true; do
         FREE_GPU_INFO=($(seq 0 $(($TOTAL_COUNT-1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
         # 如果找到足够的空闲 GPU, 则返回结果并退出
         if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-            # 只取需要的数量
-            SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
-            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-            CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+            echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${FREE_GPU_INFO[@]}"
+            echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
             # 尝试原子性地获取所有GPU的锁
-            if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                LOCKED_GPUS="$SELECTED_GPUS"
+            if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                 break
             else
                 echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -224,14 +225,13 @@ while true; do
             if [ $TARGET_FREE_GPUS -gt 4 ]; then
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                    # 只取需要的数量
-                    SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
-                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-                    CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                    echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${FREE_GPU_INFO[@]}"
+                    echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
                     # 尝试原子性地获取所有GPU的锁
-                    if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                        echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                        LOCKED_GPUS="$SELECTED_GPUS"
+                    if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                        echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                        LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                        CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                         break
                     else
                         echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -253,14 +253,13 @@ while true; do
                     done
                     # 如果在 CPU1 组中找到足够的空闲 GPU, 则返回结果并退出
                     if [ "${#CPU_1_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                        # 只取需要的数量
-                        SELECTED_GPUS="${CPU_1_GROUP[@]:0:$TARGET_FREE_GPUS}"
-                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-                        CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${CPU_1_GROUP[@]}"
+                        echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
                         # 尝试原子性地获取所有GPU的锁
-                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                            LOCKED_GPUS="$SELECTED_GPUS"
+                        if acquire_npu_locks_batch "$SERVER_NAME" "${CPU_1_GROUP[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                            LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                            CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                             break
                         else
                             echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -268,14 +267,13 @@ while true; do
                     fi
                     # 如果在 CPU2 组中找到足够的空闲 GPU, 则返回结果并退出
                     if [ "${#CPU_2_GROUP[@]}" -ge "$TARGET_FREE_GPUS" ]; then
-                        # 只取需要的数量
-                        SELECTED_GPUS="${CPU_2_GROUP[@]:0:$TARGET_FREE_GPUS}"
-                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-                        CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                        echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${CPU_2_GROUP[@]}"
+                        echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
                         # 尝试原子性地获取所有GPU的锁
-                        if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                            LOCKED_GPUS="$SELECTED_GPUS"
+                        if acquire_npu_locks_batch "$SERVER_NAME" "${CPU_2_GROUP[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                            echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                            LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                            CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                             break
                         else
                             echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -286,14 +284,13 @@ while true; do
         else
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ "$FREE_COUNT" -ge "$TARGET_FREE_GPUS" ]; then
-                # 只取需要的数量
-                SELECTED_GPUS="${FREE_GPU_INFO[@]:0:$TARGET_FREE_GPUS}"
-                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 尝试锁定：${SELECTED_GPUS}"
-                CUDA_VISIBLE_DEVICES=$(echo ${SELECTED_GPUS} | sed -E 's/\s+/\,/g')
+                echo "成功找到 $TARGET_FREE_GPUS 张空闲 GPU, 索引: ${FREE_GPU_INFO[@]}"
+                echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
                 # 尝试原子性地获取所有GPU的锁
-                if acquire_npu_locks_batch "$SERVER_NAME" "$SELECTED_GPUS" "$TASK_ID" "$SESSION_ID"; then
-                    echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${SELECTED_GPUS}"
-                    LOCKED_GPUS="$SELECTED_GPUS"
+                if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
+                    echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
+                    LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+                    CUDA_VISIBLE_DEVICES=$(echo ${LOCKED_GPUS} | sed -E 's/\s+/\,/g')
                     break
                 else
                     echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -310,30 +307,63 @@ done
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-# 获取文件锁（阻塞）
-exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
-if ! flock -x 200; then    # 获取独占锁
-    echo "无法获取锁，退出..."
-    exit 1
+MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
+if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
+    # 获取文件锁（阻塞）
+    exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+    if ! flock -x 200; then    # 获取独占锁
+        echo "无法获取锁，退出..."
+        exit 1
+    fi
+
+    # 确保文件存在 & 权限正确
+    if [ ! -f "${LOCK_DIR}/server_config.txt" ]; then
+        touch "${LOCK_DIR}/server_config.txt"
+    fi
+
+    server_ports=(`cat "${LOCK_DIR}/server_config.txt" | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+
+    get_free_port
+    PORT=$free_port
+    get_free_port
+    PROMETHEUS_PORT=$free_port
+    get_free_port
+    MASTER_PORT=$free_port
+
+    if [ -z $PORT ] || [ -z $PROMETHEUS_PORT ] || [ -z $MASTER_PORT ]; then
+        exit 1
+    fi
+
+    echo "$LOCAL_IP:$JOB_ID:$PORT $PROMETHEUS_PORT $MASTER_PORT" >> "${LOCK_DIR}/server_config.txt"
+
+    # 锁会自动在脚本退出或文件描述符关闭时释放
+    exec 200>&-  # 关闭文件描述符
+else    # Slave节点同步到master节点的端口配置
+    while true; do
+        # 获取文件锁（阻塞）
+        exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        if ! flock -x 200; then    # 获取独占锁
+            echo "无法获取锁，退出..."
+            exit 1
+        fi
+
+        # 读取Master节点配置信息
+        server_ports=`cat "${LOCK_DIR}/server_config.txt" | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
+        if [ ! -z "$server_ports" ]; then
+            PORT=$(echo $server_ports | awk '{print $1}')
+            PROMETHEUS_PORT=$(echo $server_ports | awk '{print $2}')
+            MASTER_PORT=$(echo $server_ports | awk '{print $3}')
+            # 锁会自动在脚本退出或文件描述符关闭时释放
+            exec 200>&-  # 关闭文件描述符
+            break
+        fi
+
+        # 锁会自动在脚本退出或文件描述符关闭时释放
+        exec 200>&-  # 关闭文件描述符
+
+        sleep 1
+    done
 fi
-
-server_ports=(`cat /dev/fd/200 | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
-
-get_free_port
-PORT=$free_port
-get_free_port
-PROMETHEUS_PORT=$free_port
-get_free_port
-MASTER_PORT=$free_port
-
-if [ -z $PORT ] || [ -z $PROMETHEUS_PORT ] || [ -z $MASTER_PORT ]; then
-    exit 1
-fi
-
-echo "$LOCAL_IP:$JOB_ID:$PORT $PROMETHEUS_PORT $MASTER_PORT" >> /dev/fd/200
-
-# 锁会自动在脚本退出或文件描述符关闭时释放
-exec 200>&-  # 关闭文件描述符
 
 EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
     --gpus all \

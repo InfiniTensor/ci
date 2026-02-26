@@ -6,15 +6,17 @@ parser = argparse.ArgumentParser(description="写入结果文件")
 parser.add_argument('--file', type=str)
 parser.add_argument('--framework', type=str)
 parser.add_argument('--engine', type=str)
+parser.add_argument('--sessionID', type=str)
 
 args=parser.parse_args()
 # 读取 txt 文件，按 '+' 分割列
 input_file = args.file
 output_file = args.framework
 engine = args.engine
+session_id = args.sessionID
 
 curr_dir = os.getcwd()
-output_file = f"{curr_dir}/report_{os.environ['TASK_START_TIME']}/{output_file}_result.xlsx"
+output_file = f"{curr_dir}/report_{os.environ['TASK_START_TIME']}/{session_id}/{output_file}_result.xlsx"
 data_dict = {}
 
 with open(input_file, "r", encoding="utf-8") as file:

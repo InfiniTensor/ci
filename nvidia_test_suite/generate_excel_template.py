@@ -28,7 +28,7 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
         ("测试命令", test_cmd)
     ]
 
-    col_count = 15  # 总列数（SigInfer + 14列指标）
+    col_count = 16  # 总列数（SigInfer + 15列指标）
     row_idx = 1
     for title, content in top_info:
         ws.cell(row=row_idx, column=1, value=title)
@@ -48,15 +48,15 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
     # 二级表头
     # 第 4 行：大类
     top_headers = [
-        (4, 5, "Serving Benchmark Result"),
-        (6, 8, "Time to First Token"),
-        (9, 11, "Time per Output Token"),
-        (12, 14, "Inter-token Latency")
+        (4, 6, "Serving Benchmark Result"),
+        (7, 9, "Time to First Token"),
+        (10, 12, "Time per Output Token"),
+        (13, 15, "Inter-token Latency")
     ]
 
     # 第 5 行：细项
     sub_headers = [
-        "Inference Engine", "上下文长度", "Batch",
+        "Inference Engine", "上下文长度", "Batch", "Successful requests",
         "Output token throughput", "Total Token throughput",
         "Mean TTFT", "Median TTFT", "P99 TTFT",
         "Mean TPOT", "Median TPOT", "P99 TPOT",
@@ -117,7 +117,7 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
                     value=f"{batch} (num_prompt={int(batch * multiplier)})")
 
             # 其他列预置为空并设为浮点显示两位小数
-            for col in range(4, 15):
+            for col in range(4, 16):
                 c = ws.cell(row=row_index, column=col, value=None)
                 c.data_type = "n"
                 c.number_format = "0.00"
@@ -127,7 +127,7 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
             row_fill = blue_fill if row_index % 2 == 0 else light_blue_fill
 
             # 应用样式
-            for col in range(1, 15):
+            for col in range(1, 16):
                 cell = ws.cell(row=row_index, column=col)
                 if col == 1 or col == 2:
                     cell.alignment = center_align
@@ -153,8 +153,8 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
     ws.cell(6, 1).font = Font(bold=True)
 
     # 自动调整列宽
-    for col in range(1, 15):
-        if col == 3 or col == 4 or col == 5:
+    for col in range(1, 16):
+        if col == 3 or col == 4 or col == 5 or col == 6:
             ws.column_dimensions[get_column_letter(col)].width = 26
         else:
             ws.column_dimensions[get_column_letter(col)].width = 19
@@ -171,6 +171,7 @@ def fill_benchmark_results(excel_file, benchmark_data, context_lengths, batch_si
         excel_file: Excel文件路径
         benchmark_data: 字典格式的基准测试数据
                       格式: {(context_length, batch_size): {
+                           'successful_requests': int,
                            'output_token_throughput': float,
                            'total_token_throughput': float,
                            'mean_ttft': float,
@@ -191,17 +192,18 @@ def fill_benchmark_results(excel_file, benchmark_data, context_lengths, batch_si
 
     # 数据列映射 (列索引 -> 数据键)
     data_columns = {
-        4: 'Output token throughput (tok/s)',
-        5: 'Total Token throughput (tok/s)',
-        6: 'Mean TTFT (ms)',
-        7: 'Median TTFT (ms)',
-        8: 'P99 TTFT (ms)',
-        9: 'Mean TPOT (ms)',
-        10: 'Median TPOT (ms)',
-        11: 'P99 TPOT (ms)',
-        12: 'Mean ITL (ms)',
-        13: 'Median ITL (ms)',
-        14: 'P99 ITL (ms)'
+        4: 'Successful requests',
+        5: 'Output token throughput (tok/s)',
+        6: 'Total Token throughput (tok/s)',
+        7: 'Mean TTFT (ms)',
+        8: 'Median TTFT (ms)',
+        9: 'P99 TTFT (ms)',
+        10: 'Mean TPOT (ms)',
+        11: 'Median TPOT (ms)',
+        12: 'P99 TPOT (ms)',
+        13: 'Mean ITL (ms)',
+        14: 'Median ITL (ms)',
+        15: 'P99 ITL (ms)'
     }
 
     row_index = 6  # 数据从第6行开始
@@ -278,6 +280,7 @@ if __name__ == "__main__":
     # 示例：使用字典格式填充数据
     example_benchmark_data = {
         ("128+128", 1): {
+            'successful_requests': 4,
             'output_token_throughput': 76.26,
             'total_token_throughput': 151.92,
             'mean_ttft': 40.15,
@@ -291,6 +294,7 @@ if __name__ == "__main__":
             'p99_itl': 15.40
         },
         ("128+128", 5): {
+            'successful_requests': 20,
             'output_token_throughput': 85.30,
             'total_token_throughput': 170.60,
             'mean_ttft': 45.20,
@@ -310,9 +314,9 @@ if __name__ == "__main__":
 
     # 示例：使用列表格式填充数据
     example_results_list = [
-        [76.26, 151.92, 40.15, 38.20, 65.30, 12.50,
+        [4, 76.26, 151.92, 40.15, 38.20, 65.30, 12.50,
             12.10, 18.90, 8.20, 7.80, 15.40],
-        [85.30, 170.60, 45.20, 43.10, 72.80, 11.80,
+        [20, 85.30, 170.60, 45.20, 43.10, 72.80, 11.80,
             11.40, 17.20, 7.50, 7.20, 14.10],
         # 可以继续添加更多结果...
     ]

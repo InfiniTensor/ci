@@ -18,7 +18,11 @@ else
     if [ $TEST_TYPE == "Stability" ]; then
         num_of_prefix_cache_options=1
     else
-        num_of_prefix_cache_options=2
+        if [ $ENGINE_TYPE == "SigInfer" ]; then
+            num_of_prefix_cache_options=2
+        else
+            num_of_prefix_cache_options=1
+        fi
     fi
 fi
 
@@ -141,21 +145,23 @@ cleanup_all_resources() {
     # 2. 释放 NPU 锁
     if [ -v model ]; then
         echo "正在释放 NPU 锁..."
-        source $curr_dir/npu_lock_manager.sh
+        source $curr_dir/npu_lock_manager_for_ci.sh
         for ip in ${server_list[@]}; do
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
             release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${job_count}" "${session_id}"
         done
         echo "NPU 锁释放完成"
         # 获取文件锁（阻塞）
-        exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+        exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
         if ! flock -x 200; then    # 获取独占锁
             echo "无法获取锁，退出..."
         fi
         for ip in ${server_list[@]}; do
             job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
             # 删除Server端配置信息
-            sed -i "/${local_ip_map[$ip]}:${job_id}/d" /dev/fd/200
+            # sed -i "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"
+            new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"`
+            echo "${new_config}" > "${LOCK_DIR}/server_config.txt"
         done
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
@@ -176,7 +182,7 @@ cleanup_all_resources() {
     echo "=========================================="
     echo "资源清理完成"
     echo "=========================================="
-
+    
     # 如果是由于信号中断，则退出进程
     if [ $INTERRUPTED -eq 1 ]; then
         echo "进程被中断，退出..."
@@ -200,7 +206,7 @@ handle_interrupt() {
         echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
         # 通过 ssh 找到远程脚本进程并发送信号
         ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 s_limingge@$remote_ip "
-            pids=\$(ps -ef --forest | grep 'job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
+            pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
             if [ ! -z \"\$pids\" ]; then
                 for pid in \$pids; do
                     # 检查进程是否仍在运行
@@ -216,6 +222,9 @@ handle_interrupt() {
     done
     # 等待一小段时间，让远程脚本有机会处理信号并执行清理
     sleep 2
+    if [ -v JMETER_PID ]; then
+        kill -SIGTERM $JMETER_PID
+    fi
     cleanup_all_resources
 }
 
@@ -326,6 +335,13 @@ for option in "${schedule_policies[@]}"; do
 
                 echo "尝试同时在${server_list[@]}服务器上面启动测试......"
                 
+                # 将 server_list 数组合并为用下划线分隔的字符串
+                server_list_str=$(
+                    for i in "${server_list[@]}"; do
+                        printf '%s\n' "${local_ip_map[$i]}"
+                    done | paste -sd '_' -
+                )
+
                 unset pid_map
                 declare -A pid_map
                 seq_num=0
@@ -338,19 +354,19 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $session_id $version >> "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
                     else
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $local_master_ip $seq_num $job_count $gpu_model $session_id $version &
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version &
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
                     fi
-
+                    
                     ((seq_num++))
                 done
 
@@ -374,6 +390,8 @@ for option in "${schedule_policies[@]}"; do
                                 echo "${pid_map[$done_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
                             fi
                             
+                            # ...
+
                             # 启动失败，清理工作
                             for ip in ${server_list[@]}; do
                                 if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -403,14 +421,14 @@ for option in "${schedule_policies[@]}"; do
 
                 if [ -f "${LOCK_DIR}/${LOCK_FILE}" ]; then
                     # 获取文件锁（阻塞）
-                    exec 200>>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+                    exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
                     if ! flock -x 200; then    # 获取独占锁
                         echo "无法获取锁，退出..."
                         exit 1
                     fi
                     # 读取Server端配置信息
                     job_id="${TEST_TYPE}Test_${model}_${session_id}_${job_count}"
-                    server_port=`cat /dev/fd/200 | grep "${local_ip_map[$local_master_ip]}:${job_id}" | awk -F ':' '{print $3}'` | awk '{print $1}'`
+                    server_port=`cat "${LOCK_DIR}/server_config.txt" | grep "${local_ip_map[$local_master_ip]}:${job_id}:" | awk -F ':' '{print $3}' | awk '{print $1}' | tail -n 1`
                     # 锁会自动在脚本退出或文件描述符关闭时释放
                     exec 200>&-  # 关闭文件描述符
                 else
@@ -482,7 +500,7 @@ for option in "${schedule_policies[@]}"; do
                                     for concurrency in ${concurrency_list[@]}; do
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port ${server_port} --host 0.0.0.0 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port ${server_port} --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
                                         python3 \\\${benchmark_cmd} \
                                         --backend openai \
@@ -574,32 +592,32 @@ for option in "${schedule_policies[@]}"; do
                     declare -A pid_map
 
                     if [ $gpu_model == "H20" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H20_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "A800" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "H100" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "L20" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${L20_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "H800" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://$local_master_ip:$((8000+${job_count}))/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
@@ -683,11 +701,28 @@ for option in "${schedule_policies[@]}"; do
                     fi
                 elif [ $TEST_TYPE == "Stability" ]; then
                     # 调用JMeter或者Locust工具
-                    # ......
-                    
-                    echo "按任意键结束......"
-                    # read -n 1 -s
-                    sleep infinity
+                    export JVM_ARGS="-Xms4g -Xmx4g -XX:+UseG1GC"
+                    jmeter -n -t smoke.jmx
+                    jmeter -n -t test.jmx -l result.jtl
+                    /opt/apache-jmeter-5.6.3/bin/jmeter \
+                        -n \
+                        -t /data/test/llm_perf.jmx \
+                        -l /data/jtl/result_$(date +\%F).jtl  \
+                        -e \
+                        -o report/  \
+                        -Jmodel=${model} \
+                        -Jbatch_size=16 \
+                        -Jcontext_len=8192 \
+                        -Jqps=30    \
+                        > /data/log/jmeter_$(date +\%F).log 2>&1 &
+
+                        # 在 JMX 中使用：
+                        # ${__P(model)}
+                        # ${__P(batch_size)}
+                        # ${__P(context_len)}
+
+                        JMETER_PID=$!
+                        wait $JMETER_PID
                 fi
 
                 echo "测试完成！"

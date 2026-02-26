@@ -98,7 +98,20 @@ if [ $TEST_TYPE == "Smoke" ]; then
     touch ${processed_models}
     num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
-    full_model_list=(${full_model_list_for_performance[@]})
+    if [ $MODEL_LIST == "default" ]; then
+        full_model_list=(${full_model_list_for_performance[@]})
+    else
+        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+        full_model_list=()
+        for model in "${model_list[@]}"; do
+            for item in "${full_model_list_for_performance[@]}"; do
+                name=`echo "$item" | awk -F : '{print $1}'`
+                if [ $model == $name ]; then
+                    full_model_list+=($item)
+                fi
+            done
+        done
+    fi
     rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
@@ -158,7 +171,7 @@ search_servers() {
         for key in "${!H20_server_list[@]}"; do
             echo "$key => ${H20_server_list[$key]}"
             ssh s_limingge@${H20_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -185,7 +198,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -217,7 +230,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -234,7 +247,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -253,7 +266,7 @@ search_servers() {
                         TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                         LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                         SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                         if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                             SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                             echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -276,7 +289,7 @@ search_servers() {
         for key in "${!A800_server_list[@]}"; do
             echo "$key => ${A800_server_list[$key]}"        
             ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -303,7 +316,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -335,7 +348,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_1_GROUP[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -352,7 +365,7 @@ search_servers() {
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                             LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                             SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                            check_npu_locks_batch \${SERVER_NAME} \"\${CPU_2_GROUP[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                             if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                                 SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                                 echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -371,7 +384,7 @@ search_servers() {
                         TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                         LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                         SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                        check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                         if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                             SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                             echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -394,7 +407,7 @@ search_servers() {
         for key in "${!H100_server_list[@]}"; do
             echo "$key => ${H100_server_list[$key]}"
             ssh s_limingge@${H100_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -425,7 +438,7 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -447,7 +460,7 @@ search_servers() {
         for key in "${!L20_server_list[@]}"; do
             echo "$key => ${L20_server_list[$key]}"
             ssh s_limingge@${L20_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager.sh
+                source /home/s_limingge/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -478,7 +491,7 @@ search_servers() {
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | awk '{print \$1}')
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
-                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} NPU_LIST_FOUND
+                    check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
                         echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
@@ -501,32 +514,32 @@ search_servers() {
 
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
-    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!A800_server_list[@]}"; do
     echo "$name => ${A800_server_list[$name]}"
-    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!H100_server_list[@]}"; do
     echo "$name => ${H100_server_list[$name]}"
-    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!L20_server_list[@]}"; do
     echo "$name => ${L20_server_list[$name]}"
-    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
 done
 
 for name in "${!H800_server_list[@]}"; do
     echo "$name => ${H800_server_list[$name]}"
-    scp "${curr_dir}/job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
 done
 
 GPU_resource_demand=()
@@ -591,6 +604,8 @@ else
     echo "推理引擎版本: ${version}"
 fi
 
+ret=0
+
 while true; do
     job_count=0
     temp_list=()
@@ -609,7 +624,7 @@ while true; do
                 $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "按任意键结束|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Stability测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
                 $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
@@ -629,6 +644,7 @@ while true; do
                 echo "测试类型错误！"
                 exit 1
             fi
+
             if [ $status_msg == "测试全部完成！" ]; then
                 echo "模型运行环境配置失败，准备尝试测试下一个模型......"
                 echo
@@ -636,15 +652,18 @@ while true; do
                 err=$?          # 保存上一个结束子进程的退出状态
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                        echo "没有资源，等待超时，加入队列，稍后重试......"
                         temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
                     fi
                 else
                     echo "程序出错！"
                 fi
+                ret=1
                 continue
             else
                 echo $status_msg
             fi
+
             ((job_count++))
             if [ $job_count -ge $parallel ]; then
                 # 等待所有后台子任务结束
@@ -659,6 +678,7 @@ while true; do
                     fi
                     ((remaining--))
                 done
+
                 job_count=0
                 echo "当前批量模型测试完成！"
                 echo
@@ -685,6 +705,7 @@ while true; do
             fi
             ((remaining--))
         done
+
         echo "当前批量模型测试完成！"
         echo
     fi
@@ -710,7 +731,12 @@ while true; do
             fi
             
             if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
-                python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+                console_output_flag=1
+                if [ $console_output_flag -eq 1 ]; then
+                    python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
+                else
+                    python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+                fi
             fi
         fi
         break
@@ -722,4 +748,4 @@ while true; do
     fi
 done
 
-exit 0
+exit $ret
