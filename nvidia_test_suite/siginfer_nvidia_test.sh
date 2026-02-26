@@ -605,7 +605,7 @@ for option in "${schedule_policies[@]}"; do
                         DOCKER_CONTAINER_NAMES+=("$container_name")
                     elif [ $gpu_model == "H100" ]; then
                         echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://$local_master_ip:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${H100_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
