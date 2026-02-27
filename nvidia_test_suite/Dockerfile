@@ -46,7 +46,7 @@ COPY requirements.txt /CI_Workspace
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 ARG JMETER_VERSION=5.6.3
-RUN wget -q https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz && \
+RUN wget -q https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz && \
     tar -xzf apache-jmeter-${JMETER_VERSION}.tgz -C /opt && \
     ln -s /opt/apache-jmeter-${JMETER_VERSION} /opt/jmeter && \
     rm apache-jmeter-${JMETER_VERSION}.tgz
