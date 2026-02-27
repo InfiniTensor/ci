@@ -10,11 +10,12 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
-test_type=$1
-engine=$2
-model_list=$3
-CI_job_id=$4
-version=$5
+platform=$1
+test_type=$2
+engine=$3
+model_list=$4
+CI_job_id=$5
+version=$6
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
@@ -35,12 +36,19 @@ else
     git pull origin main
 fi
 
-cd nvidia_test_suite
-mkdir -p $version
-cp latest/model_list.xlsx $version
-
-./nvidia_resource_monitor.sh $test_type $engine $model_list $CI_job_id $version &
-CHILD_PID=$!
+if [ $platform == "Ascend" ]; then
+    cd ascend_test_suite
+    mkdir -p $version
+    cp latest/model_list.xlsx $version
+    ./ascend_resource_monitor.sh $test_type $engine $model_list $CI_job_id $version &
+    CHILD_PID=$!
+elif [ $platform == "Nvidia" ]; then
+    cd nvidia_test_suite
+    mkdir -p $version
+    cp latest/model_list.xlsx $version
+    ./nvidia_resource_monitor.sh $test_type $engine $model_list $CI_job_id $version &
+    CHILD_PID=$!
+fi
 
 echo -n "Running"
 while kill -0 $CHILD_PID 2>/dev/null; do
