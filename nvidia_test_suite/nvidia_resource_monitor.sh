@@ -135,7 +135,7 @@ declare -A A800_server_list=(
 )
 
 declare -A H20_server_list=(
-    ["H20-001"]="10.9.1.14"
+    # ["H20-001"]="10.9.1.14"
 )
 
 declare -A H100_server_list=(
@@ -148,7 +148,7 @@ declare -A L20_server_list=(
 
 declare -A H800_server_list=(
     # ["H800-001"]="10.9.1.54"
-    ["H800-002"]="10.9.1.62"
+    # ["H800-002"]="10.9.1.62"
 )
 
 search_servers() {

@@ -22,6 +22,12 @@ cat > ~/.ssh/config <<EOF
 Host 10.9.1.*
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
+Host 10.208.130.44
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+Host 192.168.100.*
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
 EOF
 
 cd /CI_Workspace
