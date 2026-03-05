@@ -21,7 +21,7 @@ VERSION=${10}
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
 JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
-LOCAL_IP=$(hostname -I | awk '{print $1}')
+LOCAL_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
 # 设置清理函数，确保异常退出时释放锁

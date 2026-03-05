@@ -206,7 +206,7 @@ search_servers() {
                     echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
-                    LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | grep \"10.0.0\")
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
@@ -246,7 +246,7 @@ search_servers() {
                     echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
-                    LOCAL_IP=\$(hostname -I | awk '{print \$1}')
+                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | grep \"10.0.0\")
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then

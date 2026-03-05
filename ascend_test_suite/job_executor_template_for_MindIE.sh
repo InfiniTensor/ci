@@ -26,7 +26,7 @@ echo "VERSION=$VERSION"
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
 JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
-LOCAL_IP=$(hostname -I | awk '{print $1}')
+LOCAL_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
 # 设置清理函数，确保异常退出时释放锁
@@ -91,7 +91,7 @@ DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"
 SHM_SIZE="500g"
 NUM_NPUS=8
 SERVER_COUNT=$(echo $SERVER_LIST | tr '_' '\n' | wc -l)
-LOCAL_SERVER_IP=$(hostname -I | awk '{print $1}')
+LOCAL_SERVER_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
 CONTAINER_IP="${LOCAL_SERVER_IP}"  # 容器IP，默认与节点IP相同
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
