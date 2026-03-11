@@ -514,7 +514,7 @@ for option in "${schedule_policies[@]}"; do
                         unset pid_map[$done_pid]
                     fi
                 elif [ $TEST_TYPE == "Performance" ]; then
-                    if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-32B" ] || [ $model == "Qwen3-30B-A3B" ]; then
+                    if [ $model == "Qwen3-235B-A22B" ] || [[ $model =~ ^Qwen3-32B(-v[0-9]+)?$ ]] || [ $model == "Qwen3-30B-A3B" ]; then
                         data_path="/home/weight/Qwen3"
                     else
                         data_path="/home/weight"
@@ -534,18 +534,17 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        # concurrency_list=(1 5 10 20 50 100 150)
-                        concurrency_list=(1)
+                        concurrency_list=(1 5 10 20 50 100 150 200)
                         length_pairs=(
-                        #     "128:128"
-                             "128:1024"
-                        #     "128:2048"
-                        #     "1024:1024"
-                        #     "2048:2048"
-                        #     "4096:1024"
-                             "1024:4096"
-                        #     "30000:2048"
-                        #     "126000:2048"
+                            "128:128"
+                            "128:1024"
+                            "128:2048"
+                            "1024:1024"
+                            "2048:2048"
+                            "4096:1024"
+                            "1024:4096"
+                            "30000:2048"
+                            "126000:2048"
                         )
                         # Random
                         ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${server_list[0]} "
@@ -581,7 +580,7 @@ for option in "${schedule_policies[@]}"; do
                                         --port ${server_port} \
                                         --host ${local_master_ip} \
                                         --model ${model} \
-                                        --tokenizer ${data_path}/${model}/ \
+                                        --tokenizer ${data_path}/$(echo $model | sed -E 's/-v[0-9]+$//')/ \
                                         --endpoint /v1/completions \
                                         --dataset-name random \
                                         --random-input-len \\\$input_len \
@@ -618,7 +617,7 @@ for option in "${schedule_policies[@]}"; do
                                     --port ${server_port} \
                                     --host ${local_master_ip} \
                                     --model ${model} \
-                                    --tokenizer ${data_path}/${model}/ \
+                                    --tokenizer ${data_path}/$(echo $model | sed -E 's/-v[0-9]+$//')/ \
                                     --endpoint /v1/completions \
                                     --dataset-name sharegpt \
                                     --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json \
