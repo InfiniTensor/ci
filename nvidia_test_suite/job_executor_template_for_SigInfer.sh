@@ -3,7 +3,7 @@
 # 导入GPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 # 接收参数
@@ -87,14 +87,14 @@ fi
 LATEST_TAG=""
 if [ -z $VERSION ]; then
     # 先拿到所有 tag 并按字母升序
-    TAGS=$(/home/s_limingge/jfrog rt curl \
+    TAGS=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
         /api/docker/docker-local/v2/siginfer-x86_64-nvidia/tags/list \
     | jq -r '.tags[]' | sort)
 
     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
     for tag in $TAGS; do
-    created=$(/home/s_limingge/jfrog rt curl \
+    created=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
         /api/storage/docker-local/siginfer-x86_64-nvidia/$tag \
         | jq -r '.created')
@@ -373,7 +373,7 @@ EXEC_COMMAND="docker run --name=siginfer_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${
     --pid=host \
     --shm-size="80g" \
     --volume /dev:/dev \
-    --volume /home/weight:/home/weight \
+    --volume /home/zkjh/weight:/home/weight \
     --ipc=host	\
     -u root \
     -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES    \

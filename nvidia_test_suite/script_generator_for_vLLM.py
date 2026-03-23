@@ -67,16 +67,16 @@ def main():
     
     if test_type == "Smoke":
         target_file = "vLLM_job_executor_for_SmokeTest.sh"
-        src_code += "docker exec vllm_nvidia_SmokeTest_${JOB_COUNT} /bin/bash -c \"\n"
+        src_code += "docker exec vllm_nvidia_SmokeTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     elif test_type == "Performance":
         target_file = "vLLM_job_executor_for_PerformanceTest.sh"
-        src_code += "docker exec vllm_nvidia_PerformanceTest_${JOB_COUNT} /bin/bash -c \"\n"
+        src_code += "docker exec vllm_nvidia_PerformanceTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     elif test_type == "Stability":
         target_file = "vLLM_job_executor_for_StabilityTest.sh"
-        src_code += "docker exec vllm_nvidia_StabilityTest_${JOB_COUNT} /bin/bash -c \"\n"
+        src_code += "docker exec vllm_nvidia_StabilityTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     elif test_type == "Accuracy":
         target_file = "vLLM_job_executor_for_AccuracyTest.sh"
-        src_code += "docker exec vllm_nvidia_AccuracyTest_${JOB_COUNT} /bin/bash -c \"\n"
+        src_code += "docker exec vllm_nvidia_AccuracyTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     
     start = True
     for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
@@ -94,12 +94,13 @@ def main():
         card_types = extract_card_types(GPU)
         for card_type in card_types:
             if start:
-                src_code += f"if [ \\\"$MODEL_$GPU_MODEL\\\" == \\\"{name}_{card_type}\\\" ]; then\n"
+                src_code += f"if [ \\\"${{MODEL}}_${{GPU_MODEL}}\\\" == \\\"{name}_{card_type}\\\" ]; then\n"
                 start = False
             else:
-                src_code += f"elif [ \\\"$MODEL_$GPU_MODEL\\\" == \\\"{name}_{card_type}\\\" ]; then\n"
+                src_code += f"elif [ \\\"${{MODEL}}_${{GPU_MODEL}}\\\" == \\\"{name}_{card_type}\\\" ]; then\n"
             src_code += "    echo \\\"vllm serve "
             src_code += result
+            src_code += " > $LOG_NAME 2>&1 &"
             src_code += "\\\"\n"
             src_code += "    nohup env CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES vllm serve "
             src_code += result

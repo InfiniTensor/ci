@@ -84,7 +84,7 @@ def send_summary_to_server(version_text, model_name, summary_text):
 
     print(summary_text)
     
-    server_url = 'https://open.feishu.cn/open-apis/bot/v2/hook/9c267c92-100a-40c6-ab32-cc1ca57df84e'  # 替换为实际的服务端 URL
+    server_url = 'https://open.feishu.cn/open-apis/bot/v2/hook/2b7196ec-7bf5-4b17-ac16-a4c97c59007c'  # 替换为实际的服务端 URL
 
     try:
         # 构造 POST 请求的数据

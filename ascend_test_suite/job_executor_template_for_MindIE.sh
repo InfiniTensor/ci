@@ -3,7 +3,7 @@
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 # 接收参数
@@ -26,7 +26,7 @@ echo "VERSION=$VERSION"
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
 JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
-LOCAL_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
+LOCAL_IP=$(hostname -I | xargs printf "%s\n" | head -n 1)
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
 # 设置清理函数，确保异常退出时释放锁
@@ -84,14 +84,14 @@ get_free_port() {
 
 # 配置参数
 MODEL_WEIGHT_PATH=""
-RANK_TABLE_PATH="/home/s_limingge/rank_table/$JOB_ID"
+RANK_TABLE_PATH="/home/zkjh/rank_table/$JOB_ID"
 CONFIG_FILE="/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
 CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
 DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"
 SHM_SIZE="500g"
 NUM_NPUS=8
 SERVER_COUNT=$(echo $SERVER_LIST | tr '_' '\n' | wc -l)
-LOCAL_SERVER_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
+LOCAL_SERVER_IP=$(hostname -I | xargs printf "%s\n" | head -n 1)
 CONTAINER_IP="${LOCAL_SERVER_IP}"  # 容器IP，默认与节点IP相同
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
@@ -130,7 +130,8 @@ get_npu_ips() {
     log_info "获取每张NPU卡的IP地址..."
     NPU_IPS=()  # 清空数组
     for i in $(seq 0 $((NUM_NPUS-1))); do
-        npu_ip=$(hccn_tool -i $i -ip -g | grep -oP 'ipaddr:\K[0-9.]+' || echo "")
+        # npu_ip=$(hccn_tool -i $i -ip -g | grep -oP 'ipaddr:\K[0-9.]+' || echo "")
+        npu_ip="192.168.162.8"
         if [ -n "$npu_ip" ]; then
             NPU_IPS[$i]=$npu_ip
             log_info "NPU卡 $i IP地址: ${NPU_IPS[$i]}"
@@ -250,9 +251,15 @@ EOF
 # 步骤3: 生成全局rank_table_file.json
 generate_merged_rank_table() {
     log_info "步骤3: 生成全局rank_table_file.json..."
-    
-    curl -X POST http://192.168.100.106:$((8080+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
-    
+
+    for ((i=1; i<=3; i=i+1)) do
+        curl -X POST http://192.168.163.40:$((8080+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
+        if [ $? -eq 0 ]; then
+            break
+        fi
+        sleep 10
+    done
+
     GLOBAL_RANK_TABLE_FILE=$RANK_TABLE_PATH/merged_rank_table.json
     
     while [ ! -f $GLOBAL_RANK_TABLE_FILE ]; do sleep 1; done
@@ -319,8 +326,8 @@ start_container() {
         -v /usr/local/sbin/npu-smi:/usr/local/sbin/npu-smi \
         -v /usr/local/sbin:/usr/local/sbin \
         -v /etc/hccn.conf:/etc/hccn.conf \
-        -v /home/weight:/home/weight \
-        -v /home/s_limingge:/home/s_limingge \
+        -v /home/zkjh/weight:/home/weight \
+        -v /home/zkjh:/home/zkjh \
         -v "$RANK_TABLE_FILE:$RANK_TABLE_FILE" \
         swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:$VERSION \
         bash
@@ -603,8 +610,8 @@ start_service() {
     log_info "在所有机器上同时执行以下命令启动服务化..."
     log_info "日志文件: $LOG_NAME"
 
-    touch /home/s_limingge/$LOG_NAME
-    chmod 777 /home/s_limingge/$LOG_NAME
+    touch /home/zkjh/$LOG_NAME
+    chmod 777 /home/zkjh/$LOG_NAME
     
     docker exec -d "$CONTAINER_NAME" bash -c "
         source /usr/local/Ascend/ascend-toolkit/set_env.sh
@@ -623,22 +630,24 @@ start_service() {
         export RANKTABLEFILE=$RANK_TABLE_FILE
         export HCCL_DETERMINISTIC=true
         export MIES_CONTAINER_IP=$LOCAL_SERVER_IP
+        export ASCEND_GLOBAL_LOG_LEVEL=3
+        export ASCEND_SLOG_PRINT_TO_STDOUT=1
         # 设置库路径，确保能找到 libtorch.so 等依赖库
         export LD_LIBRARY_PATH=/usr/local/lib64/python3.11/site-packages/torch/lib:\$LD_LIBRARY_PATH
         # 验证 rank_table_file 是否存在且可读
         if [ ! -f \"\$RANK_TABLE_FILE\" ]; then
-            echo \"ERROR: rank_table_file not found: \$RANK_TABLE_FILE\" > /home/s_limingge/$LOG_NAME
+            echo \"ERROR: rank_table_file not found: \$RANK_TABLE_FILE\" > /home/zkjh/$LOG_NAME
             exit 1
         fi
         if [ ! -r \"\$RANK_TABLE_FILE\" ]; then
-            echo \"ERROR: rank_table_file not readable: \$RANK_TABLE_FILE\" > /home/s_limingge/$LOG_NAME
+            echo \"ERROR: rank_table_file not readable: \$RANK_TABLE_FILE\" > /home/zkjh/$LOG_NAME
             exit 1
         fi
         # 确保文件权限正确（容器内以 root 运行）
         chmod 640 \"\$RANK_TABLE_FILE\" 2>/dev/null || true
         chown root:root \"\$RANK_TABLE_FILE\" 2>/dev/null || true
         cd /usr/local/Ascend/mindie/latest/mindie-service/
-        nohup ./bin/mindieservice_daemon > /home/s_limingge/$LOG_NAME 2>&1 &
+        nohup ./bin/mindieservice_daemon > /home/zkjh/$LOG_NAME 2>&1 &
     "
     
     log_info "服务化已启动，等待服务就绪..."

@@ -57,7 +57,7 @@ def generate_excel(model_name, exec_cmd, test_cmd, context_lengths, batch_sizes,
     # 第 5 行：细项
     sub_headers = [
         "Inference Engine", "上下文长度", "Batch", "Successful requests",
-        "Output token throughput", "Total Token throughput",
+        "Output token throughput", "Total token throughput",
         "Mean TTFT", "Median TTFT", "P99 TTFT",
         "Mean TPOT", "Median TPOT", "P99 TPOT",
         "Mean ITL", "Median ITL", "P99 ITL"
@@ -194,7 +194,7 @@ def fill_benchmark_results(excel_file, benchmark_data, context_lengths, batch_si
     data_columns = {
         4: 'Successful requests',
         5: 'Output token throughput (tok/s)',
-        6: 'Total Token throughput (tok/s)',
+        6: 'Total token throughput (tok/s)',
         7: 'Mean TTFT (ms)',
         8: 'Median TTFT (ms)',
         9: 'P99 TTFT (ms)',

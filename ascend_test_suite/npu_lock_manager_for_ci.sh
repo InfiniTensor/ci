@@ -4,7 +4,7 @@
 # 用于在分布式环境中管理NPU资源的互斥访问
 
 # 锁文件存储目录（使用共享目录，确保所有服务器都能访问）
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 
 # 创建锁目录（如果不存在）
 mkdir -p "$LOCK_DIR"

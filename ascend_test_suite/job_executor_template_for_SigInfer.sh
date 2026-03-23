@@ -3,7 +3,7 @@
 # 导入NPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 # 接收参数
@@ -21,7 +21,7 @@ VERSION=${10}
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
 JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
-LOCAL_IP=$(hostname -I | xargs printf "%s\n" | grep "10.0.0")
+LOCAL_IP=$(hostname -I | xargs printf "%s\n" | head -n 1)
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
 # 设置清理函数，确保异常退出时释放锁
@@ -86,14 +86,14 @@ fi
 LATEST_TAG=""
 if [ -z $VERSION ]; then
     # 先拿到所有 tag 并按字母升序
-    TAGS=$(/home/s_limingge/jfrog rt curl \
+    TAGS=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
         /api/docker/docker-local/v2/siginfer-aarch64-ascend/tags/list \
     | jq -r '.tags[]' | sort)
 
     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
     for tag in $TAGS; do
-    created=$(/home/s_limingge/jfrog rt curl \
+    created=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
         /api/storage/docker-local/siginfer-aarch64-ascend/$tag \
         | jq -r '.created')
@@ -257,7 +257,7 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${
      -v /dev/davinci6:/dev/davinci6      \
      -v /dev/davinci7:/dev/davinci7      \
      --volume /home:/home   \
-     --volume /home/weight/:/home/weight/    \
+     --volume /home/zkjh/weight:/home/weight/    \
      --volume /shared/weights:/shared/weights    \
      --network host      \
      --privileged \
@@ -265,7 +265,7 @@ EXEC_COMMAND="docker run --name=siginfer_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${
      --device=/dev/devmm_svm       \
      --device=/dev/hisi_hdc        \
      --ipc=host	\
-     -e HCCL_SOCKET_IFNAME=enp67s0f0 \
+     -e HCCL_SOCKET_IFNAME=enp189s0f0 \
      -e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES    \
      docker.xcoresigma.com/docker/siginfer-aarch64-ascend:$LATEST_TAG"
 

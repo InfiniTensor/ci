@@ -65,10 +65,10 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 fi
 
-full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100)
+full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:2:A100 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100 Qwen3-30B-A3B:2:A100)
 # full_model_list_for_smoke=(Qwen2.5-72B-Instruct:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-32B-Instruct:2:H20 QwQ-32B:4:L20)
 # full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
-full_model_list_for_performance=(DeepSeek-R1-0528:8:H20)
+full_model_list_for_performance=(DeepSeek-R1-0528:8:H20 Qwen3-32B-FP8:2:A100)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
 
 log_name_suffix=$(date +"%Y%m%d")
@@ -130,8 +130,8 @@ elif [ $TEST_TYPE == "Accuracy" ]; then
     num_of_prefix_cache_options=2
 fi
 
-declare -A A800_server_list=(
-    ["A800-001"]="10.208.130.44"
+declare -A A100_server_list=(
+    ["A100-001"]="192.168.163.40"
 )
 
 declare -A H20_server_list=(
@@ -139,11 +139,11 @@ declare -A H20_server_list=(
 )
 
 declare -A H100_server_list=(
-    ["H100-001"]="192.168.100.106"
+    # ["H100-001"]="192.168.100.106"
 )
 
 declare -A L20_server_list=(
-    ["L20-001"]="192.168.100.106"
+    # ["L20-001"]="192.168.100.106"
 )
 
 declare -A H800_server_list=(
@@ -170,8 +170,8 @@ search_servers() {
     if [ $NPU_MODEL == "H20" ]; then
         for key in "${!H20_server_list[@]}"; do
             echo "$key => ${H20_server_list[$key]}"
-            ssh s_limingge@${H20_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+            ssh zkjh@${H20_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -285,11 +285,11 @@ search_servers() {
                 fi
             fi
         done
-    elif [ $NPU_MODEL == "A800" ]; then
-        for key in "${!A800_server_list[@]}"; do
-            echo "$key => ${A800_server_list[$key]}"        
-            ssh s_limingge@${A800_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+    elif [ $NPU_MODEL == "A100" ]; then
+        for key in "${!A100_server_list[@]}"; do
+            echo "$key => ${A100_server_list[$key]}"        
+            ssh zkjh@${A100_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -397,7 +397,7 @@ search_servers() {
                 exit 1"
             err=$?
             if [ $err -eq 0 ]; then
-                servers_found+=(${A800_server_list[$key]})
+                servers_found+=(${A100_server_list[$key]})
                 if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
                     break
                 fi
@@ -406,8 +406,8 @@ search_servers() {
     elif [ $NPU_MODEL == "H100" ]; then
         for key in "${!H100_server_list[@]}"; do
             echo "$key => ${H100_server_list[$key]}"
-            ssh s_limingge@${H100_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+            ssh zkjh@${H100_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -459,8 +459,8 @@ search_servers() {
     elif [ $NPU_MODEL == "L20" ]; then
         for key in "${!L20_server_list[@]}"; do
             echo "$key => ${L20_server_list[$key]}"
-            ssh s_limingge@${L20_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+            ssh zkjh@${L20_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -514,32 +514,32 @@ search_servers() {
 
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
 done
 
-for name in "${!A800_server_list[@]}"; do
-    echo "$name => ${A800_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${A800_server_list[$name]}:/home/s_limingge
+for name in "${!A100_server_list[@]}"; do
+    echo "$name => ${A100_server_list[$name]}"
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H100_server_list[@]}"; do
     echo "$name => ${H100_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H100_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!L20_server_list[@]}"; do
     echo "$name => ${L20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${L20_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H800_server_list[@]}"; do
     echo "$name => ${H800_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
-    scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${H800_server_list[$name]}:/home/s_limingge
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
 
 GPU_resource_demand=()

@@ -3,7 +3,7 @@
 # 导入GPU锁管理器
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 source "${SCRIPT_DIR}/npu_lock_manager_for_ci.sh"
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 # 接收参数
@@ -93,10 +93,10 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-docker pull quay.io/nvidia/vllm-nvidia:$LATEST_TAG
-if [ $? -ne 0 ]; then
-    exit 1;
-fi
+# docker pull quay.io/nvidia/vllm-nvidia:$LATEST_TAG
+# if [ $? -ne 0 ]; then
+#     exit 1;
+# fi
 
 ret=`docker ps -a | grep vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
@@ -345,13 +345,15 @@ docker create --name=vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
     --pid=host \
     --shm-size="80g" \
     --volume /dev:/dev \
-    --volume /home/weight:/home/weight \
+    --volume /home/zkjh/weight:/home/weight \
+    --volume /home/zkjh/workspace:/workspace \
     --workdir=/workspace \
     --ipc=host	\
     --entrypoint="" \
     -u root \
     -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES  \
-    quay.io/nvidia/vllm-nvidia:$LATEST_TAG \
+    -e CUDA_DEVICE_ORDER=PCI_BUS_ID \
+    vllm/vllm-openai:$LATEST_TAG \
     sleep infinity
 
 if [ $? -ne 0 ]; then

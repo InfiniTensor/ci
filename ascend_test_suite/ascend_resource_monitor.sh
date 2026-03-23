@@ -87,12 +87,12 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
-        ["aicc001"]="10.9.1.78"
-        ["aicc003"]="10.9.1.106"
-        ["aicc004"]="10.9.1.114"
-        ["aicc005"]="10.9.1.98"
-        ["aicc006"]="10.9.1.110"
-        ["aicc007"]="10.9.1.86"
+        ["aicc001"]="192.168.162.8"
+        # ["aicc003"]="10.9.1.106"
+        # ["aicc004"]="10.9.1.114"
+        # ["aicc005"]="10.9.1.98"
+        # ["aicc006"]="10.9.1.110"
+        # ["aicc007"]="10.9.1.86"
         # ["aicc008"]="10.9.1.94"
         # ["aicc009"]="10.9.1.82"
         # ["aicc010"]="10.9.1.102"
@@ -104,10 +104,10 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
     fi
 fi
 
-full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-v2:2)
-full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:2 Qwen2.5-72B-Instruct:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen3-32B-v2:2)
-# full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:2 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
-full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:2 Qwen3-30B-A3B:2)
+full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 Qwen3-32B-FP8:2)
+full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:4 Qwen2.5-72B-Instruct:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 DeepSeek-R1-Distill-Qwen-1.5B:1)
+# full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:4 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
+full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2)
 full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16 DeepSeek-R1-AWQ:8)
 
 log_name_suffix=$(date +"%Y%m%d")
@@ -162,7 +162,20 @@ elif [ $TEST_TYPE == "Stability" ]; then
     touch ${processed_models}
     num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Accuracy" ]; then
-    full_model_list=(${full_model_list_for_accuracy[@]})
+    if [ $MODEL_LIST == "default" ]; then
+        full_model_list=(${full_model_list_for_accuracy[@]})
+    else
+        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+        full_model_list=()
+        for model in "${model_list[@]}"; do
+            for item in "${full_model_list_for_accuracy[@]}"; do
+                name=`echo "$item" | awk -F : '{print $1}'`
+                if [ $model == $name ]; then
+                    full_model_list+=($item)
+                fi
+            done
+        done
+    fi
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
@@ -187,8 +200,8 @@ search_servers() {
     for key in "${!npu_server_list[@]}"; do
         echo "$key => ${npu_server_list[$key]}"
         if [ $key == 'aicc002' ]; then
-            sshpass -p 's_limingge' ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list['aicc002']} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+            sshpass -p 'zkjh' ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@${npu_server_list['aicc002']} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -206,7 +219,7 @@ search_servers() {
                     echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
-                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | grep \"10.0.0\")
+                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
@@ -223,8 +236,8 @@ search_servers() {
                 servers_found+=(${npu_server_list[$key]})
             fi
         else
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@${npu_server_list[$key]} "# 目标空闲 GPU 数量
-                source /home/s_limingge/npu_lock_manager_for_ci.sh
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@${npu_server_list[$key]} "# 目标空闲 GPU 数量
+                source /home/zkjh/npu_lock_manager_for_ci.sh
                 if [ $NPU_QUANTITY -eq 16 ]; then
                     TARGET_FREE_GPUS=8
                 else
@@ -246,7 +259,7 @@ search_servers() {
                     echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
-                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | grep \"10.0.0\")
+                    LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
                     SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
@@ -273,11 +286,11 @@ search_servers() {
 for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
     if [ $name == 'aicc002' ]; then
-        sshpass -p 's_limingge' scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
-        sshpass -p 's_limingge' scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${npu_server_list['aicc002']}:/home/s_limingge
+        sshpass -p 'zkjh' scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${npu_server_list['aicc002']}:/home/zkjh
+        sshpass -p 'zkjh' scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list['aicc002']}:/home/zkjh
     else
-        scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
-        scp "${curr_dir}/npu_lock_manager_for_ci.sh" s_limingge@${npu_server_list[$name]}:/home/s_limingge
+        scp -P 14735 "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+        scp -P 14735 "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
     fi
 done
 
@@ -467,7 +480,7 @@ while true; do
             fi
             
             if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
-                console_output_flag=1
+                console_output_flag=0
                 if [ $console_output_flag -eq 1 ]; then
                     python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
                 else

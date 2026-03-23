@@ -28,35 +28,35 @@ fi
 
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
-LOCK_DIR="/home/s_limingge/.npu_locks"
+LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 if true; then
     if [ -z $version ]; then
-        model_list_for_A800=($(python3 $curr_dir/parse_model_list.py A800 $curr_dir/latest/model_list.xlsx))
+        model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/latest/model_list.xlsx))
         model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/latest/model_list.xlsx))
         model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/latest/model_list.xlsx))
         model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/latest/model_list.xlsx))
         model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/latest/model_list.xlsx))
     else
-        model_list_for_A800=($(python3 $curr_dir/parse_model_list.py A800 $curr_dir/$version/model_list.xlsx))
+        model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/$version/model_list.xlsx))
         model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/$version/model_list.xlsx))
         model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/$version/model_list.xlsx))
         model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/$version/model_list.xlsx))
         model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/$version/model_list.xlsx))
     fi
 else
-    model_list_for_A800=(DeepSeek-R1-Distill-Qwen-32B:2:A800 DeepSeek-R1-Distill-Llama-70B:4:A800 Meta-Llama-3.1-70B-Instruct:4:A800 Qwen2.5-32B-Instruct:2:A800 QwQ-32B:2:A800 Qwen2.5-32B-Instruct-AWQ:1:A800 QwQ-32B-AWQ:1:A800)
+    model_list_for_A100=(DeepSeek-R1-Distill-Qwen-32B:2:A100 DeepSeek-R1-Distill-Llama-70B:4:A100 Meta-Llama-3.1-70B-Instruct:4:A100 Qwen2.5-32B-Instruct:2:A100 QwQ-32B:2:A100 Qwen2.5-32B-Instruct-AWQ:1:A100 QwQ-32B-AWQ:1:A100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100)
     model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100 DeepSeek-R1-AWQ:8:H100 Meta-Llama-3.1-8B-Instruct:1:H100 Qwen2.5-0.5B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-1.5B:1:H100 Meta-Llama-3.1-70B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 QwQ-32B:2:H100 Qwen2.5-0.5B-Instruct-AWQ:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H100 Qwen2.5-3B-Instruct-AWQ:1:H100 Qwen2.5-7B-Instruct-AWQ:1:H100 Qwen2.5-14B-Instruct-AWQ:1:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen3-30B-A3B-Instruct-2507:2:H100 Qwen3-32B-AWQ:1:H100)
     model_list_for_H20=(DeepSeek-V3-0324:8:H20 DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 DeepSeek-V3.1:8:H20 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen3-32B-AWQ:1:H20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 DeepSeek-R1-Distill-Qwen-7B:1:H20 DeepSeek-R1-Distill-Qwen-14B:1:H20 Qwen2.5-1.5B-Instruct:1:H20 Qwen2.5-3B-Instruct:1:H20 Qwen2.5-7B-Instruct:1:H20 Qwen2.5-14B-Instruct:1:H20 Qwen2.5-32B-Instruct:2:H20)
     model_list_for_H800=(DeepSeek-V3.1:8:H800)
     model_list_for_L20=(Meta-Llama-3.1-70B-Instruct:8:L20 Qwen2.5-32B-Instruct:4:L20 Qwen2.5-72B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-32B-FP8:2:L20 DeepSeek-R1-Distill-Qwen-1.5B:1:L20 DeepSeek-R1-Distill-Qwen-7B:1:L20 DeepSeek-R1-Distill-Qwen-14B:1:L20 DeepSeek-R1-Distill-Qwen-32B:4:L20 DeepSeek-R1-Distill-Llama-8B:1:L20 DeepSeek-R1-Distill-Llama-70B:8:L20 Meta-Llama-3.1-8B-Instruct:1:L20 Qwen2.5-0.5B-Instruct:1:L20 Qwen2.5-1.5B-Instruct:1:L20 Qwen2.5-3B-Instruct:1:L20 Qwen2.5-7B-Instruct:1:L20 Qwen2.5-14B-Instruct:1:L20)
 fi
 
-full_model_list=(${model_list_for_A800[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
+full_model_list=(${model_list_for_A100[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
 
-declare -A A800_server_list=(
-    ["10.208.130.44"]="A800-001"
+declare -A A100_server_list=(
+    ["192.168.163.40"]="A100-001"
 )
 
 declare -A H20_server_list=(
@@ -77,7 +77,7 @@ declare -A H800_server_list=(
 )
 
 declare -A local_ip_map=(
-    ["10.208.130.44"]="10.208.130.44"
+    ["192.168.163.40"]="192.168.163.40"
     ["10.9.1.14"]="172.31.0.2"
     ["192.168.100.106"]="192.168.100.106"
     ["10.9.1.54"]="172.16.28.34"
@@ -170,7 +170,7 @@ cleanup_all_resources() {
     
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
-        ssh -q -o ConnectionAttempts=3 s_limingge@$ip "
+        ssh -q -o ConnectionAttempts=3 zkjh@$ip "
             name=${engine_type}_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
             if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                 docker stop \$name
@@ -205,7 +205,7 @@ handle_interrupt() {
     for remote_ip in "${!unique_ips[@]}"; do
         echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
         # 通过 ssh 找到远程脚本进程并发送信号
-        ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 s_limingge@$remote_ip "
+        ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 zkjh@$remote_ip "
             pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
             if [ ! -z \"\$pids\" ]; then
                 for pid in \$pids; do
@@ -354,14 +354,14 @@ for option in "${schedule_policies[@]}"; do
                     fi
 
                     if [ $TEST_TYPE == "Smoke" ]; then
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
                     else
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip chmod a+x /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$ip /home/s_limingge/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version &
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $use_prefix_cache_flag $option $swap_space $server_list_str $seq_num $job_count $gpu_model $session_id $version &
                         ssh_pid=$!
                         pid_map[$ssh_pid]=$ip
                         SSH_PID_MAP[$ssh_pid]=$ip
@@ -395,11 +395,11 @@ for option in "${schedule_policies[@]}"; do
                             # 启动失败，清理工作
                             for ip in ${server_list[@]}; do
                                 if [ $ENGINE_TYPE == "SigInfer" ]; then
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                                 elif [ $ENGINE_TYPE == "vLLM" ]; then
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                                    ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                                    ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                                 fi
                             done
                             
@@ -434,11 +434,11 @@ for option in "${schedule_policies[@]}"; do
                 else
                     echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
                     if [ $ENGINE_TYPE == "SigInfer" ]; then
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                     elif [ $ENGINE_TYPE == "vLLM" ]; then
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                     fi
                     continue
                 fi
@@ -446,7 +446,7 @@ for option in "${schedule_policies[@]}"; do
                 echo "开始执行模型${TEST_TYPE}测试任务......"
 
                 if [ $TEST_TYPE == "Performance" ]; then
-                    if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-FP8" ] || [ $model == "Qwen3-32B-AWQ" ]; then
+                    if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-AWQ" ] || [ $model == "Qwen3-32B-FP8" ]; then
                         data_path="/home/weight/Qwen3"
                     elif [ $model == "QwQ-32B" ] || [ $model == "QwQ-32B-AWQ" ]; then
                         data_path="/home/weight/Qwen"
@@ -458,22 +458,25 @@ for option in "${schedule_policies[@]}"; do
 
                     if [ $TEST_PARAM == "Random" ]; then
                         multiplier=4
-                        concurrency_list=(1 5 10 20 50 100 150)
+                        # concurrency_list=(1 5 10 20 50 100 150)
+                        concurrency_list=(1 5 10 20 50 100)
                         length_pairs=(
                             "128:128"
                             "128:1024"
                             "128:2048"
-                            "1024:1024"
-                            "2048:2048"
-                            "4096:1024"
-                            "1024:4096"
-                            "30000:2048"
-                            "126000:2048"
+                            # "1024:1024"
+                            # "2048:2048"
+                            # "4096:1024"
+                            # "1024:4096"
+                            # "30000:2048"
+                            # "126000:2048"
                         )
                         # Random
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$local_master_ip "
-                            docker exec ${engine_type}_nvidia_PerformanceTest_${job_count} /bin/bash -c \"
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
+                            docker exec ${engine_type}_nvidia_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
+                                export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
                                 pip3 install dataSets pillow aiohttp
+                                unset https_proxy http_proxy
 
                                 if [ $ENGINE_TYPE == \\\"SigInfer\\\" ]; then
                                     if [ -f \\\"/SigInfer/script/benchmark/benchmark_serving.py\\\" ]; then
@@ -500,9 +503,9 @@ for option in "${schedule_policies[@]}"; do
                                     for concurrency in ${concurrency_list[@]}; do
                                         prompts=\\\$((concurrency * ${multiplier}))
                                         echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                        echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port ${server_port} --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
+                                        echo \\\"\\\${benchmark_cmd} --backend openai --port ${server_port} --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name random --random-input-len \\\$input_len --random-output-len \\\$output_len --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency --ignore-eos\\\"
 
-                                        python3 \\\${benchmark_cmd} \
+                                        \\\${benchmark_cmd} \
                                         --backend openai \
                                         --port ${server_port} \
                                         --host 127.0.0.1 \
@@ -524,7 +527,7 @@ for option in "${schedule_policies[@]}"; do
                         multiplier=4
                         concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
                         # Sharegpt
-                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 s_limingge@$local_master_ip "
+                        ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
                             docker exec ${engine_type}_nvidia_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
                                 pip3 install dataSets pillow aiohttp
 
@@ -545,9 +548,9 @@ for option in "${schedule_policies[@]}"; do
                                 for concurrency in ${concurrency_list[@]}; do
                                     prompts=\\\$((concurrency * ${multiplier}))
                                     echo \\\"Testing concurrency=\\\$concurrency, prompts=\\\$prompts\\\"
-                                    echo \\\"python3 \\\${benchmark_serving_path} --backend openai --port ${server_port} --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
+                                    echo \\\"\\\${benchmark_cmd} --backend openai --port ${server_port} --host 127.0.0.1 --model ${model} --tokenizer ${data_path}/${model}/ --endpoint /v1/completions --dataset-name sharegpt --dataset-path /home/weight/ShareGPT_V3_unfiltered_cleaned_split.json --num-prompts \\\$prompts --request-rate inf --max-concurrency \\\$concurrency\\\"
 
-                                    python3 \\\${benchmark_cmd} \
+                                    \\\${benchmark_cmd} \
                                     --backend openai \
                                     --port ${server_port} \
                                     --host 127.0.0.1 \
@@ -597,9 +600,9 @@ for option in "${schedule_policies[@]}"; do
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
-                    elif [ $gpu_model == "A800" ]; then
-                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
-                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A800_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
+                    elif [ $gpu_model == "A100" ]; then
+                        echo "docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A100_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd \"$full_cmd\""
+                        docker run --rm --name $container_name --volume $curr_dir/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${A100_server_list[$local_master_ip]} --url http://${local_master_ip}:${server_port}/v1 --model=$model_name --gpu $gpu_model --cmd "\"$full_cmd\"" 2>&1 &
                         pid=$!
                         pid_map[$pid]="$container_name"
                         DOCKER_CONTAINER_NAMES+=("$container_name")
@@ -642,21 +645,21 @@ for option in "${schedule_policies[@]}"; do
                     # 开始执行测试
                     # 容器1: Evalscope mmlu,ceval
                     container_name_1="Evalscope_mmlu_ceval_$$"
-                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_1.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_1" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/zkjh/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip --number 10 -P 10 --dataset mmlu,ceval > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_1.log" 2>&1 &
                     pid1=$!
                     pid_map[$pid1]="$container_name_1"
                     DOCKER_CONTAINER_NAMES+=("$container_name_1")
                     
                     # 容器2: Evalscope gsm8k,ARC_c
                     container_name_2="Evalscope_gsm8k_ARC_c_$$"
-                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_2.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_2" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/zkjh/weight/:/home/weight/ --entrypoint /evalscope.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip --number 200 -P 10 --dataset gsm8k,ARC_c > "$curr_dir/logs/accuracy/$session_id/${filename}_evalscope_2.log" 2>&1 &
                     pid2=$!
                     pid_map[$pid2]="$container_name_2"
                     DOCKER_CONTAINER_NAMES+=("$container_name_2")
                     
                     # 容器3: SGLang mmlu,gsm8k
                     container_name_3="SGLang_mmlu_gsm8k_$$"
-                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip > "$curr_dir/logs/accuracy/$session_id/${filename}_SGLang_3.log" 2>&1 &
+                    docker run -i --rm --name "$container_name_3" --privileged=true --cap-add=ALL --pid=host --gpus=all --network=host  -v /home/zkjh/weight/:/home/weight/ --entrypoint /sglang.sh  evalscope:0624 -M $model --port ${server_port} --host $local_master_ip > "$curr_dir/logs/accuracy/$session_id/${filename}_SGLang_3.log" 2>&1 &
                     pid3=$!
                     pid_map[$pid3]="$container_name_3"
                     DOCKER_CONTAINER_NAMES+=("$container_name_3")
@@ -730,11 +733,11 @@ for option in "${schedule_policies[@]}"; do
                 # 测试完成，清理工作
                 for ip in ${server_list[@]}; do
                     if [ $ENGINE_TYPE == "SigInfer" ]; then
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm siginfer_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                     elif [ $ENGINE_TYPE == "vLLM" ]; then
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 s_limingge@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${session_id}_${job_count}
                     fi
                 done
                 
@@ -757,8 +760,8 @@ for option in "${schedule_policies[@]}"; do
                         server_name="unknown"
                         if [ $gpu_model == "H20" ]; then
                             server_name=${H20_server_list[$local_master_ip]}
-                        elif [ $gpu_model == "A800" ]; then
-                            server_name=${A800_server_list[$local_master_ip]}
+                        elif [ $gpu_model == "A100" ]; then
+                            server_name=${A100_server_list[$local_master_ip]}
                         elif [ $gpu_model == "H100" ]; then
                             server_name=${H100_server_list[$local_master_ip]}
                         elif [ $gpu_model == "L20" ]; then
