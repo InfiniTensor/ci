@@ -27,7 +27,7 @@ EOF
 cd /CI_Workspace
 
 if [ ! -d ci_autotest ]; then
-    git clone http://git.xcoresigma.com/xcore-sigma/autotest.git ci_autotest
+    git clone git@github.com:Vincent777/ci_autotest.git ci_autotest
     cd ci_autotest
 else
     cd ci_autotest
