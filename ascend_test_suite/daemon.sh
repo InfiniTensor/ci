@@ -21,7 +21,7 @@ version=$6
 
 curr_dir=$(pwd)
 
-docker run --rm --name="CI_test_job_${CI_job_id}" --ipc=host --net=host --privileged -e https_proxy=http://localhost:9991 -e http_proxy=http://localhost:9991 -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list $CI_job_id $version &
+docker run --rm --name="CI_test_job_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list $CI_job_id $version &
 CHILD_PID=$!
 
 echo -n "Running"
