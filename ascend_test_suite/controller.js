@@ -9,7 +9,8 @@ const ranks = {};
 const port = parseInt(process.argv[2], 10);
 const WORLD_SIZE = parseInt(process.argv[3], 10);
 
-const RANK_DIR = path.join(__dirname, "ranks");
+// const RANK_DIR = path.join(__dirname, "ranks");
+const RANK_DIR = "/CI_Workspace/ranks";
 fs.mkdirSync(RANK_DIR, { recursive: true });
 
 count = 0;
