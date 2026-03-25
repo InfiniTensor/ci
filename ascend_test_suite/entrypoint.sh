@@ -19,7 +19,7 @@ version=$6
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
-Host 10.9.1.*
+Host *
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
 EOF
