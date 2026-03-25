@@ -29,6 +29,7 @@ const upload = multer({ storage });
 
 app.post("/rank/:node", upload.single("file"), async (req, res) => {
     try {
+        console.log(`${req.file}, ${req.file.path}`)
         if (!req.file || !req.file.path) {
             res.status(400).json({ status: "error", message: "Missing uploaded file" });
             return;
