@@ -253,7 +253,7 @@ generate_merged_rank_table() {
     log_info "步骤3: 生成全局rank_table_file.json..."
 
     for ((i=1; i<=3; i=i+1)) do
-        curl -X POST http://192.168.163.40:$((8080+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
+        curl -X POST http://192.168.163.40:$((8786+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
         if [ $? -eq 0 ]; then
             break
         fi
