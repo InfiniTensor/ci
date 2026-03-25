@@ -358,7 +358,8 @@ for option in "${schedule_policies[@]}"; do
                     cd $curr_dir/controller/$job_id
                     rm -rf *
                     npm init -y
-                    npm install express multer
+                    # npm install express multer
+                    npm install express@4 multer@1.4.5-lts.1
                     cp $curr_dir/controller.js .
                     # 获取文件锁（阻塞），防止多任务并发执行时发生端口冲突
                     exec 300>"${LOCK_DIR}/http_port_$((8786+$job_count)).lock"    # 打开文件描述符 300
