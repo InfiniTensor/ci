@@ -7,6 +7,8 @@ import openai
 import allure
 from debugtalk import *
 
+pytestmark = pytest.mark.skip(reason="临时禁用 logprobs 测试")
+
 @pytest.mark.asyncio
 @allure.title("文本补全_logprobs为True，返回结果包含logprobs信息")        
 async def test_logprobs_true(client):

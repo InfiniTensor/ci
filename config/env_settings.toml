@@ -1,6 +1,6 @@
 [aicc005]
 BASE_URL = "http://10.9.1.26:8000/v1"
-MODEL = "Qwen3-32B"
+MODEL = "DeepSeek-R1-AWQ"
 API_KEY = "-"
 
 [aicc014]

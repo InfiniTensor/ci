@@ -24,5 +24,6 @@ model = args.model
 gpu = args.gpu
 cmd = args.cmd
 
-add_cmd = f"dynaconf write toml -v BASE_URL={url} -v MODEL={model} -v API_KEY=- -p config/env_settings.toml -e {env} -y"
+name_prefix = model.split('_', 1)[0]
+add_cmd = f"dynaconf write toml -v BASE_URL={url} -v MODEL={name_prefix} -v API_KEY=- -p config/env_settings.toml -e {env} -y"
 subprocess.run(add_cmd, shell=True)
