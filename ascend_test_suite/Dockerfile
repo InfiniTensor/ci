@@ -23,14 +23,13 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     docker.io \
     tini \
-    npm \
     openssh-server \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 Node.js 20 LTS（包含 npm）
-# RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
-#     apt-get update && apt-get install -y nodejs && \
-#     rm -rf /var/lib/apt/lists/*
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
+    apt-get update && apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # 创建 .ssh 目录
 RUN mkdir -p /root/.ssh && chmod 700 /root/.ssh

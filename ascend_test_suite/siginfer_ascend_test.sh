@@ -359,7 +359,7 @@ for option in "${schedule_policies[@]}"; do
                     rm -rf *
                     npm init -y
                     # npm install express multer
-                    npm install express@4 multer@1.4.5-lts.1
+                    npm install express multer
                     cp $curr_dir/controller.js .
                     # 获取文件锁（阻塞），防止多任务并发执行时发生端口冲突
                     exec 300>"${LOCK_DIR}/http_port_$((8786+$job_count)).lock"    # 打开文件描述符 300
@@ -367,7 +367,7 @@ for option in "${schedule_policies[@]}"; do
                         echo "无法获取锁，退出..."
                         exit 1
                     fi
-                    DEBUG=http,net,tls,multer:*,express:* node controller.js $((8786+$job_count)) ${#server_list[@]}
+                    node controller.js $((8786+$job_count)) ${#server_list[@]}
                     # 锁会自动在脚本退出或文件描述符关闭时释放
                     exec 300>&-  # 关闭文件描述符
                     arguments=""
