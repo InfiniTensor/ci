@@ -1,13 +1,12 @@
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 
 import github_status as gh
 
 
 # ---------------------------------------------------------------------------
-# parse_repo_url
+# Tests for `parse_repo_url`.
 # ---------------------------------------------------------------------------
 
 
@@ -36,7 +35,7 @@ def test_parse_repo_url_invalid():
 
 
 # ---------------------------------------------------------------------------
-# build_status_context
+# Tests for `build_status_context`.
 # ---------------------------------------------------------------------------
 
 
@@ -46,7 +45,7 @@ def test_build_status_context():
 
 
 # ---------------------------------------------------------------------------
-# post_commit_status
+# Tests for `post_commit_status`.
 # ---------------------------------------------------------------------------
 
 
@@ -57,7 +56,9 @@ def test_post_status_no_token(monkeypatch):
 
 
 def test_post_status_missing_owner():
-    result = gh.post_commit_status("", "repo", "abc123", "success", "ctx", "desc", token="tok")
+    result = gh.post_commit_status(
+        "", "repo", "abc123", "success", "ctx", "desc", token="tok"
+    )
     assert result is False
 
 

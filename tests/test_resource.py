@@ -1,28 +1,31 @@
 import threading
 
-import pytest
 
 import ci_resource as res
 
 
 # ---------------------------------------------------------------------------
-# GpuInfo / SystemResources
+# Tests for `GpuInfo` and `SystemResources`.
 # ---------------------------------------------------------------------------
 
 
 def test_gpu_info_fields():
-    g = res.GpuInfo(index=0, memory_used_mb=1000, memory_total_mb=8000, utilization_pct=50)
+    g = res.GpuInfo(
+        index=0, memory_used_mb=1000, memory_total_mb=8000, utilization_pct=50
+    )
     assert g.index == 0
     assert g.memory_total_mb == 8000
 
 
 def test_system_resources_fields():
-    s = res.SystemResources(total_memory_mb=32000, available_memory_mb=16000, cpu_count=8)
+    s = res.SystemResources(
+        total_memory_mb=32000, available_memory_mb=16000, cpu_count=8
+    )
     assert s.cpu_count == 8
 
 
 # ---------------------------------------------------------------------------
-# detect_gpus
+# Tests for `detect_gpus`.
 # ---------------------------------------------------------------------------
 
 
@@ -78,7 +81,7 @@ def test_detect_gpus_file_not_found(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# detect_system_resources
+# Tests for `detect_system_resources`.
 # ---------------------------------------------------------------------------
 
 
@@ -90,7 +93,7 @@ def test_detect_system_resources(monkeypatch, tmp_path):
         "MemAvailable:   20000000 kB\n"
     )
 
-    import io
+
     _real_open = open
 
     def fake_open(path, **kw):
@@ -108,7 +111,7 @@ def test_detect_system_resources(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# get_free_gpus
+# Tests for `get_free_gpus`.
 # ---------------------------------------------------------------------------
 
 
@@ -132,7 +135,7 @@ def test_get_free_gpus_filters_by_utilization(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# allocate / release
+# Tests for `allocate` and `release`.
 # ---------------------------------------------------------------------------
 
 
@@ -197,11 +200,11 @@ def test_release_frees_gpus(monkeypatch):
     assert ok is True
     assert len(gpu_ids) == 2
 
-    # All GPUs allocated, next allocation should fail
+    # All GPUs allocated; next allocation should fail.
     _, ok2 = pool.allocate(1)
     assert ok2 is False
 
-    # Release one
+    # Release one GPU.
     pool.release([gpu_ids[0]])
     gpu_ids2, ok3 = pool.allocate(1)
     assert ok3 is True
@@ -264,7 +267,7 @@ def test_thread_safety(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# get_status
+# Tests for `get_status`.
 # ---------------------------------------------------------------------------
 
 
@@ -288,7 +291,7 @@ def test_get_status(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
-# parse_gpu_requirement / parse_memory_requirement
+# Tests for `parse_gpu_requirement` and `parse_memory_requirement`.
 # ---------------------------------------------------------------------------
 
 
