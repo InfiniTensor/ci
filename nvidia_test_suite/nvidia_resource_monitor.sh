@@ -52,9 +52,7 @@ else
     version=$6
 fi
 
-echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
-
-exit 0
+# echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     if [ -z $version ]; then

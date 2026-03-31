@@ -18,9 +18,6 @@ docker_args="$5"
 CI_job_id=$6
 version=$7
 
-echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:"
-echo "$docker_args"
-
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
 Host *
