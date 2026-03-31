@@ -97,7 +97,7 @@ def main():
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             elif "<<<DOCKER_ARGS>>>" in line:
-                lines[line_num] = docker_args + " \\"
+                lines[line_num] = docker_args
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:
