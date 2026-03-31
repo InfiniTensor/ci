@@ -16,7 +16,7 @@ platform=$1
 test_type=$2
 engine=$3
 model_list=$4
-docker_args=$5
+docker_args="$5"
 CI_job_id=$6
 version=$7
 
