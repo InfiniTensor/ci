@@ -150,6 +150,8 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
+            elif "<<<DOCKER_ARGS>>>" in line:
+                lines[line_num] = docker_args + " \\"
             line_num += 1
     except FileNotFoundError:
         print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
