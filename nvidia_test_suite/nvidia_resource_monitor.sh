@@ -13,7 +13,7 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 TEST_TYPE=$1
 ENGINE_TYPE=$2
 MODEL_LIST=$3
-DOCKER_ARGS=$4
+DOCKER_ARGS="$4"
 SESSION_ID=$5
 curr_dir=$(pwd)
 
@@ -52,19 +52,19 @@ else
     version=$6
 fi
 
-# echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
     else
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} $version
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
     else
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} $version
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
     fi
 fi
 

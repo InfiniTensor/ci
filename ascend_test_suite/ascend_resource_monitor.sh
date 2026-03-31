@@ -52,7 +52,7 @@ else
     version=$6
 fi
 
-# echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     declare -A npu_server_list=(
@@ -67,9 +67,9 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
     else
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} $version
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
@@ -84,9 +84,9 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
     else
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} $version
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
@@ -101,9 +101,9 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
     else
-        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} ${DOCKER_ARGS} $version
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
     fi
 fi
 
