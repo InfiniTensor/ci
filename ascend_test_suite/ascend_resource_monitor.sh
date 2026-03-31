@@ -13,7 +13,8 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 TEST_TYPE=$1
 ENGINE_TYPE=$2
 MODEL_LIST=$3
-SESSION_ID=$4
+DOCKER_ARGS=$4
+SESSION_ID=$5
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
@@ -38,8 +39,8 @@ if [ -z $MODEL_LIST ]; then
 fi
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$5
-    version=$6
+    TEST_PARAM=$6
+    version=$7
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -48,7 +49,7 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$5
+    version=$6
 fi
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
@@ -64,9 +65,9 @@ if [ $ENGINE_TYPE == "SigInfer" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
     else
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} $version
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} $version
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
@@ -81,9 +82,9 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
     else
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} $version
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} $version
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
@@ -98,17 +99,17 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
         # ["aicc010"]="10.9.1.102"
     )
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} "latest"
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
     else
-        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} $version
+        python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} ${DOCKER_ARGS} $version
     fi
 fi
 
-full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 Qwen3-32B-FP8:2)
-full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:4 Qwen2.5-72B-Instruct:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 DeepSeek-R1-Distill-Qwen-1.5B:1)
-# full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:4 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
-full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2)
-full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16 DeepSeek-R1-AWQ:8)
+# full_model_list_for_smoke=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 Qwen2.5-72B-Instruct:4 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 Qwen2.5-72B-Instruct-AWQ:2 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-235B-A22B:8 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 Qwen3-32B-FP8:2)
+# full_model_list_for_performance=(DeepSeek-R1-W8A8:16 DeepSeek-R1-AWQ:8 DeepSeek-R1-0528:16 Qwen3-235B-A22B:8 Qwen3-32B:4 Qwen2.5-72B-Instruct:4 Qwen2.5-72B-Instruct-AWQ:2 Qwen3-32B-v2:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2 Qwen3.5-27B:2 Qwen3.5-35B-A3B:4 DeepSeek-R1-Distill-Qwen-1.5B:1)
+# # full_model_list_for_performance=(DeepSeek-R1-0528:16 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 Qwen3-32B:4 Qwen3-235B-A22B:8 DeepSeek-R1-W8A8:16)
+# full_model_list_for_accuracy=(DeepSeek-R1-AWQ:8 DeepSeek-R1-W8A8:16 DeepSeek-R1-Distill-Qwen-1.5B:1 Qwen3-235B-A22B:8 DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1-Distill-Llama-8B:1 DeepSeek-R1-Distill-Llama-70B:4 Meta-Llama-3.1-8B-Instruct:1 Qwen2.5-72B-Instruct-AWQ:2 Qwen2.5-32B-Instruct-AWQ:1 Qwen2.5-72B-Instruct:4 Meta-Llama-3.1-70B-Instruct:4 Qwen2.5-0.5B-Instruct:1 QwQ-32B:2 Qwen2.5-0.5B-Instruct-AWQ:1 QwQ-32B-AWQ:1 Qwen3-32B:4 Qwen3-30B-A3B:2 Qwen3-14B:2 DeepSeek-R1-Distill-Qwen-14B:2)
+# full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:2 DeepSeek-R1:16 DeepSeek-R1-AWQ:8)
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -118,39 +119,13 @@ mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_I
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
-    if [ $MODEL_LIST == "default" ]; then
-        full_model_list=(${full_model_list_for_smoke[@]})
-    else
-        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
-        full_model_list=()
-        for model in "${model_list[@]}"; do
-            for item in "${full_model_list_for_smoke[@]}"; do
-                name=`echo "$item" | awk -F : '{print $1}'`
-                if [ $model == $name ]; then
-                    full_model_list+=($item)
-                fi
-            done
-        done
-    fi
+    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
     num_of_prefix_cache_options=2
 elif [ $TEST_TYPE == "Performance" ]; then
-    if [ $MODEL_LIST == "default" ]; then
-        full_model_list=(${full_model_list_for_performance[@]})
-    else
-        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
-        full_model_list=()
-        for model in "${model_list[@]}"; do
-            for item in "${full_model_list_for_performance[@]}"; do
-                name=`echo "$item" | awk -F : '{print $1}'`
-                if [ $model == $name ]; then
-                    full_model_list+=($item)
-                fi
-            done
-        done
-    fi
+    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}

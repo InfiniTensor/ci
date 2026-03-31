@@ -88,7 +88,6 @@ RANK_TABLE_PATH="/home/zkjh/rank_table/$JOB_ID"
 CONFIG_FILE="/usr/local/Ascend/mindie/latest/mindie-service/conf/config.json"
 CONTAINER_NAME="mindie_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}"
 DOCKER_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:${VERSION}"
-SHM_SIZE="500g"
 NUM_NPUS=8
 SERVER_COUNT=$(echo $SERVER_LIST | tr '_' '\n' | wc -l)
 LOCAL_SERVER_IP=$(hostname -I | xargs printf "%s\n" | head -n 1)
@@ -304,34 +303,10 @@ start_container() {
     
     docker run -itd --privileged \
         --name="$CONTAINER_NAME" \
-        --net=host \
-        --shm-size="$SHM_SIZE" \
-        --ipc=host \
-        --device=/dev/davinci0 \
-        --device=/dev/davinci1 \
-        --device=/dev/davinci2 \
-        --device=/dev/davinci3 \
-        --device=/dev/davinci4 \
-        --device=/dev/davinci5 \
-        --device=/dev/davinci6 \
-        --device=/dev/davinci7 \
-        --device=/dev/davinci_manager \
-        --device=/dev/hisi_hdc \
-        --device=/dev/devmm_svm \
-        -v /usr/local/Ascend/driver/lib64:/usr/local/Ascend/driver/lib64 \
-        -v /usr/local/Ascend/driver/include:/usr/local/Ascend/driver/include \
-        -v /usr/local/Ascend/driver/tools:/usr/local/Ascend/driver/tools \
-        -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
-        -v /usr/local/Ascend/firmware:/usr/local/Ascend/firmware \
-        -v /usr/local/sbin/npu-smi:/usr/local/sbin/npu-smi \
-        -v /usr/local/sbin:/usr/local/sbin \
-        -v /etc/hccn.conf:/etc/hccn.conf \
-        -v /home/zkjh/weight:/home/weight \
-        -v /home/zkjh:/home/zkjh \
+        <<<DOCKER_ARGS>>>
         -v "$RANK_TABLE_FILE:$RANK_TABLE_FILE" \
-        swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:$VERSION \
         bash
-    
+
     if [ $? -eq 0 ]; then
         log_info "容器启动成功"
     else

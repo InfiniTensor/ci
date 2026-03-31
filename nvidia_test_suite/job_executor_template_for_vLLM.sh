@@ -338,22 +338,8 @@ else    # Slave节点同步到master节点的端口配置
 fi
 
 docker create --name=vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
-    --gpus all \
-    --privileged \
-    --cap-add=ALL \
-    --network host \
-    --pid=host \
-    --shm-size="80g" \
-    --volume /dev:/dev \
-    --volume /home/zkjh/weight:/home/weight \
-    --volume /home/zkjh/workspace:/workspace \
-    --workdir=/workspace \
-    --ipc=host	\
-    --entrypoint="" \
-    -u root \
-    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES  \
-    -e CUDA_DEVICE_ORDER=PCI_BUS_ID \
-    vllm/vllm-openai:$LATEST_TAG \
+    <<<DOCKER_ARGS>>>
+    -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES   \
     sleep infinity
 
 if [ $? -ne 0 ]; then

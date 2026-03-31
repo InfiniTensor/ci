@@ -31,29 +31,29 @@ log_name_suffix=${TASK_START_TIME}
 LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
-if true; then
-    if [ -z $version ]; then
-        model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/latest/model_list.xlsx))
-        model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/latest/model_list.xlsx))
-        model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/latest/model_list.xlsx))
-        model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/latest/model_list.xlsx))
-        model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/latest/model_list.xlsx))
-    else
-        model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/$version/model_list.xlsx))
-        model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/$version/model_list.xlsx))
-        model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/$version/model_list.xlsx))
-        model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/$version/model_list.xlsx))
-        model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/$version/model_list.xlsx))
-    fi
-else
-    model_list_for_A100=(DeepSeek-R1-Distill-Qwen-32B:2:A100 DeepSeek-R1-Distill-Llama-70B:4:A100 Meta-Llama-3.1-70B-Instruct:4:A100 Qwen2.5-32B-Instruct:2:A100 QwQ-32B:2:A100 Qwen2.5-32B-Instruct-AWQ:1:A100 QwQ-32B-AWQ:1:A100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100)
-    model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100 DeepSeek-R1-AWQ:8:H100 Meta-Llama-3.1-8B-Instruct:1:H100 Qwen2.5-0.5B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-1.5B:1:H100 Meta-Llama-3.1-70B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 QwQ-32B:2:H100 Qwen2.5-0.5B-Instruct-AWQ:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H100 Qwen2.5-3B-Instruct-AWQ:1:H100 Qwen2.5-7B-Instruct-AWQ:1:H100 Qwen2.5-14B-Instruct-AWQ:1:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen3-30B-A3B-Instruct-2507:2:H100 Qwen3-32B-AWQ:1:H100)
-    model_list_for_H20=(DeepSeek-V3-0324:8:H20 DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 DeepSeek-V3.1:8:H20 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen3-32B-AWQ:1:H20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 DeepSeek-R1-Distill-Qwen-7B:1:H20 DeepSeek-R1-Distill-Qwen-14B:1:H20 Qwen2.5-1.5B-Instruct:1:H20 Qwen2.5-3B-Instruct:1:H20 Qwen2.5-7B-Instruct:1:H20 Qwen2.5-14B-Instruct:1:H20 Qwen2.5-32B-Instruct:2:H20)
-    model_list_for_H800=(DeepSeek-V3.1:8:H800)
-    model_list_for_L20=(Meta-Llama-3.1-70B-Instruct:8:L20 Qwen2.5-32B-Instruct:4:L20 Qwen2.5-72B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-32B-FP8:2:L20 DeepSeek-R1-Distill-Qwen-1.5B:1:L20 DeepSeek-R1-Distill-Qwen-7B:1:L20 DeepSeek-R1-Distill-Qwen-14B:1:L20 DeepSeek-R1-Distill-Qwen-32B:4:L20 DeepSeek-R1-Distill-Llama-8B:1:L20 DeepSeek-R1-Distill-Llama-70B:8:L20 Meta-Llama-3.1-8B-Instruct:1:L20 Qwen2.5-0.5B-Instruct:1:L20 Qwen2.5-1.5B-Instruct:1:L20 Qwen2.5-3B-Instruct:1:L20 Qwen2.5-7B-Instruct:1:L20 Qwen2.5-14B-Instruct:1:L20)
-fi
+# if true; then
+#     if [ -z $version ]; then
+#         model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/latest/model_list.xlsx))
+#         model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/latest/model_list.xlsx))
+#         model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/latest/model_list.xlsx))
+#         model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/latest/model_list.xlsx))
+#         model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/latest/model_list.xlsx))
+#     else
+#         model_list_for_A100=($(python3 $curr_dir/parse_model_list.py A100 $curr_dir/$version/model_list.xlsx))
+#         model_list_for_H100=($(python3 $curr_dir/parse_model_list.py H100 $curr_dir/$version/model_list.xlsx))
+#         model_list_for_H20=($(python3 $curr_dir/parse_model_list.py H20 $curr_dir/$version/model_list.xlsx))
+#         model_list_for_H800=($(python3 $curr_dir/parse_model_list.py H800 $curr_dir/$version/model_list.xlsx))
+#         model_list_for_L20=($(python3 $curr_dir/parse_model_list.py L20 $curr_dir/$version/model_list.xlsx))
+#     fi
+# else
+#     model_list_for_A100=(DeepSeek-R1-Distill-Qwen-32B:2:A100 DeepSeek-R1-Distill-Llama-70B:4:A100 Meta-Llama-3.1-70B-Instruct:4:A100 Qwen2.5-32B-Instruct:2:A100 QwQ-32B:2:A100 Qwen2.5-32B-Instruct-AWQ:1:A100 QwQ-32B-AWQ:1:A100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100)
+#     model_list_for_H100=(DeepSeek-R1-Distill-Qwen-32B:1:H100 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H100 Qwen3-32B-FP8:2:H100 DeepSeek-R1-AWQ:8:H100 Meta-Llama-3.1-8B-Instruct:1:H100 Qwen2.5-0.5B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 DeepSeek-R1-Distill-Qwen-1.5B:1:H100 Meta-Llama-3.1-70B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 QwQ-32B:2:H100 Qwen2.5-0.5B-Instruct-AWQ:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H100 Qwen2.5-3B-Instruct-AWQ:1:H100 Qwen2.5-7B-Instruct-AWQ:1:H100 Qwen2.5-14B-Instruct-AWQ:1:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen3-30B-A3B-Instruct-2507:2:H100 Qwen3-32B-AWQ:1:H100)
+#     model_list_for_H20=(DeepSeek-V3-0324:8:H20 DeepSeek-R1:8:H20 DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:1:H20 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H20 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H20 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H20 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-R1-AWQ:8:H20 DeepSeek-R1-Distill-Qwen-32B:2:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 DeepSeek-V3.1:8:H20 Qwen2.5-32B-Instruct:2:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen3-32B-AWQ:1:H20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen2.5-1.5B-Instruct-AWQ:1:H20 DeepSeek-R1-Distill-Qwen-7B:1:H20 DeepSeek-R1-Distill-Qwen-14B:1:H20 Qwen2.5-1.5B-Instruct:1:H20 Qwen2.5-3B-Instruct:1:H20 Qwen2.5-7B-Instruct:1:H20 Qwen2.5-14B-Instruct:1:H20 Qwen2.5-32B-Instruct:2:H20)
+#     model_list_for_H800=(DeepSeek-V3.1:8:H800)
+#     model_list_for_L20=(Meta-Llama-3.1-70B-Instruct:8:L20 Qwen2.5-32B-Instruct:4:L20 Qwen2.5-72B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-32B-FP8:2:L20 DeepSeek-R1-Distill-Qwen-1.5B:1:L20 DeepSeek-R1-Distill-Qwen-7B:1:L20 DeepSeek-R1-Distill-Qwen-14B:1:L20 DeepSeek-R1-Distill-Qwen-32B:4:L20 DeepSeek-R1-Distill-Llama-8B:1:L20 DeepSeek-R1-Distill-Llama-70B:8:L20 Meta-Llama-3.1-8B-Instruct:1:L20 Qwen2.5-0.5B-Instruct:1:L20 Qwen2.5-1.5B-Instruct:1:L20 Qwen2.5-3B-Instruct:1:L20 Qwen2.5-7B-Instruct:1:L20 Qwen2.5-14B-Instruct:1:L20)
+# fi
 
-full_model_list=(${model_list_for_A100[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
+# full_model_list=(${model_list_for_A100[@]} ${model_list_for_H100[@]} ${model_list_for_H20[@]} ${model_list_for_H800[@]} ${model_list_for_L20[@]})
 
 declare -A A100_server_list=(
     ["192.168.163.40"]="A100-001"
@@ -233,25 +233,25 @@ trap handle_interrupt SIGINT SIGTERM
 # EXIT 信号仍然调用 cleanup（正常退出时 INTERRUPTED=0，不会额外 exit）
 trap cleanup_all_resources EXIT
 
-model_list=()
+model_list=($candidate_models)
 
-if [ ! -z "$candidate_models" ]; then
-    for candidate_item in $candidate_models; do
-        candidate_model=`echo "$candidate_item" | awk -F : '{print $1}'`
-        candidate_quanity=`echo "$candidate_item" | awk -F : '{print $2}'`
-        candidate_gpu=`echo "$candidate_item" | awk -F : '{print $3}'`
-        for item in "${full_model_list[@]}"; do
-            model=`echo "$item" | awk -F : '{print $1}'`
-            quanity=`echo "$item" | awk -F : '{print $2}'`
-            gpu=`echo "$item" | awk -F : '{print $3}'`
-            if [[ "$model" =~ ^$candidate_model$ ]] && [[ "$quanity" =~ ^$candidate_quanity$ ]] && [[ "$gpu" =~ ^$candidate_gpu$ ]]; then
-                model_list+=($item)
-            fi
-        done
-    done
-else
-    model_list=("${full_model_list[@]}")
-fi
+# if [ ! -z "$candidate_models" ]; then
+#     for candidate_item in $candidate_models; do
+#         candidate_model=`echo "$candidate_item" | awk -F : '{print $1}'`
+#         candidate_quanity=`echo "$candidate_item" | awk -F : '{print $2}'`
+#         candidate_gpu=`echo "$candidate_item" | awk -F : '{print $3}'`
+#         for item in "${full_model_list[@]}"; do
+#             model=`echo "$item" | awk -F : '{print $1}'`
+#             quanity=`echo "$item" | awk -F : '{print $2}'`
+#             gpu=`echo "$item" | awk -F : '{print $3}'`
+#             if [[ "$model" =~ ^$candidate_model$ ]] && [[ "$quanity" =~ ^$candidate_quanity$ ]] && [[ "$gpu" =~ ^$candidate_gpu$ ]]; then
+#                 model_list+=($item)
+#             fi
+#         done
+#     done
+# else
+#     model_list=("${full_model_list[@]}")
+# fi
 
 echo "*************开始执行${TEST_TYPE}测试任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
 echo "测试模型列表: ${model_list[@]}"

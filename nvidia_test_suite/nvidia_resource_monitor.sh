@@ -13,7 +13,8 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 TEST_TYPE=$1
 ENGINE_TYPE=$2
 MODEL_LIST=$3
-SESSION_ID=$4
+DOCKER_ARGS=$4
+SESSION_ID=$5
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
@@ -38,8 +39,8 @@ if [ -z $MODEL_LIST ]; then
 fi
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$5
-    version=$6
+    TEST_PARAM=$6
+    version=$7
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -48,28 +49,28 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$5
+    version=$6
 fi
 
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "latest"
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
     else
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} $version
+        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} $version
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "latest"
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"
     else
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} $version
+        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} ${DOCKER_ARGS} $version
     fi
 fi
 
-full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:2:A100 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100 Qwen3-30B-A3B:2:A100)
-# full_model_list_for_smoke=(Qwen2.5-72B-Instruct:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-32B-Instruct:2:H20 QwQ-32B:4:L20)
-# full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
-full_model_list_for_performance=(DeepSeek-R1-0528:8:H20 Qwen3-32B-FP8:2:A100)
-full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
+# full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:2:A100 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100 Qwen3-30B-A3B:2:A100)
+# # full_model_list_for_smoke=(Qwen2.5-72B-Instruct:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-32B-Instruct:2:H20 QwQ-32B:4:L20)
+# # full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
+# full_model_list_for_performance=(DeepSeek-R1-0528:8:H20 Qwen3-32B-FP8:2:A100)
+# full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -79,39 +80,13 @@ mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_I
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
-    if [ $MODEL_LIST == "default" ]; then
-        full_model_list=(${full_model_list_for_smoke[@]})
-    else
-        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
-        full_model_list=()
-        for model in "${model_list[@]}"; do
-            for item in "${full_model_list_for_smoke[@]}"; do
-                name=`echo "$item" | awk -F : '{print $1}'`
-                if [ $model == $name ]; then
-                    full_model_list+=($item)
-                fi
-            done
-        done
-    fi
+    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=2
+    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Performance" ]; then
-    if [ $MODEL_LIST == "default" ]; then
-        full_model_list=(${full_model_list_for_performance[@]})
-    else
-        model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
-        full_model_list=()
-        for model in "${model_list[@]}"; do
-            for item in "${full_model_list_for_performance[@]}"; do
-                name=`echo "$item" | awk -F : '{print $1}'`
-                if [ $model == $name ]; then
-                    full_model_list+=($item)
-                fi
-            done
-        done
-    fi
+    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
@@ -127,7 +102,7 @@ elif [ $TEST_TYPE == "Accuracy" ]; then
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=2
+    num_of_prefix_cache_options=1
 fi
 
 declare -A A100_server_list=(

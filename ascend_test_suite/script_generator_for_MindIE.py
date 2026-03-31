@@ -1,29 +1,41 @@
-from openpyxl import load_workbook
+import yaml
 import re
 import os
 import sys
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("Usage: python script_generator_for_MindIE.py <test_type> <version>")
+    if len(sys.argv) != 4:
+        print("Usage: python script_generator_for_MindIE.py <test_type> <docker_args> <version>")
         sys.exit(1)
     
     test_type = sys.argv[1]
-    version = sys.argv[2]
+    docker_args = sys.argv[2]
+    version = sys.argv[3]
     
     curr_dir = os.getcwd()
     
-    # 加载 Excel 文件
-    file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
-    workbook = load_workbook(file_path)
+    # Load YAML config (do NOT use .xlsx)
+    yaml_candidates = [
+        f'{curr_dir}/{version}/model_list.yml',
+        f'{curr_dir}/{version}/model_list.yaml',
+    ]
+    file_path = None
+    for candidate in yaml_candidates:
+        if os.path.exists(candidate):
+            file_path = candidate
+            break
+    if not file_path:
+        print(f"Error: YAML config not found for version '{version}'. Tried: {', '.join(yaml_candidates)}")
+        sys.exit(1)
 
-    # 选择工作表
-    sheet = workbook['MindIE']
+    with open(file_path, 'r', encoding='utf-8') as f:
+        cfg = yaml.safe_load(f) or {}
 
-    # 获取行数
-    row_count = sheet.max_row
-    print(f"总行数: {row_count}")
+    models = cfg.get('models', [])
+    if not isinstance(models, list):
+        print("Error: YAML key 'models' must be a list.")
+        sys.exit(1)
     
     target_file = ""
     src_code = ""
@@ -38,12 +50,15 @@ def main():
         target_file = "MindIE_job_executor_for_AccuracyTest.sh"
     
     start = True
-    for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
-        # print(row)  # 每行数据以元组形式返回
-        name = row[0]
-        GPU = row[1]
-        args = row[2]
-        args = args.split('\n')[0]
+    for model in models:
+        name = (model or {}).get('model_name')
+        args = (model or {}).get('default_params') or ''
+
+        if not name or not args:
+            continue
+
+        # Keep the first line (Excel-like behavior of using split('\\n')[0])
+        args = str(args).splitlines()[0].strip()
         
         pattern = "--tokenizer\s+(\S+)"
         match = re.search(pattern, args)

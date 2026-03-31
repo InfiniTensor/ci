@@ -1,4 +1,4 @@
-from openpyxl import load_workbook
+import yaml
 import re
 import os
 import sys
@@ -41,26 +41,38 @@ def extract_card_types(card_type_str):
     return cleaned_cards
 
 def main():
-    verison = ""
-    if len(sys.argv) != 3:
-        print("Usage: python script_generator <test_type> <version>")
+    if len(sys.argv) != 4:
+        print("Usage: python script_generator_for_vLLM.py <test_type> <docker_args> <version>")
         sys.exit(1)
     
     test_type = sys.argv[1]
-    version = sys.argv[2]
+    docker_args = sys.argv[2]
+    version = sys.argv[3]
     
     curr_dir = os.getcwd()
 
-    # 加载 Excel 文件
-    file_path = f'{curr_dir}/{version}/model_list.xlsx'  # 替换为你的 Excel 文件路径
-    workbook = load_workbook(file_path)
+    yaml_candidates = [
+        f'{curr_dir}/{version}/model_list.yml',
+        f'{curr_dir}/{version}/model_list.yaml',
+    ]
 
-    # 选择工作表
-    sheet = workbook['NVIDIA']
+    file_path = None
+    for candidate in yaml_candidates:
+        if os.path.exists(candidate):
+            file_path = candidate
+            break
+    
+    if not file_path:
+        print(f"Error: YAML config not found for version '{version}'. Tried: {', '.join(yaml_candidates)}")
+        sys.exit(1)
 
-    # 获取行数
-    row_count = sheet.max_row
-    print(f"总行数: {row_count}")
+    with open(file_path, 'r', encoding='utf-8') as f:
+        cfg = yaml.safe_load(f) or {}
+
+    models = cfg.get('models', [])
+    if not isinstance(models, list):
+        print("Error: YAML key 'models' must be a list.")
+        sys.exit(1)
     
     target_file = ""
     src_code = ""
@@ -79,14 +91,20 @@ def main():
         src_code += "docker exec vllm_nvidia_AccuracyTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     
     start = True
-    for row in sheet.iter_rows(min_row=2, max_row=row_count, values_only=True):
-        # print(row)  # 每行数据以元组形式返回
-        name = row[0]
-        GPU = row[1]
-        args = row[2]
-        args = args.split('\n')[0]
+    for model in models:
+        # Expected YAML schema:
+        # - model_name (str)
+        # - card_type (str)
+        # - default_params (str): docker run ... command fragment
+        name = (model or {}).get('model_name')
+        GPU = (model or {}).get('card_type')
+        args = (model or {}).get('default_params') or ''
 
-        result = re.sub(r"^.*docker\.xcoresigma\.com/docker/vllm/vllm-openai\:\S+", "", args)
+        if not name or not GPU or not args:
+            continue
+
+        args = str(args).splitlines()[0].strip()
+
         result = re.sub(r"--model\s+", "", result)
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
         result = re.sub(r"--served-model-name\s+\S+", f"--served-model-name {name}", result)
