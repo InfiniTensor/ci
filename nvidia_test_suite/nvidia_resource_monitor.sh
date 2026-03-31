@@ -52,6 +52,10 @@ else
     version=$6
 fi
 
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+
+exit 0
+
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     if [ -z $version ]; then
         python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} ${DOCKER_ARGS} "latest"

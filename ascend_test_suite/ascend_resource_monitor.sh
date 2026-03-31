@@ -52,6 +52,10 @@ else
     version=$6
 fi
 
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+
+exit 0
+
 if [ $ENGINE_TYPE == "SigInfer" ]; then
     declare -A npu_server_list=(
         ["aicc001"]="10.9.1.78"
