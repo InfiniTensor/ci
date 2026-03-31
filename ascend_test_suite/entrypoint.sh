@@ -40,13 +40,13 @@ fi
 if [ $platform == "Ascend" ]; then
     cd ascend_test_suite
     mkdir -p $version
-    cp latest/model_list.xlsx $version
+    cp latest/model_list.yml $version
     ./ascend_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $version &
     CHILD_PID=$!
 elif [ $platform == "Nvidia" ]; then
     cd nvidia_test_suite
     mkdir -p $version
-    cp latest/model_list.xlsx $version
+    cp latest/model_list.yml $version
     ./nvidia_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $version &
     CHILD_PID=$!
 fi
