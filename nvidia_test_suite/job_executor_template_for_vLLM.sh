@@ -340,6 +340,7 @@ fi
 docker create --name=vllm_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
     <<<DOCKER_ARGS>>>
     -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES   \
+    vllm/vllm-openai:$VERSION   \
     sleep infinity
 
 if [ $? -ne 0 ]; then
