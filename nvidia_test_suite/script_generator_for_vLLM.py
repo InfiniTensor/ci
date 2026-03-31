@@ -105,7 +105,7 @@ def main():
 
         args = str(args).splitlines()[0].strip()
 
-        result = re.sub(r"--model\s+", "", result)
+        result = re.sub(r"--model\s+", "", args)
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
         result = re.sub(r"--served-model-name\s+\S+", f"--served-model-name {name}", result)
         
