@@ -12,6 +12,9 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
 TEST_TYPE=$1
 ENGINE_TYPE=$2
+MODEL_LIST=$3
+DOCKER_ARGS="$4"
+SESSION_ID=$5
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
@@ -30,26 +33,14 @@ elif [ $ENGINE_TYPE != "InfiniTensor" ] && [ $ENGINE_TYPE != "vLLM" ] && [ $ENGI
     exit 1
 fi
 
-if [ $TEST_TYPE != "Unit" ]; then
-    MODEL_LIST=$3
-    DOCKER_ARGS="$4"
-    SESSION_ID=$5
-    if [ -z $MODEL_LIST ]; then
-        echo "Parameter Model List required!"
-        exit 1
-    fi
-    arg_idx=6
-else
-    DOCKER_ARGS="$3"
-    SESSION_ID=$4
-    arg_idx=5
+if [ -z $MODEL_LIST ]; then
+    echo "Parameter Model List required!"
+    exit 1
 fi
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=${!arg_idx}
-    ((arg_idx++))
-    version=${!arg_idx}
-    ((arg_idx++))
+    TEST_PARAM=$6
+    version=$7
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -58,8 +49,7 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=${!arg_idx}
-    ((arg_idx++))
+    version=$6
 fi
 
 echo "########################################################################"
