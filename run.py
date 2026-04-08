@@ -140,9 +140,8 @@ def build_docker_args(
         setup_cmd = setup_raw
 
     args = [
-        "docker",
-        "run",
-        "--rm",
+        "-u",
+        "root",
         "--network",
         "host",
         "-i",
