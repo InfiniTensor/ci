@@ -28,7 +28,7 @@ platforms:
         BASE_IMAGE: nvcr.io/nvidia/pytorch:24.10-py3
     setup: pip install .[dev] --no-build-isolation
     jobs:
-      gpu_unittest:
+      gpu:
         type: unittest
         resources:
           ngpus: 1                         # Scheduler auto-picks this many free GPUs
