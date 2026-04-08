@@ -62,6 +62,7 @@ else
     ((args_idx++))
 fi
 
+echo "***************************************************************************"
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then
