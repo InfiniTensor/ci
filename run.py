@@ -146,7 +146,7 @@ def build_docker_args(
         "--network",
         "host",
         "-i",
-        "-w",
+        "--workdir",
         workdir,
         "-e",
         f"REPO_URL={repo_url}",
