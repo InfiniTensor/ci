@@ -49,6 +49,7 @@ def main():
     elif test_type == "Accuracy":
         target_file = "MindIE_job_executor_for_AccuracyTest.sh"
     
+    model_list = ""
     start = True
     for model in models:
         name = (model or {}).get('model_name')
@@ -67,6 +68,15 @@ def main():
         else:
             model_weight_path = ""
         
+        pattern = "-tp\s+(\d+)"
+        match = re.search(pattern, args)
+        if match:
+            npu_quantity = match.group(1)
+        else:
+            npu_quantity = "0"
+
+        model_list += f"{model}:{npu_quantity} "
+
         if start:
             src_code += f"    if [ $MODEL == \"{name}\" ]; then\n"
             start = False
@@ -97,7 +107,7 @@ def main():
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             elif "<<<DOCKER_ARGS>>>" in line:
-                lines[line_num] = docker_args
+                lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:
@@ -108,6 +118,8 @@ def main():
         print(f"Error reading file: {str(e)}")
     
     os.system(f"chmod 777 {target_file}")
+
+    print(model_list.rstrip())
 
 if __name__ == "__main__":
     main()

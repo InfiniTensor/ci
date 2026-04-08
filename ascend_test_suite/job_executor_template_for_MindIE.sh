@@ -303,7 +303,7 @@ start_container() {
     
     docker run -itd --privileged \
         --name="$CONTAINER_NAME" \
-        <<<DOCKER_ARGS>>>
+        <<<DOCKER_ARGS>>>   \
         -v "$RANK_TABLE_FILE:$RANK_TABLE_FILE" \
         swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:$VERSION  \
         bash

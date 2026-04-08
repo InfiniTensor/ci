@@ -12,15 +12,12 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
 TEST_TYPE=$1
 ENGINE_TYPE=$2
-MODEL_LIST="$3:A100"
-DOCKER_ARGS="$4"
-SESSION_ID=$5
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"
     exit 1
-elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ]; then
+elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ] && [ $TEST_TYPE != "Unit" ]; then
     echo "Test_Type is wrong!"
     exit 1
 fi
@@ -28,19 +25,31 @@ fi
 if [ -z $ENGINE_TYPE ]; then
     echo "Parameter PLATFORM required!"
     exit 1
-elif [ $ENGINE_TYPE != "SigInfer" ] && [ $ENGINE_TYPE != "vLLM" ]; then
+elif [ $ENGINE_TYPE != "InfiniTensor" ] && [ $ENGINE_TYPE != "vLLM" ]; then
     echo "Inference Engine Type is wrong!"
     exit 1
 fi
 
-if [ -z $MODEL_LIST ]; then
-    echo "Parameter Model List required!"
-    exit 1
+if [ $TEST_TYPE != "Unit" ]; then
+    MODEL_LIST=$3
+    DOCKER_ARGS="$4"
+    SESSION_ID=$5
+    if [ -z $MODEL_LIST ]; then
+        echo "Parameter Model List required!"
+        exit 1
+    fi
+    args_idx=6
+else
+    DOCKER_ARGS="$3"
+    SESSION_ID=$4
+    args_idx=5
 fi
 
 if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$6
-    version=$7
+    TEST_PARAM=${!args_idx}
+    ((args_idx++))
+    version=${!args_idx}
+    ((args_idx++))
     if [ -z $TEST_PARAM ]; then
         echo "Parameter Test_Param required!"
         exit 1
@@ -49,30 +58,27 @@ if [ $TEST_TYPE == "Performance" ]; then
         exit 1
     fi
 else
-    version=$6
+    version=${!args_idx}
+    ((args_idx++))
 fi
 
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
 
-if [ $ENGINE_TYPE == "SigInfer" ]; then
+if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
     else
-        python3 $curr_dir/script_generator_for_SigInfer.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"
+        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
     else
-        python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version
+        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
     fi
 fi
 
-# full_model_list_for_smoke=(DeepSeek-R1-0528:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B:1:H20 Qwen3-32B-FP8:2:A100 DeepSeek-R1-Distill-Qwen-1.5B:1:H20 DeepSeek-R1-Distill-Qwen-32B:1:H20 DeepSeek-R1-Distill-Llama-8B:1:H100 DeepSeek-R1-Distill-Llama-70B:4:H20 Meta-Llama-3.1-8B-Instruct:1:H100 Meta-Llama-3.1-70B-Instruct:4:H20 Qwen2.5-0.5B-Instruct:1:H100 Qwen2.5-72B-Instruct:4:H20 QwQ-32B:2:H20 Qwen2.5-0.5B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20 QwQ-32B-AWQ:1:H20 DeepSeek-V3.1:8:H20 DeepSeek-V3-0324:8:H20 DeepSeek-R1-Distill-Qwen-7B:1:H100 DeepSeek-R1-Distill-Qwen-14B:1:H100 Qwen2.5-1.5B-Instruct:1:H100 Qwen2.5-3B-Instruct:1:H100 Qwen2.5-7B-Instruct:1:H100 Qwen2.5-14B-Instruct:1:H100 Qwen2.5-1.5B-Instruct-AWQ:1:H20 Qwen2.5-3B-Instruct-AWQ:1:H20 Qwen2.5-7B-Instruct-AWQ:1:H20 Qwen2.5-14B-Instruct-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen3-30B-A3B-Instruct-2507:2:H20 Qwen3-32B-AWQ:1:H20 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct:2:H100 Qwen3.5-27B:2:A100 Qwen3.5-35B-A3B:2:A100 Qwen3-30B-A3B:2:A100)
-# # full_model_list_for_smoke=(Qwen2.5-72B-Instruct:4:L20 Qwen2.5-72B-Instruct-AWQ:2:L20 Qwen2.5-32B-Instruct:4:L20 QwQ-32B:4:L20 Qwen2.5-32B-Instruct:2:H100 Qwen2.5-72B-Instruct:4:H100 Qwen2.5-32B-Instruct-AWQ:1:H100 Qwen2.5-72B-Instruct-AWQ:1:H100 QwQ-32B-AWQ:1:H100 Qwen2.5-32B-Instruct:2:H20 QwQ-32B:4:L20)
-# # full_model_list_for_performance=(DeepSeek-V3.1:8:H20 Qwen3-235B-A22B:8:H20 Qwen3-235B-A22B-FP8:4:H20 Qwen3-32B-FP8:1:H20 Qwen3-32B:1:H20 Qwen2.5-72B-Instruct-AWQ:1:H20)
-# full_model_list_for_performance=(DeepSeek-R1-0528:8:H20 Qwen3-32B-FP8:2:A100)
-# full_model_list_for_stability=(DeepSeek-R1-Distill-Qwen-32B:1:H100)
+exit 0
 
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
@@ -82,30 +88,33 @@ mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_I
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
-    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Performance" ]; then
-    full_model_list=($MODEL_LIST)
     rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Stability" ]; then
-    full_model_list=(${full_model_list_for_stability[@]})
     rm -rf $curr_dir/logs/stability/$SESSION_ID/*.log $curr_dir/logs/stability/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/stability/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=1
 elif [ $TEST_TYPE == "Accuracy" ]; then
-    full_model_list=(${full_model_list_for_accuracy[@]})
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-    num_of_prefix_cache_options=1
 fi
+
+full_model_list=()
+model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+for model in "${model_list[@]}"; do
+    for item in "${model_config_list[@]}"; do
+        name=`echo "$item" | awk -F : '{print $1}'`
+        if [ $model == $name ]; then
+            full_model_list+=($item)
+        fi
+    done
+done
 
 declare -A A100_server_list=(
     ["A100-001"]="192.168.163.40"
@@ -525,50 +534,11 @@ for item in "${full_model_list[@]}"; do
     model=`echo "$item" | awk -F : '{print $1}'`
     quanity=`echo "$item" | awk -F : '{print $2}'`
     gpu=`echo "$item" | awk -F : '{print $3}'`
-    found=0
-    # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
-    for option in 'DynamicSplitFuseV2'; do
-        use_prefix_cache_flag=-1
-        for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
-            swap_space=40
-            for ((j=1; j<=1; j=j+1)); do
-                # 模型已经测试过了，检查下一个
-                if [ $use_prefix_cache_flag -gt 0 ]; then
-                    if [ $swap_space -eq 0 ]; then
-                        if [ ! -z `cat ${processed_models} | grep -w ${item}_${option}_use-prefix-cache` ]; then
-                            continue
-                        fi
-                    else
-                        if [ ! -z `cat ${processed_models} | grep -w ${item}_${option}_use-prefix-cache_swap-space` ]; then
-                            swap_space=0
-                            continue
-                        fi
-                    fi
-                else
-                    if [ $swap_space -eq 0 ]; then
-                        if [ ! -z `cat ${processed_models} | grep -w ${item}_${option}` ]; then
-                            continue
-                        fi
-                    else
-                        if [ ! -z `cat ${processed_models} | grep -w ${item}_${option}_swap-space` ]; then
-                            swap_space=0
-                            continue
-                        fi
-                    fi
-                fi
-                GPU_resource_demand+=(${item})
-                found=1
-                break
-            done
-            if [ $found -eq 1 ]; then
-                break
-            fi
-            use_prefix_cache_flag=$((-use_prefix_cache_flag))
-        done
-        if [ $found -eq 1 ]; then
-            break
-        fi
-    done
+    
+    # 模型已经测试过了，检查下一个
+    if [ ! -z `cat ${processed_models} | grep -w ${item}` ]; then
+        GPU_resource_demand+=(${item})
+    fi
 done
 
 GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
@@ -598,22 +568,22 @@ while true; do
             echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
             echo
             if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniTensor_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Stability测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Smoke" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
             elif [ $TEST_TYPE == "Accuracy" ]; then
-                $curr_dir/siginfer_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniTensor_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`

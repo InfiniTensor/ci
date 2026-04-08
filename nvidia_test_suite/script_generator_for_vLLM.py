@@ -90,6 +90,7 @@ def main():
         target_file = "vLLM_job_executor_for_AccuracyTest.sh"
         src_code += "docker exec vllm_nvidia_AccuracyTest_${SESSION_ID}_${JOB_COUNT} /bin/bash -c \"\n"
     
+    model_list = ""
     start = True
     for model in models:
         # Expected YAML schema:
@@ -104,6 +105,15 @@ def main():
             continue
 
         args = str(args).splitlines()[0].strip()
+
+        pattern = "-tp\s+(\d+)"
+        match = re.search(pattern, args)
+        if match:
+            npu_quantity = match.group(1)
+        else:
+            npu_quantity = "0"
+
+        model_list += f"{model}:{npu_quantity}:{GPU} "
 
         result = re.sub(r"--model\s+", "", args)
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
@@ -151,7 +161,7 @@ def main():
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
             elif "<<<DOCKER_ARGS>>>" in line:
-                lines[line_num] = docker_args
+                lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
     except FileNotFoundError:
         print(f"Error: Log file '{curr_dir}/{template_file}' not found.")
@@ -159,6 +169,8 @@ def main():
         print(f"Error reading file: {str(e)}")
     
     os.system(f"chmod 777 {target_file}")
+
+    print(model_list.rstrip())
 
 if __name__ == "__main__":
     main()
