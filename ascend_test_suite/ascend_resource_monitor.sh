@@ -92,8 +92,6 @@ elif [ $ENGINE_TYPE == "MindIE" ]; then
     fi
 fi
 
-exit 0
-
 log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
