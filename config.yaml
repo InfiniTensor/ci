@@ -172,6 +172,18 @@ platforms:
       build_args:
         BASE_IMAGE: swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A2-py311-openeuler24.03-lts
     jobs:
+      npu:
+        type: unittest
+        resources:
+          ngpus: 1                         # Scheduler auto-picks this many free GPUs
+          memory: 32GB
+          shm_size: 16g                    # Prevent PyTorch default 64MB shared memory limit
+          timeout: 3600
+        # env:                             # Uncomment to inject extra env vars into the container.
+        #   MY_VAR: value
+        stages:
+          - name: test
+            run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
       npu_smoketest:
         type: smoketest
         docker_args:
