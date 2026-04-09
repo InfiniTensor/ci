@@ -52,8 +52,9 @@ else
     version=$6
 fi
 
-echo "***************************************************************************"
+echo "################################# Nvidia ##############################"
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+echo "#######################################################################"
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     if [ -z $version ]; then
@@ -516,6 +517,36 @@ for name in "${!H800_server_list[@]}"; do
     scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
+
+if [ $TEST_TYPE == "Unit" ]; then
+    while true; do
+        model="None"
+        GPU_QUANTITY=1
+        GPU_MODEL="A100"
+        echo "当前模型: $model, GPU数量: $GPU_QUANTITY, GPU型号: $GPU_MODEL"
+        search_servers $model $job_count $GPU_QUANTITY $GPU_MODEL servers
+        if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
+            echo "已找到满足条件的空闲 GPU, 开始执行 UnitTest......"
+            echo
+        $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
+        last_pid=$!
+        wait $last_pid  # 等待子进程结束
+        err=$?          # 保存结束子进程的退出状态
+        if [ $err -ne 0 ]; then
+            if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                echo "没有资源，等待超时，加入队列，稍后重试......"
+                continue
+            fi
+        else
+            echo "程序出错！"
+        fi
+        
+        # 等待一段时间后重新扫描（例如 10 秒）
+        sleep 10
+    done
+
+    exit 0
+fi
 
 GPU_resource_demand=()
 

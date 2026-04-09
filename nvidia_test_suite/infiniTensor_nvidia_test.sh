@@ -199,6 +199,62 @@ trap handle_interrupt SIGINT SIGTERM
 # EXIT 信号仍然调用 cleanup（正常退出时 INTERRUPTED=0，不会额外 exit）
 trap cleanup_all_resources EXIT
 
+if [ $TEST_TYPE == "Unit" ]; then
+    echo "*************开始执行 UnitTest 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
+    model="None"
+    gpu_quantity=1
+    gpu_model="A100"
+    
+    filename="${log_name_suffix}_UnitTest.log"
+
+    cd $curr_dir
+
+    echo "尝试同时在${server_list[@]}服务器上面启动测试......"
+    
+    # 将 server_list 数组合并为用下划线分隔的字符串
+    server_list_str=$(
+        for i in "${server_list[@]}"; do
+            printf '%s\n' "${local_ip_map[$i]}"
+        done | paste -sd '_' -
+    )
+
+    unset pid_map
+    declare -A pid_map
+    ip=${server_list[0]}
+
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}" &
+    ssh_pid=$!
+    pid_map[$ssh_pid]=$ip
+    SSH_PID_MAP[$ssh_pid]=$ip
+
+    wait $ssh_pid
+    err=$?
+    
+    echo "UnitTest 任务结束，服务器：${pid_map[$ssh_pid]} (PID=$ssh_pid)"
+
+    # 从 SSH_PID_MAP 中移除已完成的进程
+    unset SSH_PID_MAP[$ssh_pid]
+    
+    if [ $err -ne 0 ]; then
+        if [ $err -eq 10 ]; then
+            echo "${pid_map[$ssh_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
+        else
+            echo "${pid_map[$ssh_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
+        fi
+    fi
+
+    # 清理工作
+    for ip in ${server_list[@]}; do
+        if [ $ENGINE_TYPE == "InfiniTensor" ]; then
+            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniTensor_nvidia_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniTensor_nvidia_UnitTest_${session_id}_0
+        fi
+    done
+
+    exit $err
+fi
+
 model_list=($candidate_models)
 
 echo "*************开始执行${TEST_TYPE}测试任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
@@ -260,13 +316,13 @@ for item in "${model_list[@]}"; do
 
         if [ $TEST_TYPE == "Smoke" ]; then
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $option $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
             SSH_PID_MAP[$ssh_pid]=$ip
         else
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $option $server_list_str $seq_num $job_count $gpu_model $session_id $version &
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $gpu_model $session_id $version &
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
             SSH_PID_MAP[$ssh_pid]=$ip
