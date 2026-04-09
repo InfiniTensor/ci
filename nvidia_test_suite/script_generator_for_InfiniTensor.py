@@ -83,7 +83,7 @@ def main():
     elif test_type == "Accuracy":
         target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
 
-    if test_type == "Unit":
+    if test_type != "Unit":
         model_list = ""
         start = True
         for model in models:
