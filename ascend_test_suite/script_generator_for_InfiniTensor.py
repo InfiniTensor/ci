@@ -122,7 +122,7 @@ def main():
                 if test_type == "Unit":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
                 else:
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES docker.infinitensor.com/docker/infiniTensor-aarch64-ascend:$LATEST_TAG"
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES docker.infinitensor.com/docker/infiniTensor-aarch64-ascend:$LATEST_TAG")
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:

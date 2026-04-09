@@ -351,8 +351,11 @@ else    # Slave节点同步到master节点的端口配置
     done
 fi
 
-EXEC_COMMAND="docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
-    <<<DOCKER_ARGS>>>"
+EXEC_COMMAND=$(cat <<'EOF'
+docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+    <<<DOCKER_ARGS>>>
+EOF
+)
 
 <<<generated source code>>>
 
