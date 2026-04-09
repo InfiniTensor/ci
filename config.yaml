@@ -63,7 +63,7 @@ platforms:
         env:
           MODEL_LIST: Qwen3-32B-FP8
           IMAGE: v0.10.0
-          ENGINE: InfiniTensor
+          ENGINE: vLLM
 
   iluvatar:
     image:
