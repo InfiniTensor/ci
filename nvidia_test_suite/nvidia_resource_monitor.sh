@@ -528,24 +528,27 @@ if [ $TEST_TYPE == "Unit" ]; then
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "已找到满足条件的空闲 GPU, 开始执行 UnitTest......"
             echo
-        $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
-        last_pid=$!
-        wait $last_pid  # 等待子进程结束
-        err=$?          # 保存结束子进程的退出状态
-        if [ $err -ne 0 ]; then
-            if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                echo "没有资源，等待超时，加入队列，稍后重试......"
-                continue
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
+            last_pid=$!
+            wait $last_pid  # 等待子进程结束
+            err=$?          # 保存结束子进程的退出状态
+            if [ $err -ne 0 ]; then
+                if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                    echo "没有资源，等待超时，加入队列，稍后重试......"
+                    sleep 10
+                    continue
+                fi
             fi
+            break
         else
-            echo "程序出错！"
+            echo "未找到足够的空闲 GPU, 稍后重试......"
+            echo
+            # 等待一段时间后重新扫描（例如 10 秒）
+            sleep 10
         fi
-        
-        # 等待一段时间后重新扫描（例如 10 秒）
-        sleep 10
     done
 
-    exit 0
+    exit $err
 fi
 
 GPU_resource_demand=()
