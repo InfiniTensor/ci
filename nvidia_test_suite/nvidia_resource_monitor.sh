@@ -74,7 +74,7 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID $curr_dir/logs/unit/$SESSION_ID
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
@@ -92,6 +92,10 @@ elif [ $TEST_TYPE == "Stability" ]; then
 elif [ $TEST_TYPE == "Accuracy" ]; then
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+elif [ $TEST_TYPE == "Unit" ]; then
+    rm -rf $curr_dir/logs/unit/$SESSION_ID/*.log $curr_dir/logs/unit/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/unit/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 fi
 

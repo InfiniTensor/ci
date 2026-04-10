@@ -223,7 +223,7 @@ if [ $TEST_TYPE == "Unit" ]; then
     ip=${server_list[0]}
 
     ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/unit/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
