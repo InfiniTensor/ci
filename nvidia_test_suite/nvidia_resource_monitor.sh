@@ -524,7 +524,7 @@ if [ $TEST_TYPE == "Unit" ]; then
         GPU_QUANTITY=1
         GPU_MODEL="A100"
         echo "当前模型: $model, GPU数量: $GPU_QUANTITY, GPU型号: $GPU_MODEL"
-        search_servers $model $job_count $GPU_QUANTITY $GPU_MODEL servers
+        search_servers $model 0 $GPU_QUANTITY $GPU_MODEL servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "已找到满足条件的空闲 GPU, 开始执行 UnitTest......"
             echo
