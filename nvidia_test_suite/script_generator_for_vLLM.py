@@ -113,7 +113,7 @@ def main():
         else:
             npu_quantity = "0"
 
-        model_list += f"{model}:{npu_quantity}:{GPU} "
+        model_list += f"{name}:{npu_quantity}:{GPU} "
 
         result = re.sub(r"--model\s+", "", args)
         result = re.sub(r"--port\s+\d+", "--port $PORT", result)
