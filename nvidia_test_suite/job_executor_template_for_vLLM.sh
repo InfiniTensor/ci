@@ -9,15 +9,12 @@ LOCK_FILE="server_config.lock"
 # 接收参数
 MODEL=$1
 GPU_QUANITY=$2
-USE_PREFIX_CACHE=$3
-SCHEDULE_POLICY=$4
-SWAP_SPACE=$5
-SERVER_LIST=$6
-NODE_RANK=$7
-JOB_COUNT=$8
-GPU_MODEL=$9
-SESSION_ID=${10}
-VERSION=${11}
+SERVER_LIST=$3
+NODE_RANK=$4
+JOB_COUNT=$5
+GPU_MODEL=$6
+SESSION_ID=$7
+VERSION=$8
 
 # 生成唯一的任务ID
 TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
@@ -72,17 +69,6 @@ get_free_port() {
     done
     free_port=""
 }
-
-if [ $USE_PREFIX_CACHE -eq 1 ]; then
-    USE_PREFIX_CACHE="--use-prefix-cache"
-else
-    USE_PREFIX_CACHE=""
-fi
-
-SWAP_SPACE_OPTION=""
-if [ $SWAP_SPACE -gt 0 ]; then
-    SWAP_SPACE_OPTION="--swap-space $SWAP_SPACE"
-fi
 
 LATEST_TAG=""
 if [ -z $VERSION ]; then
