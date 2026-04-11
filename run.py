@@ -129,7 +129,7 @@ def build_docker_args(
 ):
     job = config["jobs"][job_name]
     platform = job.get("platform", "nvidia")
-    image_tag = image_tag_override or job.get("image", "latest")
+    image_tag = image_tag_override or job.get("image", "046d1f6")
     image = resolve_image(config, platform, image_tag)
     resources = job.get("resources", {})
     setup_raw = job.get("setup", "pip install .[dev]")
