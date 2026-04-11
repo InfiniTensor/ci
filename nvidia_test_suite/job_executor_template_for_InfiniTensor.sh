@@ -356,7 +356,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
 fi
 
 EXEC_COMMAND=$(cat <<'EOF'
-docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} \
     <<<DOCKER_ARGS>>>
 EOF
 )
