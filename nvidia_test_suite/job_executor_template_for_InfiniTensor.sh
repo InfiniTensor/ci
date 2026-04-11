@@ -370,7 +370,7 @@ if [ $? -ne 0 ]; then
     exit 1;
 fi
 
-if [ "<<<TEST_TYPE>>>" != "Unit" ]; then
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
     TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
     if [ $NODE_RANK -eq 0 ]; then
         timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
