@@ -94,16 +94,18 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-DOCKER_IMAGE_URL=""
-docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
-if [ $? -ne 0 ]; then
-    docker pull docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then 
+    DOCKER_IMAGE_URL=""
+    docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
     if [ $? -ne 0 ]; then
-        exit 1;
+        docker pull docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+        if [ $? -ne 0 ]; then
+            exit 1;
+        fi
+        DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
+    else
+        DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
     fi
-    DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
-else
-    DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
 fi
 
 ret=`docker ps -a | grep infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
@@ -293,7 +295,7 @@ done
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-if [ "<<<TEST_TYPE>>>" != "Unit" ]; then
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
     MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
     if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
         # 获取文件锁（阻塞）
