@@ -93,7 +93,8 @@ if [ -n "$LOCAL_SRC" ]; then
 else
   git clone "$REPO_URL" repo
   cd repo
-  git checkout "$BRANCH"
+  git fetch origin fix/causal-softmax-include
+  git checkout fix/causal-softmax-include
 fi
 echo "========== Setup =========="
 eval "$SETUP_CMD"
@@ -140,6 +141,8 @@ def build_docker_args(
         setup_cmd = setup_raw
 
     args = [
+        "docker",
+        "run",
         "-u",
         "root",
         "--network",

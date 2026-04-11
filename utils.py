@@ -62,7 +62,7 @@ def normalize_config(raw):
             flat = {
                 "platform": platform,
                 "short_name": job_name,
-                "image": defaults.get("image_tag", "74a7449"),
+                "image": defaults.get("image_tag", "latest"),
             }
 
             # Apply platform defaults
