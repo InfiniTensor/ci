@@ -58,7 +58,6 @@ platforms:
           - /home/zkjh/weight:/home/weight
           - /home/zkjh/workspace:/workspace
         resources:
-          ngpus: 2
           shm_size: 80g
         env:
           MODEL_LIST: Qwen3-32B-FP8
@@ -215,7 +214,6 @@ platforms:
           - /home/zkjh/weight:/home/weight
           - /home/zkjh:/home/zkjh
         resources:
-          ngpus: 1
           shm_size: 500g
         env:
           MODEL_LIST: DeepSeek-R1-Distill-Qwen-1.5B
