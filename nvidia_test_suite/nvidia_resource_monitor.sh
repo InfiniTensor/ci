@@ -552,6 +552,8 @@ if [ $TEST_TYPE == "Unit" ]; then
         fi
     done
 
+    echo "测试任务完成！"
+
     exit $err
 fi
 
