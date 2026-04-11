@@ -239,6 +239,7 @@ GPU_resource_demand=()
 
 for item in "${full_model_list[@]}"; do
     model=`echo "$item" | awk -F : '{print $1}'`
+    # 模型是否还没有测试过
     if [ -z `cat ${processed_models} | grep -w ${model}` ]; then
         GPU_resource_demand+=(${item})
     fi

@@ -560,12 +560,8 @@ fi
 GPU_resource_demand=()
 
 for item in "${full_model_list[@]}"; do
-    model=`echo "$item" | awk -F : '{print $1}'`
-    quanity=`echo "$item" | awk -F : '{print $2}'`
-    gpu=`echo "$item" | awk -F : '{print $3}'`
-    
-    # 模型已经测试过了，检查下一个
-    if [ ! -z `cat ${processed_models} | grep -w ${item}` ]; then
+    # 模型是否还没有测试过
+    if [ -z `cat ${processed_models} | grep -w ${item}` ]; then
         GPU_resource_demand+=(${item})
     fi
 done
