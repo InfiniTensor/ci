@@ -356,6 +356,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
 fi
 
 EXEC_COMMAND="docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
+EXEC_COMMAND+="-e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF

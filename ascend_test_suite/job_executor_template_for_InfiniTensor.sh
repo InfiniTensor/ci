@@ -227,8 +227,9 @@ else    # Slave节点同步到master节点的端口配置
     done
 fi
 
-EXEC_COMMAND=$(cat <<'EOF'
-docker run --name=infiniTensor_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+EXEC_COMMAND="docker run --name=infiniTensor_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
+EXEC_COMMAND+="-e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES "
+EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF
 )
