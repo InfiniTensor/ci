@@ -99,6 +99,8 @@ elif [ $TEST_TYPE == "Unit" ]; then
     touch ${processed_models}
 fi
 
+echo "model config list: ${model_config_list[@]}"
+
 full_model_list=()
 model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
 for model in "${model_list[@]}"; do
