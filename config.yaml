@@ -55,7 +55,7 @@ platforms:
           - "-e CUDA_DEVICE_ORDER=PCI_BUS_ID"
         volumes:
           - /dev:/dev
-          - /home/zkjh/weight:/home/weight
+          - /data/shared/limingge/weight:/home/weight
           - /home/zkjh/workspace:/workspace
         resources:
           shm_size: 80g
