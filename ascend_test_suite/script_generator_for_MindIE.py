@@ -75,7 +75,7 @@ def main():
         else:
             npu_quantity = "0"
 
-        model_list += f"{model}:{npu_quantity} "
+        model_list += f"{name}:{npu_quantity} "
 
         if start:
             src_code += f"    if [ $MODEL == \"{name}\" ]; then\n"
