@@ -532,7 +532,7 @@ if [ $TEST_TYPE == "Unit" ]; then
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "已找到满足条件的空闲 GPU, 开始执行 UnitTest......"
             echo
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
