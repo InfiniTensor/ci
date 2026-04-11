@@ -93,8 +93,7 @@ if [ -n "$LOCAL_SRC" ]; then
 else
   git clone "$REPO_URL" repo
   cd repo
-  git fetch origin fix/causal-softmax-include
-  git checkout fix/causal-softmax-include
+  git checkout "$BRANCH"
 fi
 echo "========== Setup =========="
 eval "$SETUP_CMD"
