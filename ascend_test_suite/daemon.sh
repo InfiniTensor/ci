@@ -4,7 +4,7 @@ set -m
 cleanup() {
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
     echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-    docker stop --time 60 CI_test_job_${platform}_${test_type}_${CI_job_id}
+    docker stop --timeout 60 CI_test_job_${platform}_${test_type}_${CI_job_id}
     # docker kill --signal=SIGTERM CI_test_job_${CI_job_id}
     # docker kill -s TERM CI_test_job_${CI_job_id}
     rm -rf $curr_dir
