@@ -14,7 +14,7 @@ trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
 echo -n "Running"
 while true; do
-    eco -n "."
+    echo -n "."
     sleep 1
 done
 
