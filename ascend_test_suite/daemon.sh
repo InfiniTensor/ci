@@ -12,6 +12,14 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
 
+echo -n "Running"
+while true; do
+    eco -n "."
+    sleep 1
+done
+
+exit 0
+
 platform=$1
 test_type=$2
 engine=$3
