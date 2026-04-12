@@ -25,7 +25,7 @@ curr_dir=$(pwd)
 docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $version &
 CHILD_PID=$!
 
-echo -n "Running"
+echo "Running"
 while kill -0 $CHILD_PID 2>/dev/null; do
     # echo -ne "\r\033[KRunning..."
     echo -n "."
