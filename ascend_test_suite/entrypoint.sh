@@ -18,6 +18,8 @@ docker_args="$5"
 CI_job_id=$6
 version=$7
 
+export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
+
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
 Host *
