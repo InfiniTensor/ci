@@ -198,8 +198,8 @@ if emails:
     att_excel["Content-Disposition"] = f'attachment; filename="{os.path.basename(excel_path)}"'
     msg.attach(att_excel)
 
-    if os.path.exists("./test_info.log"):
-        with open("./test_info.log", "rb") as fp:
+    if os.path.exists(log_path):
+        with open(log_path, "rb") as fp:
             att_log = MIMEText(fp.read(), "base64", "utf-8")
         att_log["Content-Type"] = "application/octet-stream"
         att_log["Content-Disposition"] = 'attachment; filename="test_info.log"'
