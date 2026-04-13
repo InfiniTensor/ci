@@ -668,7 +668,7 @@ for item in "${model_list[@]}"; do
             
             # 生成本次测试的Excel报告，并比较上一次Excel报告
             python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}" "$session_id" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
-            CI_report_folder="/home/zkjh/CI_ascend_test/${session_id}_ascend_npu_performancetest"
+            CI_report_folder="/artifacts/CI_ascend_test/${session_id}_ascend_npu_performancetest"
             cp "$curr_dir/report_${log_name_suffix}/$session_id/${model}.xlsx" $CI_report_folder
 
             # last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")

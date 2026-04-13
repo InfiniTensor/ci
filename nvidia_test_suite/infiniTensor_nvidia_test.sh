@@ -717,7 +717,7 @@ for item in "${model_list[@]}"; do
                 server_name=${H800_server_list[$local_master_ip]}
             fi
             python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}" "$session_id" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
-            CI_report_folder="/home/zkjh/CI_nvidia_test/${session_id}_nvidia_gpu_performancetest"
+            CI_report_folder="/artifacts/CI_nvidia_test/${session_id}_nvidia_gpu_performancetest"
             cp "$curr_dir/report_${log_name_suffix}/$session_id/${model}#${gpu_model}.xlsx" $CI_report_folder
 
             # last_date=$(date -d "$TASK_START_TIME -1 day" +"%Y%m%d")
