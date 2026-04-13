@@ -52,7 +52,7 @@ else
     version=$6
 fi
 
-echo "################################# Nvidia ##############################"
+echo "################################# Ascend ##############################"
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
 echo "#######################################################################"
 
