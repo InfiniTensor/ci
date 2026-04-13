@@ -53,7 +53,7 @@ else
 fi
 
 echo "################################# Nvidia ##############################"
-echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
 echo "#######################################################################"
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then

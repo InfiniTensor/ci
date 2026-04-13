@@ -52,8 +52,9 @@ else
     version=$6
 fi
 
-echo "########################################################################"
-echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $version"
+echo "################################# Nvidia ##############################"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
+echo "#######################################################################"
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     declare -A npu_server_list=(
