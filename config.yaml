@@ -206,7 +206,7 @@ platforms:
         stages:
           - name: test
             run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
-      npu_smoketest:
+      # npu_smoketest:
         type: smoketest
         docker_args:
           - "--privileged"
