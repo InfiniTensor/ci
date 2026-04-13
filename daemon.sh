@@ -7,7 +7,7 @@ cleanup() {
     docker stop --timeout 60 CI_test_job_${platform}_${test_type}_${CI_job_id}
     # docker kill --signal=SIGTERM CI_test_job_${CI_job_id}
     # docker kill -s TERM CI_test_job_${CI_job_id}
-    rm -rf $curr_dir
+    # rm -rf $curr_dir
     exit 130
 }
 
@@ -42,6 +42,6 @@ done
 wait $CHILD_PID
 EXIT_CODE=$?
 
-rm -rf $curr_dir
+# rm -rf $curr_dir
 
 exit $EXIT_CODE
