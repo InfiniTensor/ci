@@ -189,7 +189,7 @@ if emails:
     msg = MIMEMultipart()
     msg["From"] = sender_email
     msg["To"] = ",".join(emails)
-    msg["Subject"] = "xcore_llm api server自动化测试结果"
+    msg["Subject"] = "UnitTest测试结果"
     msg.attach(MIMEText(html_msg, "html", "utf-8"))
 
     with open(excel_path, "rb") as fp:
