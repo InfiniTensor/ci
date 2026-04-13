@@ -255,7 +255,7 @@ for item in "${model_list[@]}"; do
             if [ $ENGINE_TYPE == "MindIE" ]; then
                 ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
             else
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $option $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
             fi
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
@@ -264,7 +264,7 @@ for item in "${model_list[@]}"; do
             if [ $ENGINE_TYPE == "MindIE" ]; then
                 ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
             else
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $option $server_list_str $seq_num $job_count $session_id $version &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
             fi
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
@@ -284,8 +284,17 @@ for item in "${model_list[@]}"; do
         # npm install express multer
         npm install express multer
         cp $curr_dir/controller.js .
+        if [ "${TEST_TYPE}" == "Smoke" ]; then
+            http_server_port=8686
+        elif [ "${TEST_TYPE}" == "Performance" ]; then
+            http_server_port=8787
+        elif [ "${TEST_TYPE}" == "Accuracy" ]; then
+            http_server_port=8888
+        elif [ "${TEST_TYPE}" == "Stablity" ]; then
+            http_server_port=8989
+        fi
         # 获取文件锁（阻塞），防止多任务并发执行时发生端口冲突
-        exec 300>"${LOCK_DIR}/http_port_$((8786+$job_count)).lock"    # 打开文件描述符 300
+        exec 300>"${LOCK_DIR}/http_port_$(($http_server_port+$job_count)).lock"    # 打开文件描述符 300
         if ! flock -x 300; then    # 获取独占锁
             echo "无法获取锁，退出..."
             exit 1

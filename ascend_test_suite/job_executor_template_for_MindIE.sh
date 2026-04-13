@@ -251,8 +251,18 @@ EOF
 generate_merged_rank_table() {
     log_info "步骤3: 生成全局rank_table_file.json..."
 
+    if [ "<<<TEST_TYPE>>>" == "SmokeTest" ]; then
+        HTTP_SERVER_PORT=8686
+    elif [ "<<<TEST_TYPE>>>" == "PerformanceTest" ]; then
+        HTTP_SERVER_PORT=8787
+    elif [ "<<<TEST_TYPE>>>" == "AccuracyTest" ]; then
+        HTTP_SERVER_PORT=8888
+    elif [ "<<<TEST_TYPE>>>" == "StablityTest" ]; then
+        HTTP_SERVER_PORT=8989
+    fi
+
     for ((i=1; i<=60; i=i+1)) do
-        curl -X POST http://192.168.163.40:$((8786+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
+        curl -X POST http://192.168.163.40:$(($HTTP_SERVER_PORT+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
         if [ $? -eq 0 ]; then
             break
         fi
