@@ -299,7 +299,7 @@ for item in "${model_list[@]}"; do
             echo "无法获取锁，退出..."
             exit 1
         fi
-        node controller.js $((8786+$job_count)) ${#server_list[@]}
+        node controller.js $(($http_server_port+$job_count)) ${#server_list[@]}
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 300>&-  # 关闭文件描述符
         arguments=""
