@@ -107,8 +107,6 @@ for sheet in wb.sheetnames:
     for i in range(1, ws.max_column + 1):
         k = get_column_letter(i)
         ws.column_dimensions[k].width = min(column_widths[i - 1], 20) + 2
-    # 第二列“运行结果”固定更宽，提升可读性
-    ws.column_dimensions[get_column_letter(2)].width = max(ws.column_dimensions[get_column_letter(2)].width, 16)
 
     for row in ws.iter_rows():
         for cell in row:
@@ -123,11 +121,7 @@ for sheet in wb.sheetnames:
 wb.save(excel_path)
 wb.close()
 
-fwrite_html = fwrite.copy()
-# 防止邮箱客户端将 `*.py::test_xxx` 自动识别为链接
-fwrite_html["用例名称"] = fwrite_html["用例名称"].str.replace(".py::", ".py&#8203;::", regex=False)
-
-df_html = fwrite_html.to_html(escape=False, index=False, justify="left")
+df_html = fwrite.to_html(escape=False, index=False, justify="left")
 df_html = df_html.replace("<td>passed</td>", "<td class='pass'>passed</td>")
 df_html = df_html.replace("<td>failed</td>", "<td class='fail'>failed</td>")
 df_html = df_html.replace("<td>skipped</td>", "<td class='skip'>skipped</td>")
@@ -141,7 +135,6 @@ head = """
         table.dataframe tbody { border: 2px solid #91c6e1; }
         table.dataframe th { vertical-align: top; font-size: 14px; padding: 10px; color: #105de3; text-align: center; }
         table.dataframe td { text-align: left; padding: 10px; }
-        table.dataframe th:nth-child(2), table.dataframe td:nth-child(2) { min-width: 120px; text-align: center; }
         body { font-family: sans-serif; }
         .pass { color: #23B14D; }
         .fail { color: #ED1D25; }
