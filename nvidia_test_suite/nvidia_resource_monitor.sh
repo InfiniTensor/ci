@@ -174,7 +174,7 @@ search_servers() {
                     if [ \$TARGET_FREE_GPUS -gt 4 ]; then
                         # 如果找到足够的空闲 GPU, 则返回结果并退出
                         if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                            echo \"Successfully found \$TARGET_FREE_GPUS idle GPU(s), indices: \${GPU_INFO[@]}\"
+                            echo \"Successfully found \$TARGET_FREE_GPUS idle GPU(s), indices: \${FREE_GPU_INFO[@]}\"
                             echo \"Checking if \$TARGET_FREE_GPUS GPUs can be locked\"
                             # 生成唯一的任务ID
                             TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
