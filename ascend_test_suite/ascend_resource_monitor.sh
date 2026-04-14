@@ -52,9 +52,9 @@ else
     version=$6
 fi
 
-echo "################################# Ascend ##############################"
+echo "#################################### Ascend #####################################"
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
-echo "#######################################################################"
+echo "#################################################################################"
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     declare -A npu_server_list=(
@@ -143,7 +143,7 @@ search_servers() {
         SERVER_QUANTITY=$(($NPU_QUANTITY/8))
     fi
 
-    echo "正在搜索 ${SERVER_QUANTITY} 台GPU服务器......"
+    echo "Searching for ${SERVER_QUANTITY} GPU server(s)..."
     
     servers_found=()
     for key in "${!npu_server_list[@]}"; do
@@ -156,16 +156,16 @@ search_servers() {
                 else
                     TARGET_FREE_GPUS=$NPU_QUANTITY
                 fi
-                echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
+                echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
                 # 使用 npu-smi 获取 GPU 使用情况
                 GPU_INFO=(\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}'))
                 # 检查空闲 GPU 数量
                 FREE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \${GPU_INFO[@]}\"
+                echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${GPU_INFO[@]}\"
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${GPU_INFO[@]}\"
-                    echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                    echo \"Successfully found \$TARGET_FREE_GPUS idle GPU(s), indices: \${GPU_INFO[@]}\"
+                    echo \"Checking if \$TARGET_FREE_GPUS NPUs can be locked\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
@@ -173,10 +173,10 @@ search_servers() {
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
-                        echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                        echo \"Can lock \$TARGET_FREE_GPUS of these NPUs, indices: \${SELECTED_NPUS}\"
                         exit 0
                     else
-                        echo \"锁定失败（可能被其他任务占用），继续扫描......\"
+                        echo \"Failed to acquire the lock (resources may be taken by other tasks), resuming scan....\"
                     fi
                 fi
                 exit 1"
@@ -192,7 +192,7 @@ search_servers() {
                 else
                     TARGET_FREE_GPUS=$NPU_QUANTITY
                 fi
-                echo \"开始在${key}上扫描 GPU, 目标: 寻找 \$TARGET_FREE_GPUS 张空闲 GPU...\"
+                echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
                 # 使用 npu-smi 获取 GPU 使用情况
                 GPU_INFO=(\$(npu-smi info | grep \"No\ running\ processes\ found\ in\ NPU\" | awk '{print \$8}'))
                 # if [ $NPU_QUANTITY -ne 16 ]; then
@@ -201,11 +201,11 @@ search_servers() {
                 # fi
                 # 检查空闲 GPU 数量
                 FREE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
-                echo \"当前空闲 GPU 数量：\$FREE_COUNT, 索引: \${GPU_INFO[@]}\"
+                echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${GPU_INFO[@]}\"
                 # 如果找到足够的空闲 GPU, 则返回结果并退出
                 if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
-                    echo \"成功找到 \$TARGET_FREE_GPUS 张空闲 GPU, 索引：\${GPU_INFO[@]}\"
-                    echo \"检查是否可以锁定其中 \$TARGET_FREE_GPUS 张 GPU\"
+                    echo \"Successfully found \$TARGET_FREE_GPUS idle GPU(s), indices: \${GPU_INFO[@]}\"
+                    echo \"Checking if \$TARGET_FREE_GPUS GPUs can be locked\"
                     # 生成唯一的任务ID
                     TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                     LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
@@ -213,10 +213,10 @@ search_servers() {
                     check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                     if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                         SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
-                        echo \"可以锁定其中 \$TARGET_FREE_GPUS 张 GPU, 索引：\${SELECTED_NPUS}\"
+                        echo \"Can lock \$TARGET_FREE_GPUS of these NPUs, indices: \${SELECTED_NPUS}\"
                         exit 0
                     else
-                        echo \"锁定失败（可能被其他任务占用），继续扫描......\"
+                        echo \"Failed to acquire the lock (resources may be taken by other tasks), resuming scan....\"
                     fi
                 fi
                 exit 1"
@@ -250,12 +250,12 @@ done
 
 GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
 
-echo "开始测试模型列表：${GPU_resource_demand[@]}"
+echo "Starting tests for Model List: ${GPU_resource_demand[@]}"
 
 if [ -z $version ]; then
-    echo "推理引擎版本: Latest"
+    echo "Inference Engine Version: Latest"
 else
-    echo "推理引擎版本: ${version}"
+    echo "Inference Engine Version: ${version}"
 fi
 
 ret=0
@@ -268,48 +268,48 @@ while true; do
     for item in "${GPU_resource_demand[@]}"; do
         model=`echo "$item" | awk -F : '{print $1}'`
         GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
-        echo "当前模型: $model, GPU数量: $GPU_QUANTITY"
+        echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY"
         search_servers $model $job_count $GPU_QUANTITY servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
-            echo "已找到满足条件的空闲 GPU, 开始测试模型${model}......"
+            echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
             echo
             if [ $TEST_TYPE == "Stability" ]; then
                 $curr_dir/infiniTensor_ascend_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Stability测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Stability testing task|All tests have completed"`
             elif [ $TEST_TYPE == "Performance" ]; then
                 $curr_dir/infiniTensor_ascend_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Performance测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Performance testing task|All tests have completed"`
             elif [ $TEST_TYPE == "Smoke" ]; then
                 $curr_dir/infiniTensor_ascend_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Smoke测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Smoke testing task|All tests have completed"`
             elif [ $TEST_TYPE == "Accuracy" ]; then
                 $curr_dir/infiniTensor_ascend_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "开始执行模型Accuracy测试任务|测试全部完成"`
+                status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Accuracy testing task|All tests have completed"`
             else
-                echo "测试类型错误！"
+                echo "Test Type is Wrong!"
                 exit 1
             fi
 
-            if [ $status_msg == "测试全部完成！" ]; then
-                echo "模型运行环境配置失败，准备尝试测试下一个模型......"
+            if [ $status_msg == "All tests have completed" ]; then
+                echo "Failed to set up the model runtime environment. Trying the next model..."
                 echo
                 wait $last_pid  # 等待上一个子进程结束
                 err=$?          # 保存上一个结束子进程的退出状态
                 if [ $err -ne 0 ]; then
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                        echo "没有资源，等待超时，加入队列，稍后重试......"
+                        echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
                         temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
                     fi
                 else
-                    echo "程序出错！"
+                    echo "The program encountered an error!"
                 fi
                 ret=1
                 continue
@@ -333,12 +333,12 @@ while true; do
                 done
 
                 job_count=0
-                echo "当前批量模型测试完成！"
+                echo "The current batch of model tests has completed!"
                 echo
             fi
         else
             temp_list+=(${item})
-            echo "未找到足够的空闲 GPU, 无法测试模型${model}, 准备尝试测试下一个模型......"
+            echo "No sufficient idle GPUs are available, model ${model} cannot be tested. Proceeding to the next model..."
             echo
             # 等待一段时间后重新扫描（例如 10 秒）
             sleep 10
@@ -359,12 +359,12 @@ while true; do
             ((remaining--))
         done
 
-        echo "当前批量模型测试完成！"
+        echo "The current batch of model tests has completed!"
         echo
     fi
 
     if [[ ${#temp_list[@]} -eq 0 ]]; then
-        echo "全部测试完成！"
+        echo "All tests completed!"
         if [ $TEST_TYPE == "Accuracy" ]; then
             python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Ascend_910B1 --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
         elif [ $TEST_TYPE == "Smoke" ]; then
@@ -396,7 +396,7 @@ while true; do
     else
         GPU_resource_demand=("${temp_list[@]}")
         echo
-        echo "准备尝试进行下一轮模型测试: ${GPU_resource_demand[@]}"
+        echo "Preparing to start the next round of model testing: ${GPU_resource_demand[@]}"
         echo
     fi
 done

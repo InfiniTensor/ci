@@ -740,6 +740,6 @@ for item in "${model_list[@]}"; do
     echo "${model}:${gpu_quantity}:${gpu_model}" >> ${processed_models}
 done
 
-echo "测试全部完成！"
+echo "All tests have completed"
 
 exit $ret_code
