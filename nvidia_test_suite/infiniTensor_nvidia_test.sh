@@ -415,7 +415,7 @@ for item in "${model_list[@]}"; do
         continue
     fi
 
-    echo "开始执行模型${TEST_TYPE}测试任务......"
+    echo "Starting the model ${TEST_TYPE} testing task..."
 
     if [ $TEST_TYPE == "Performance" ]; then
         if [ $model == "Qwen3-235B-A22B" ] || [ $model == "Qwen3-235B-A22B-FP8" ] || [ $model == "Qwen3-32B-AWQ" ] || [ $model == "Qwen3-32B-FP8" ]; then

@@ -398,7 +398,7 @@ for item in "${model_list[@]}"; do
         continue
     fi
 
-    echo "开始执行模型${TEST_TYPE}测试任务......"
+    echo "Starting the model ${TEST_TYPE} testing task..."
 
     if [ $TEST_TYPE == "Smoke" ]; then
         # 获取模型启动命令，并做为参数传入
