@@ -298,7 +298,7 @@ while true; do
                 exit 1
             fi
 
-            if [ $status_msg == "All tests have completed" ]; then
+            if [ "$status_msg" == "All tests have completed" ]; then
                 echo "Failed to set up the model runtime environment. Trying the next model..."
                 echo
                 wait $last_pid  # 等待上一个子进程结束
