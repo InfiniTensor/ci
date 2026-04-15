@@ -1,0 +1,13 @@
+The specified version : v0.10.0
+开始扫描 GPU, 目标: 寻找 2 张空闲 GPU...
+当前使用中的 GPU 数量：2, 索引: 1 5
+成功找到 2 张空闲 GPU, 索引: 0 2 3 4 6 7
+尝试锁定其中 2 张 GPU
+成功锁定 2 张 GPU, 索引：0 2
+CUDA_VISIBLE_DEVICES=0,2
+7ba56e7235587d08c994b445f66cb3552259381133bb16b665c920d202074b5f
+vllm_nvidia_SmokeTest_00000_0
+vllm serve  /home/weight/Qwen3/Qwen3-32B-FP8/ --served-model-name Qwen3-32B-FP8 --port 20000 --no-enable-prefix-caching -tp 2 --no-enable-prefix-caching > server_log_SmokeTest_20260320_031041.log 2>&1 &
+INFO:     Application startup complete.
+>>> Detected master service startup completion!
+正常退出（退出码: 0），保留GPU锁
