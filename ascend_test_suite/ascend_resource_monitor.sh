@@ -58,11 +58,7 @@ echo "##########################################################################
 
 if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     declare -A npu_server_list=(
-        ["aicc001"]="10.9.1.78"
-        ["aicc002"]="10.9.1.106"
-        ["aicc003"]="10.9.1.114"
-        ["aicc004"]="10.9.1.110"
-        ["aicc005"]="10.9.1.86"
+        ["aicc001"]="172.22.162.8"
     )
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
@@ -71,11 +67,7 @@ if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     declare -A npu_server_list=(
-        ["aicc001"]="10.9.1.78"
-        ["aicc002"]="10.9.1.106"
-        ["aicc003"]="10.9.1.114"
-        ["aicc004"]="10.9.1.110"
-        ["aicc005"]="10.9.1.86"
+        ["aicc001"]="172.22.162.8"
     )
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
@@ -84,7 +76,7 @@ elif [ $ENGINE_TYPE == "vLLM" ]; then
     fi
 elif [ $ENGINE_TYPE == "MindIE" ]; then
     declare -A npu_server_list=(
-        ["aicc001"]="192.168.162.8"
+        ["aicc001"]="172.22.162.8"
     )
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_MindIE.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)

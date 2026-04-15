@@ -113,7 +113,7 @@ for model in "${model_list[@]}"; do
 done
 
 declare -A A100_server_list=(
-    ["A100-001"]="192.168.163.40"
+    ["A100-001"]="172.22.163.40"
 )
 
 declare -A H20_server_list=(
