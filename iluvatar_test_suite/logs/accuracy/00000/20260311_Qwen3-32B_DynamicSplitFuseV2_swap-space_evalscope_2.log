@@ -1,0 +1,140 @@
+2026-03-11 15:51:08,157 - evalscope - INFO - Args: Task config is provided with dictionary type.
+2026-03-11 15:51:08,338 - evalscope - INFO - Check the OpenCompass environment: OK
+2026-03-11 15:51:08,348 - evalscope - INFO - Dump task config to ./outputs/20260311_155108/configs/task_config_9941cc.yaml
+2026-03-11 15:51:08,350 - evalscope - INFO - {
+    "model": "DummyCustomModel",
+    "model_id": "dummy-model",
+    "model_args": {},
+    "model_task": "text_generation",
+    "template_type": null,
+    "chat_template": null,
+    "datasets": [],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "generation_config": {},
+    "eval_type": "custom",
+    "eval_backend": "OpenCompass",
+    "eval_config": {
+        "datasets": [
+            "gsm8k",
+            "ARC_c"
+        ],
+        "models": [
+            {
+                "path": "Qwen3-32B",
+                "openai_api_base": "http://10.9.1.114:20000/v1/chat/completions",
+                "is_chat": true,
+                "batch_size": 10
+            }
+        ],
+        "work_dir": "outputs/llama2_eval_result",
+        "limit": 200,
+        "time_str": "20260311_155108"
+    },
+    "stage": "all",
+    "limit": null,
+    "eval_batch_size": 1,
+    "mem_cache": false,
+    "use_cache": null,
+    "work_dir": "./outputs/20260311_155108",
+    "outputs": null,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": null,
+    "api_key": "EMPTY",
+    "timeout": null,
+    "stream": false,
+    "judge_strategy": "auto",
+    "judge_worker_num": 1,
+    "judge_model_args": {},
+    "analysis_report": false
+}
+2026-03-11 15:51:15,278 - evalscope - INFO - *** Run task with config: /tmp/tmp2k5crvd0.py 
+
+['gsm8k', 'ARC_c']
+03/11 15:51:15 - OpenCompass - INFO - Current exp folder: outputs/llama2_eval_result/20260311_155108
+03/11 15:51:17 - OpenCompass - WARNING - SlurmRunner is not used, so the partition argument is ignored.
+03/11 15:51:17 - OpenCompass - INFO - Partitioned into 2 tasks.
+  0%|          | 0/2 [00:00<?, ?it/s]                                       0%|          | 0/2 [00:00<?, ?it/s]                                       0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [29:39<29:39, 1779.80s/it]100%|██████████| 2/2 [52:44<00:00, 1547.39s/it]100%|██████████| 2/2 [52:44<00:00, 1582.25s/it]
+launch OpenICLInfer[Qwen3-32B/ARC-c] on CPU 
+launch OpenICLInfer[Qwen3-32B/gsm8k] on CPU 
+03/11 16:44:01 - OpenCompass - INFO - Partitioned into 2 tasks.
+  0%|          | 0/2 [00:00<?, ?it/s]                                       0%|          | 0/2 [00:00<?, ?it/s]                                       0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:09<00:09,  9.09s/it]100%|██████████| 2/2 [00:09<00:00,  3.84s/it]100%|██████████| 2/2 [00:09<00:00,  4.63s/it]
+launch OpenICLEval[Qwen3-32B/ARC-c] on CPU 
+launch OpenICLEval[Qwen3-32B/gsm8k] on CPU 
+dataset    version    metric    mode      Qwen3-32B
+---------  ---------  --------  ------  -----------
+ARC-c      1e0de5     accuracy  gen           58.00
+gsm8k      1d7fe4     accuracy  gen           52.50
+03/11 16:44:10 - OpenCompass - INFO - write summary to /outputs/llama2_eval_result/20260311_155108/summary/summary_20260311_155108.txt
+03/11 16:44:10 - OpenCompass - INFO - write csv to /outputs/llama2_eval_result/20260311_155108/summary/summary_20260311_155108.csv
+
+
+The markdown format results is as below:
+
+| dataset | version | metric | mode | Qwen3-32B |
+|----- | ----- | ----- | ----- | -----|
+| ARC-c | 1e0de5 | accuracy | gen | 58.00 |
+| gsm8k | 1d7fe4 | accuracy | gen | 52.50 |
+
+03/11 16:44:10 - OpenCompass - INFO - write markdown summary to /outputs/llama2_eval_result/20260311_155108/summary/summary_20260311_155108.md
+2026-03-11 16:44:10,932 - evalscope - INFO - Args: Task config is provided with dictionary type.
+2026-03-11 16:44:10,932 - evalscope - INFO - **Loading task cfg for summarizer: {
+    "model": "DummyCustomModel",
+    "model_id": "dummy-model",
+    "model_args": {},
+    "model_task": "text_generation",
+    "template_type": null,
+    "chat_template": null,
+    "datasets": [],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "generation_config": {},
+    "eval_type": "custom",
+    "eval_backend": "OpenCompass",
+    "eval_config": {
+        "datasets": [
+            "gsm8k",
+            "ARC_c"
+        ],
+        "models": [
+            {
+                "path": "Qwen3-32B",
+                "openai_api_base": "http://10.9.1.114:20000/v1/chat/completions",
+                "is_chat": true,
+                "batch_size": 10,
+                "abbr": "Qwen3-32B"
+            }
+        ],
+        "work_dir": "outputs/llama2_eval_result",
+        "limit": 200,
+        "time_str": "20260311_155108"
+    },
+    "stage": "all",
+    "limit": null,
+    "eval_batch_size": 1,
+    "mem_cache": false,
+    "use_cache": null,
+    "work_dir": "./outputs",
+    "outputs": null,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": null,
+    "api_key": "EMPTY",
+    "timeout": null,
+    "stream": false,
+    "judge_strategy": "auto",
+    "judge_worker_num": 1,
+    "judge_model_args": {},
+    "analysis_report": false
+}
+>> Start to get the report with summarizer ...
+
+>> The report list: [{'dataset': 'ARC-c', 'version': '1e0de5', 'metric': 'accuracy', 'mode': 'gen', 'Qwen3-32B': '58.00'}, {'dataset': 'gsm8k', 'version': '1d7fe4', 'metric': 'accuracy', 'mode': 'gen', 'Qwen3-32B': '52.50'}]
+{'gsm8k': 52.5, 'failed': [], 'ARC-c': 58.0}
