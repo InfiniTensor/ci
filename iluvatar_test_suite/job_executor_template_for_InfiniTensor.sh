@@ -122,9 +122,9 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
-# 检查 npu-smi 命令是否存在
-if ! command -v npu-smi &> /dev/null; then
-    echo "错误: npu-smi 未找到，请确保 Iluvatar 910B 驱动已安装"
+# 检查 ixsmi 命令是否存在
+if ! docker exec zhuyue_test /bin/bash -ic 'command -v ixsmi' &> /dev/null; then
+    echo "错误: ixsmi 未找到，请确保 Iluvatar V200 驱动已安装"
     exit 1
 fi
 
