@@ -110,7 +110,7 @@ def main():
             elif "<<<TEST_TYPE>>>" in line:
                 if test_type == "Smoke":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
-                elif type_type == "Unit":
+                elif test_type == "Unit":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "UnitTest")    
                 elif test_type == "Performance":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "PerformanceTest")

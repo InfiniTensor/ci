@@ -28,8 +28,6 @@ def main():
         print(f"Error: YAML config not found for version '{version}'. Tried: {', '.join(yaml_candidates)}")
         sys.exit(1)
 
-    print(f"AAAAAAAAAAAAAAAAAaa: {file_path}")
-
     with open(file_path, 'r', encoding='utf-8') as f:
         cfg = yaml.safe_load(f) or {}
 
@@ -112,7 +110,7 @@ def main():
             elif "<<<TEST_TYPE>>>" in line:
                 if test_type == "Smoke":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
-                elif type_type == "Unit":
+                elif test_type == "Unit":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "UnitTest")    
                 elif test_type == "Performance":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "PerformanceTest")
