@@ -168,8 +168,8 @@ while true; do
     sleep 10
 done
 
-ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
-echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
+CUDA_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
+echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
@@ -232,7 +232,7 @@ else    # Slave节点同步到master节点的端口配置
 fi
 
 EXEC_COMMAND="docker run --name=infiniTensor_iluvatar_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
-EXEC_COMMAND+="-e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES "
+EXEC_COMMAND+="-e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF
