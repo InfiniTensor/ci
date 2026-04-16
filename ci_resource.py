@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Resource detection and allocation for CI Runner Agent."""
+from __future__ import annotations
 
 import json
 import operator
