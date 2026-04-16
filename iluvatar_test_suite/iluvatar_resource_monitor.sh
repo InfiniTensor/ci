@@ -63,6 +63,7 @@ if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
     else
+        version="${version##*:}"
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
     fi
 fi
