@@ -28,6 +28,8 @@ def main():
         print(f"Error: YAML config not found for version '{version}'. Tried: {', '.join(yaml_candidates)}")
         sys.exit(1)
 
+    print(f"AAAAAAAAAAAAAAAAAaa: {file_path}")
+
     with open(file_path, 'r', encoding='utf-8') as f:
         cfg = yaml.safe_load(f) or {}
 
