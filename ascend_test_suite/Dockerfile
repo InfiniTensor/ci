@@ -47,7 +47,7 @@ WORKDIR /CI_Workspace
 COPY entrypoint.sh /CI_Workspace
 COPY requirements.txt /CI_Workspace
 
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir --index-url https://pypi.org/simple --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 
 ARG JMETER_VERSION=5.6.3
 RUN wget -q https://dlcdn.apache.org/jmeter/binaries/apache-jmeter-${JMETER_VERSION}.tgz && \
