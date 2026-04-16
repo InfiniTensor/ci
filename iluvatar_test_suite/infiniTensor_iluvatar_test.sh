@@ -231,17 +231,19 @@ if [ $TEST_TYPE == "Unit" ]; then
         fi
     done
 
-    # 发送测试报告
-    # 获取模型启动命令，并做为参数传入
-    launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/unit/$session_id/${filename}"`
+    if [ $err -eq 0 ]; then
+        # 发送测试报告
+        # 获取模型启动命令，并做为参数传入
+        launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/unit/$session_id/${filename}"`
 
-    python3 ./get_info.py \
-        --file "$curr_dir/logs/unit/$session_id/${filename}" \
-        --email "limingge@xcoresigma.com" \
-        --model "InfiniOps" \
-        --gpu "A100" \
-        --cmd "${launch_cmd}"
-
+        python3 ./get_info.py \
+            --file "$curr_dir/logs/unit/$session_id/${filename}" \
+            --email "limingge@xcoresigma.com" \
+            --model "InfiniOps" \
+            --gpu "A100" \
+            --cmd "${launch_cmd}"
+    fi
+    
     exit $err
 fi
 
