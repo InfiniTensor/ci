@@ -40,15 +40,15 @@ def main():
     src_code = ""
 
     if test_type == "Smoke":
-        target_file = "infiniTensor_job_executor_for_SmokeTest.sh"
+        target_file = "InfiniTensor_job_executor_for_SmokeTest.sh"
     if test_type == "Unit":
-        target_file = "infiniTensor_job_executor_for_UnitTest.sh"
+        target_file = "InfiniTensor_job_executor_for_UnitTest.sh"
     elif test_type == "Performance":
-        target_file = "infiniTensor_job_executor_for_PerformanceTest.sh"
+        target_file = "InfiniTensor_job_executor_for_PerformanceTest.sh"
     elif test_type == "Stability":
-        target_file = "infiniTensor_job_executor_for_StabilityTest.sh"
+        target_file = "InfiniTensor_job_executor_for_StabilityTest.sh"
     elif test_type == "Accuracy":
-        target_file = "infiniTensor_job_executor_for_AccuracyTest.sh"
+        target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
 
     if test_type != "Unit":
         model_list = ""
