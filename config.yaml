@@ -110,6 +110,7 @@ platforms:
         type: unittest
         resources:
           ngpus: 1
+          gpu_style: none
           memory: 32GB
           shm_size: 16g
           timeout: 3600
