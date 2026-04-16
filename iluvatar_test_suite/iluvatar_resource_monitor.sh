@@ -136,13 +136,13 @@ search_servers() {
             fi
             echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
             # 使用 ixsmi 获取 GPU 使用情况
-            GPU_INFO=(\$(docker exec zhuyue_test ixsmi | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
+            GPU_INFO=(\$(docker exec zhuyue_test /bin/bash -ic 'ixsmi' | awk '/Processes:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
             # 去重
             GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
             # 检查使用中的 GPU 数量
             USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
             echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
-            TOTAL_COUNT=\$(docker exec zhuyue_test ixsmi -L | wc -l)
+            TOTAL_COUNT=\$(docker exec zhuyue_test /bin/bash -ic 'ixsmi -L' | wc -l)
             FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
             FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
             echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${FREE_GPU_INFO[@]}\"
