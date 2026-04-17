@@ -1,0 +1,165 @@
+models:
+- model_name: DeepSeek-R1-AWQ
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-AWQ --tokenizer /home/weight/DeepSeek-R1-AWQ/ -tp 8 --port 4321 --platform-type ascend --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --quantization awq --swap-space 40 --gpu-memory-utilization 0.95 --tool-call-parser deepseek_v3
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: DeepSeek-R1
+  card_type: 910B1
+  default_params: --model DeepSeek-R1 --tokenizer /home/weight/DeepSeek-R1/ -tp 16 --port 4321 --platform-type ascend --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --master-addr 192.168.0.156 --master-port 8008 --nnodes 2 --node-rank 0 --swap-space 40 --tool-call-parser deepseek_v3
+  note: ''
+- model_name: DeepSeek-R1-0528
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-0528 --tokenizer /home/weight/DeepSeek-R1-0528/ -tp 16 --port 4321 --platform-type ascend --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --master-addr 192.168.0.156 --master-port 8008 --nnodes 2 --node-rank 0 --swap-space 40 --tool-call-parser deepseek_v3
+  note: ''
+- model_name: DeepSeek-R1-W8A8
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-W8A8 --tokenizer /home/weight/DeepSeek-R1-Channel-INT8/ -tp 16 --port 8000 --platform-type ascend --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --gpu-memory-utilization 0.97 --max-num-batched-tokens 2048 --master-addr 192.168.0.77 --master-port 8008 --nnodes 2 --node-rank 0 --swap-space 40 --tool-call-parser deepseek_v3 --tokens-per-prediction 1
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: DeepSeek-V3.1-Terminus-Channel-int8
+  card_type: 910B1
+  default_params: --model DeepSeek-V3.1-Terminus-Channel-int8 --tokenizer /home/weight/DeepSeek-V3.1-Terminus-Channel-int8/ -tp 16 --port 8000 --platform-type ascend --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --gpu-memory-utilization 0.97 --max-num-batched-tokens 2048 --master-addr 192.168.0.77 --master-port 8008 --nnodes 2 --node-rank 0 --swap-space 40 --tool-call-parser deepseek_v3 --tokens-per-prediction 1
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: DeepSeek-R1-Distill-Qwen-1.5B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Qwen-1.5B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-1.5B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: DeepSeek-R1-Distill-Qwen-7B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Qwen-7B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-7B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: DeepSeek-R1-Distill-Qwen-14B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Qwen-14B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-14B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: DeepSeek-R1-Distill-Qwen-32B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Qwen-32B --tokenizer /home/weight/DeepSeek-R1-Distill-Qwen-32B -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: DeepSeek-R1-Distill-Llama-8B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Llama-8B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-8B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser llama3_json
+  note: ''
+- model_name: DeepSeek-R1-Distill-Llama-70B
+  card_type: 910B1
+  default_params: --model DeepSeek-R1-Distill-Llama-70B --tokenizer /home/weight/DeepSeek-R1-Distill-Llama-70B -tp 4 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser llama3_json
+  note: ''
+- model_name: Meta-Llama-3.1-8B-Instruct
+  card_type: 910B1
+  default_params: --model Meta-Llama-3.1-8B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-8B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser llama3_json
+  note: ''
+- model_name: Meta-Llama-3.1-70B-Instruct
+  card_type: 910B1
+  default_params: --model Meta-Llama-3.1-70B-Instruct --tokenizer /home/weight/Meta-Llama-3.1-70B-Instruct -tp 4 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser llama3_json
+  note: ''
+- model_name: Qwen2.5-0.5B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-0.5B-Instruct --tokenizer /home/weight/Qwen2.5-0.5B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-1.5B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-1.5B-Instruct --tokenizer /home/weight/Qwen2.5-1.5B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-3B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-3B-Instruct --tokenizer /home/weight/Qwen2.5-3B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-7B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-7B-Instruct --tokenizer /home/weight/Qwen2.5-7B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-14B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-14B-Instruct --tokenizer /home/weight/Qwen2.5-14B-Instruct -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-32B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-32B-Instruct --tokenizer /home/weight/Qwen2.5-32B-Instruct -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-72B-Instruct
+  card_type: 910B1
+  default_params: --model Qwen2.5-72B-Instruct --tokenizer /home/weight/Qwen2.5-72B-Instruct -tp 4 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: QwQ-32B
+  card_type: 910B1
+  default_params: --model QwQ-32B --tokenizer /home/weight/QwQ-32B -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-0.5B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-0.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-0.5B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-1.5B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-1.5B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-1.5B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-3B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-3B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-3B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-7B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-7B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-7B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-14B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-14B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-14B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-32B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-32B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-32B-Instruct-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen2.5-72B-Instruct-AWQ
+  card_type: 910B1
+  default_params: --model Qwen2.5-72B-Instruct-AWQ --tokenizer /home/weight/Qwen2.5-72B-Instruct-AWQ -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: QwQ-32B-AWQ
+  card_type: 910B1
+  default_params: --model QwQ-32B-AWQ --tokenizer /home/weight/QwQ-32B-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen3-32B
+  card_type: 910B1
+  default_params: --model Qwen3-32B --tokenizer /home/weight/Qwen3/Qwen3-32B -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen3-30B-A3B
+  card_type: 910B1
+  default_params: --model Qwen3-30B-A3B --tokenizer /home/weight/Qwen3/Qwen3-30B-A3B -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen3-235B-A22B
+  card_type: 910B1
+  default_params: --model Qwen3-235B-A22B --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B -tp 8 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 8192 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --gpu-memory-utilization 0.98 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen3-32B-AWQ
+  card_type: 910B1
+  default_params: --model Qwen3-32B-AWQ --tokenizer /home/weight/Qwen3/Qwen3-32B-AWQ -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen1.5-1.8B-Chat
+  card_type: 910B1
+  default_params: --model Qwen1.5-1.8B-Chat --tokenizer /home/weight/Qwen1.5-1.8B-Chat -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: ChatGLM-6B
+  card_type: 910B1
+  default_params: --model ChatGLM-6B --tokenizer /home/weight/ChatGLM-6B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: chatglm2-6b
+  card_type: 910B1
+  default_params: --model chatglm2-6b --tokenizer /home/weight/chatglm2-6b -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: chatglm3-6b
+  card_type: 910B1
+  default_params: --model chatglm3-6b --tokenizer /home/weight/chatglm3-6b -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: baichuan-7B
+  card_type: 910B1
+  default_params: --model baichuan-7B --tokenizer /home/weight/baichuan-7B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: Baichuan2-7B-Chat
+  card_type: 910B1
+  default_params: --model Baichuan2-7B-Chat --tokenizer /home/weight/Baichuan2-7B-Chat -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40
+  note: ''
+- model_name: Qwen3.5-27B
+  card_type: 910B1
+  default_params: --model Qwen3.5-27B --tokenizer /home/weight/Qwen3.5-27B -tp 2 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''
+- model_name: Qwen3.5-35B-A3B
+  card_type: 910B1
+  default_params: --model Qwen3.5-35B-A3B --tokenizer /home/weight/Qwen3.5-35B-A3B -tp 1 --block-size 128 --weight-dtype=FP16 --schedule-policy DynamicSplitFuseV2 --max-num-batched-tokens 2048 --port 8000 --master-addr 0.0.0.0 --master-port 8008 --nnodes 1 --node-rank 0 --platform-type ascend --swap-space 40 --tool-call-parser hermes
+  note: ''

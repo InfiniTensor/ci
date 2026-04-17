@@ -1,0 +1,33 @@
+models:
+- model_name: DeepSeek-R1-Distill-Qwen-32B
+  card_type: H100
+  default_params: --model /home/weight/DeepSeek-R1-Distill-Qwen-32B --served-model-name deepseek --port 28881 -tp 1 --max-model-len 18432 --no-enable-prefix-caching
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: DeepSeek-R1-Distill-Llama-8B
+  card_type: H100
+  default_params: --model /home/weight/DeepSeek-R1-Distill-Llama-8B --served-model-name deepseek --port 28881 -tp 1 --no-enable-prefix-caching
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: Qwen3-32B-FP8
+  card_type: A100
+  default_params: --model /home/weight/Qwen3/Qwen3-32B-FP8/ --served-model-name deepseek --port 28881 --no-enable-prefix-caching -tp 2 --no-enable-prefix-caching
+  note: ''
+- model_name: DeepSeek-R1-Distill-Llama-70B
+  card_type: H100
+  default_params: --model /home/weight/DeepSeek-R1-Distill-Llama-70B --served-model-name deepseek --port 28881 -tp 4 --no-enable-prefix-caching
+  note: For long-context scenarios, you can add parameter --compute-mla-model-as-mha
+- model_name: Qwen3-235B-A22B
+  card_type: H100
+  default_params: --model /home/weight/Qwen3/Qwen3-235B-A22B --served-model-name deepseek --port 28881 -tp 8 --gpu-memory-utilization 0.98 --no-enable-prefix-caching
+  note: ''
+- model_name: Qwen3.5-27B
+  card_type: A100
+  default_params: --model /home/weight/Qwen3.5-27B --served-model-name Qwen3.5-27B --port 28881 -tp 2 --gpu-memory-utilization 0.98 --no-enable-prefix-caching
+  note: ''
+- model_name: Qwen3.5-35B-A3B
+  card_type: A100
+  default_params: --model /home/weight/Qwen3.5-35B-A3B --served-model-name Qwen3.5-35B-A3B --port 28881 -tp 2 --gpu-memory-utilization 0.98 --no-enable-prefix-caching
+  note: ''
+- model_name: Qwen3-30B-A3B
+  card_type: A100
+  default_params: --model /home/weight/Qwen3-30B-A3B --served-model-name Qwen3-30B-A3B --port 28881 -tp 2 --gpu-memory-utilization 0.98 --no-enable-prefix-caching
+  note: ''

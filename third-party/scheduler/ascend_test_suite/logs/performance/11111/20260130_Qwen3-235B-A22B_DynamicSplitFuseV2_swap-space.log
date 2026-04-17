@@ -1,0 +1,102 @@
+========================================================
+Random Testing input=128, output=1024
+========================================================
+Testing concurrency=1, prompts=4
+vllm bench serve --backend openai --port 20000 --host 10.0.0.3 --model Qwen3-235B-A22B --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B/ --endpoint /v1/completions --dataset-name random --random-input-len 128 --random-output-len 1024 --num-prompts 4 --request-rate inf --max-concurrency 1 --ignore-eos
+INFO 01-30 08:08:10 [__init__.py:36] Available plugins for group vllm.platform_plugins:
+INFO 01-30 08:08:10 [__init__.py:38] - ascend -> vllm_ascend:register
+INFO 01-30 08:08:10 [__init__.py:41] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 01-30 08:08:10 [__init__.py:207] Platform plugin ascend is activated
+WARNING 01-30 08:08:15 [_custom_ops.py:20] Failed to import from vllm._C with ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen2VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_vl:AscendQwen2VLForConditionalGeneration.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen3VLMoeForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl_without_padding:AscendQwen3VLMoeForConditionalGeneration.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen3VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl_without_padding:AscendQwen3VLForConditionalGeneration.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen2_5_VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl:AscendQwen2_5_VLForConditionalGeneration.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen2_5OmniModel is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_omni_thinker:AscendQwen2_5OmniThinkerForConditionalGeneration.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture DeepseekV32ForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v3_2:CustomDeepseekV3ForCausalLM.
+WARNING 01-30 08:08:16 [registry.py:582] Model architecture Qwen3NextForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen3_next:CustomQwen3NextForCausalLM.
+INFO 01-30 08:08:16 [importing.py:63] Triton not installed or not compatible; certain GPU-related functions will not be available.
+Namespace(subparser='bench', bench_type='serve', dispatch_function=<function BenchmarkServingSubcommand.cmd at 0xfffcec2a8d60>, seed=0, num_prompts=4, dataset_name='random', no_stream=False, dataset_path=None, no_oversample=False, custom_output_len=256, custom_skip_chat_template=False, spec_bench_output_len=256, spec_bench_category=None, sonnet_input_len=550, sonnet_output_len=150, sonnet_prefix_len=200, sharegpt_output_len=None, blazedit_min_distance=0.0, blazedit_max_distance=1.0, random_input_len=128, random_output_len=1024, random_range_ratio=0.0, random_prefix_len=0, random_batch_size=1, random_mm_base_items_per_request=1, random_mm_num_mm_items_range_ratio=0.0, random_mm_limit_mm_per_prompt={'image': 255, 'video': 0}, random_mm_bucket_config={(256, 256, 1): 0.5, (720, 1280, 1): 0.5, (720, 1280, 16): 0.0}, hf_subset=None, hf_split=None, hf_name=None, hf_output_len=None, prefix_repetition_prefix_len=256, prefix_repetition_suffix_len=256, prefix_repetition_num_prefixes=10, prefix_repetition_output_len=128, label=None, backend='openai', endpoint_type=None, base_url=None, host='10.0.0.3', port=20000, endpoint='/v1/completions', header=None, max_concurrency=1, model='Qwen3-235B-A22B', tokenizer='/home/weight/Qwen3/Qwen3-235B-A22B/', use_beam_search=False, logprobs=None, request_rate=inf, burstiness=1.0, trust_remote_code=False, disable_tqdm=False, profile=False, save_result=False, save_detailed=False, append_result=False, metadata=None, result_dir=None, result_filename=None, ignore_eos=True, percentile_metrics='ttft,tpot,itl', metric_percentiles='99', goodput=None, request_id_prefix='benchmark-serving', top_p=None, top_k=None, min_p=None, temperature=None, tokenizer_mode='auto', served_model_name=None, lora_modules=None, ramp_up_strategy=None, ramp_up_start_rps=None, ramp_up_end_rps=None, ready_check_timeout_sec=600)
+INFO 01-30 08:08:18 [datasets.py:507] Sampling input_len from [128, 128] and output_len from [1024, 1024]
+Starting initial single prompt test run...
+Waiting for endpoint to become up in 600 seconds
+Initial test run completed. Starting main benchmark run...
+Traffic request rate: inf
+Burstiness factor: 1.0 (Poisson process)
+Maximum request concurrency: 1
+tip: install termplotlib and gnuplot to plot the metrics
+============ Serving Benchmark Result ============
+Successful requests:                     4         
+Maximum request concurrency:             1         
+Benchmark duration (s):                  181.84    
+Total input tokens:                      512       
+Total generated tokens:                  4096      
+Request throughput (req/s):              0.02      
+Output token throughput (tok/s):         22.53     
+Peak output token throughput (tok/s):    24.00     
+Peak concurrent requests:                2.00      
+Total Token throughput (tok/s):          25.34     
+---------------Time to First Token----------------
+Mean TTFT (ms):                          113.32    
+Median TTFT (ms):                        114.71    
+P99 TTFT (ms):                           115.14    
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          44.33     
+Median TPOT (ms):                        44.42     
+P99 TPOT (ms):                           44.67     
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           44.33     
+Median ITL (ms):                         43.47     
+P99 ITL (ms):                            63.08     
+==================================================
+========================================================
+Random Testing input=1024, output=4096
+========================================================
+Testing concurrency=1, prompts=4
+vllm bench serve --backend openai --port 20000 --host 10.0.0.3 --model Qwen3-235B-A22B --tokenizer /home/weight/Qwen3/Qwen3-235B-A22B/ --endpoint /v1/completions --dataset-name random --random-input-len 1024 --random-output-len 4096 --num-prompts 4 --request-rate inf --max-concurrency 1 --ignore-eos
+INFO 01-30 08:12:16 [__init__.py:36] Available plugins for group vllm.platform_plugins:
+INFO 01-30 08:12:16 [__init__.py:38] - ascend -> vllm_ascend:register
+INFO 01-30 08:12:16 [__init__.py:41] All plugins in this group will be loaded. Set `VLLM_PLUGINS` to control which plugins to load.
+INFO 01-30 08:12:16 [__init__.py:207] Platform plugin ascend is activated
+WARNING 01-30 08:12:21 [_custom_ops.py:20] Failed to import from vllm._C with ModuleNotFoundError("No module named 'vllm._C'")
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen2VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_vl:AscendQwen2VLForConditionalGeneration.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen3VLMoeForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl_without_padding:AscendQwen3VLMoeForConditionalGeneration.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen3VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl_without_padding:AscendQwen3VLForConditionalGeneration.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen2_5_VLForConditionalGeneration is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_vl:AscendQwen2_5_VLForConditionalGeneration.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen2_5OmniModel is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen2_5_omni_thinker:AscendQwen2_5OmniThinkerForConditionalGeneration.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture DeepseekV32ForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.deepseek_v3_2:CustomDeepseekV3ForCausalLM.
+WARNING 01-30 08:12:22 [registry.py:582] Model architecture Qwen3NextForCausalLM is already registered, and will be overwritten by the new model class vllm_ascend.models.qwen3_next:CustomQwen3NextForCausalLM.
+INFO 01-30 08:12:22 [importing.py:63] Triton not installed or not compatible; certain GPU-related functions will not be available.
+Namespace(subparser='bench', bench_type='serve', dispatch_function=<function BenchmarkServingSubcommand.cmd at 0xfffd0fef0d60>, seed=0, num_prompts=4, dataset_name='random', no_stream=False, dataset_path=None, no_oversample=False, custom_output_len=256, custom_skip_chat_template=False, spec_bench_output_len=256, spec_bench_category=None, sonnet_input_len=550, sonnet_output_len=150, sonnet_prefix_len=200, sharegpt_output_len=None, blazedit_min_distance=0.0, blazedit_max_distance=1.0, random_input_len=1024, random_output_len=4096, random_range_ratio=0.0, random_prefix_len=0, random_batch_size=1, random_mm_base_items_per_request=1, random_mm_num_mm_items_range_ratio=0.0, random_mm_limit_mm_per_prompt={'image': 255, 'video': 0}, random_mm_bucket_config={(256, 256, 1): 0.5, (720, 1280, 1): 0.5, (720, 1280, 16): 0.0}, hf_subset=None, hf_split=None, hf_name=None, hf_output_len=None, prefix_repetition_prefix_len=256, prefix_repetition_suffix_len=256, prefix_repetition_num_prefixes=10, prefix_repetition_output_len=128, label=None, backend='openai', endpoint_type=None, base_url=None, host='10.0.0.3', port=20000, endpoint='/v1/completions', header=None, max_concurrency=1, model='Qwen3-235B-A22B', tokenizer='/home/weight/Qwen3/Qwen3-235B-A22B/', use_beam_search=False, logprobs=None, request_rate=inf, burstiness=1.0, trust_remote_code=False, disable_tqdm=False, profile=False, save_result=False, save_detailed=False, append_result=False, metadata=None, result_dir=None, result_filename=None, ignore_eos=True, percentile_metrics='ttft,tpot,itl', metric_percentiles='99', goodput=None, request_id_prefix='benchmark-serving', top_p=None, top_k=None, min_p=None, temperature=None, tokenizer_mode='auto', served_model_name=None, lora_modules=None, ramp_up_strategy=None, ramp_up_start_rps=None, ramp_up_end_rps=None, ready_check_timeout_sec=600)
+INFO 01-30 08:12:23 [datasets.py:507] Sampling input_len from [1024, 1024] and output_len from [4096, 4096]
+Starting initial single prompt test run...
+Waiting for endpoint to become up in 600 seconds
+Initial test run completed. Starting main benchmark run...
+Traffic request rate: inf
+Burstiness factor: 1.0 (Poisson process)
+Maximum request concurrency: 1
+tip: install termplotlib and gnuplot to plot the metrics
+============ Serving Benchmark Result ============
+Successful requests:                     4         
+Maximum request concurrency:             1         
+Benchmark duration (s):                  724.27    
+Total input tokens:                      4096      
+Total generated tokens:                  16384     
+Request throughput (req/s):              0.01      
+Output token throughput (tok/s):         22.62     
+Peak output token throughput (tok/s):    24.00     
+Peak concurrent requests:                2.00      
+Total Token throughput (tok/s):          28.28     
+---------------Time to First Token----------------
+Mean TTFT (ms):                          253.35    
+Median TTFT (ms):                        251.01    
+P99 TTFT (ms):                           262.88    
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          44.15     
+Median TPOT (ms):                        44.04     
+P99 TPOT (ms):                           44.57     
+---------------Inter-token Latency----------------
+Mean ITL (ms):                           44.15     
+Median ITL (ms):                         43.55     
+P99 ITL (ms):                            52.11     
+==================================================

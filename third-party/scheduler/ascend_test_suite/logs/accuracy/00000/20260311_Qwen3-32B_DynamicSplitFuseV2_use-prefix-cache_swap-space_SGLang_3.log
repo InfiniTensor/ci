@@ -1,0 +1,4 @@
+mmlu评测结果: ['Average accuracy: 0.818', '']
+
+gsm8k评测结果: ['Accuracy: 0.650', 'Invalid: 0.000', 'Latency: 202.265 s', '']
+
