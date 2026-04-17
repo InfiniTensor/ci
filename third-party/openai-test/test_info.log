@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.13, pytest-8.3.4, pluggy-1.5.0
+rootdir: /home/s_yangshuo/openai-test
+plugins: metadata-3.1.1, html-4.1.1, asyncio-1.0.0, allure-pytest-2.14.2, anyio-4.8.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 63 items
+
+chat/test_chat_accuracy.py .....                                         [  7%]
+chat/test_chat_echo.py ss                                                [ 11%]
+chat/test_chat_max_completion_tokens.py ....ss                           [ 20%]
+chat/test_chat_response_format.py ...                                    [ 25%]
+chat/test_chat_role.py ..                                                [ 28%]
+chat/test_chat_stop.py .                                                 [ 30%]
+chat/test_chat_stream.py ......                                          [ 39%]
+chat/test_function_call.py ...........                                   [ 57%]
+text/test_completions.py ..s.ss.........s                                [ 82%]
+text/test_completions_accuracy.py 
