@@ -262,7 +262,7 @@ generate_merged_rank_table() {
     fi
 
     for ((i=1; i<=60; i=i+1)) do
-        curl -X POST http://192.168.163.40:$(($HTTP_SERVER_PORT+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
+        curl -X POST http://192.168.162.8:$(($HTTP_SERVER_PORT+$JOB_COUNT))/rank/$SERVER_NAME -F "file=@$RANK_TABLE_FILE"
         if [ $? -eq 0 ]; then
             break
         fi
