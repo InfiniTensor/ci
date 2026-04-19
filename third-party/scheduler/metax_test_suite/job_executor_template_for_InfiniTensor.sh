@@ -120,9 +120,9 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
-# 检查 npu-smi 命令是否存在
-if ! command -v npu-smi &> /dev/null; then
-    echo "错误: npu-smi 未找到，请确保 metax 910B 驱动已安装"
+# 检查 mx-smi 命令是否存在
+if ! command -v mx-smi &> /dev/null; then
+    echo "错误: mx-smi 未找到，请确保 metax C550 驱动已安装"
     exit 1
 fi
 
@@ -157,7 +157,7 @@ while true; do
         # 尝试原子性地获取所有NPU的锁
         if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
-            LOCKED_GPUS="${ACUQIRED_LOCKS[@]}"
+            LOCKED_NPUS="${ACUQIRED_LOCKS[@]}"
             GPU_INFO=(${ACUQIRED_LOCKS[@]})
             break
         else
@@ -170,44 +170,14 @@ while true; do
     sleep 10
 done
 
-ASCEND_RT_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
-echo "ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES"
+MACA_VISIBLE_DEVICES =$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
+echo "MACA_VISIBLE_DEVICES =$MACA_VISIBLE_DEVICES "
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
-if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
-    # 获取文件锁（阻塞）
-    exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
-    if ! flock -x 200; then    # 获取独占锁
-        echo "无法获取锁，退出..."
-        exit 1
-    fi
-
-    # 确保文件存在 & 权限正确
-    if [ ! -f "${LOCK_DIR}/server_config.txt" ]; then
-        touch "${LOCK_DIR}/server_config.txt"
-    fi
-
-    server_ports=(`cat "${LOCK_DIR}/server_config.txt" | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
-
-    get_free_port
-    PORT=$free_port
-    get_free_port
-    PROMETHEUS_PORT=$free_port
-    get_free_port
-    MASTER_PORT=$free_port
-
-    if [ -z $PORT ] || [ -z $PROMETHEUS_PORT ] || [ -z $MASTER_PORT ]; then
-        exit 1
-    fi
-
-    echo "$LOCAL_IP:$JOB_ID:$PORT $PROMETHEUS_PORT $MASTER_PORT" >> "${LOCK_DIR}/server_config.txt"
-
-    # 锁会自动在脚本退出或文件描述符关闭时释放
-    exec 200>&-  # 关闭文件描述符
-else    # Slave节点同步到master节点的端口配置
-    while true; do
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+    MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
+    if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
         # 获取文件锁（阻塞）
         exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
         if ! flock -x 200; then    # 获取独占锁
@@ -215,26 +185,58 @@ else    # Slave节点同步到master节点的端口配置
             exit 1
         fi
 
-        # 读取Master节点配置信息
-        server_ports=`cat "${LOCK_DIR}/server_config.txt" | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
-        if [ ! -z "$server_ports" ]; then
-            PORT=$(echo $server_ports | awk '{print $1}')
-            PROMETHEUS_PORT=$(echo $server_ports | awk '{print $2}')
-            MASTER_PORT=$(echo $server_ports | awk '{print $3}')
-            # 锁会自动在脚本退出或文件描述符关闭时释放
-            exec 200>&-  # 关闭文件描述符
-            break
+        # 确保文件存在 & 权限正确
+        if [ ! -f "${LOCK_DIR}/server_config.txt" ]; then
+            touch "${LOCK_DIR}/server_config.txt"
         fi
+
+        server_ports=(`cat "${LOCK_DIR}/server_config.txt" | grep $LOCAL_IP | awk -F ':' '{print $3}'`)
+
+        get_free_port
+        PORT=$free_port
+        get_free_port
+        PROMETHEUS_PORT=$free_port
+        get_free_port
+        MASTER_PORT=$free_port
+
+        if [ -z $PORT ] || [ -z $PROMETHEUS_PORT ] || [ -z $MASTER_PORT ]; then
+            exit 1
+        fi
+
+        echo "$LOCAL_IP:$JOB_ID:$PORT $PROMETHEUS_PORT $MASTER_PORT" >> "${LOCK_DIR}/server_config.txt"
 
         # 锁会自动在脚本退出或文件描述符关闭时释放
         exec 200>&-  # 关闭文件描述符
+    else    # Slave节点同步到master节点的端口配置
+        while true; do
+            # 获取文件锁（阻塞）
+            exec 200>"${LOCK_DIR}/${LOCK_FILE}"    # 打开文件描述符 200
+            if ! flock -x 200; then    # 获取独占锁
+                echo "无法获取锁，退出..."
+                exit 1
+            fi
 
-        sleep 1
-    done
+            # 读取Master节点配置信息
+            server_ports=`cat "${LOCK_DIR}/server_config.txt" | grep "${MASTER_IP}:${JOB_ID}:" | awk -F ':' '{print $3}' | tail -n 1`
+            if [ ! -z "$server_ports" ]; then
+                PORT=$(echo $server_ports | awk '{print $1}')
+                PROMETHEUS_PORT=$(echo $server_ports | awk '{print $2}')
+                MASTER_PORT=$(echo $server_ports | awk '{print $3}')
+                # 锁会自动在脚本退出或文件描述符关闭时释放
+                exec 200>&-  # 关闭文件描述符
+                break
+            fi
+
+            # 锁会自动在脚本退出或文件描述符关闭时释放
+            exec 200>&-  # 关闭文件描述符
+
+            sleep 1
+        done
+    fi
 fi
 
 EXEC_COMMAND="docker run --name=infiniTensor_metax_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
-EXEC_COMMAND+="-e ASCEND_RT_VISIBLE_DEVICES=$ASCEND_RT_VISIBLE_DEVICES "
+EXEC_COMMAND+="-e MACA_VISIBLE_DEVICES =$MACA_VISIBLE_DEVICES  "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF
@@ -249,56 +251,60 @@ if [ $? -ne 0 ]; then
   exit 1;
 fi
 
-TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
-if [ $NODE_RANK -eq 0 ]; then
-    timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
-    EXIT_STATUS=$?
-    if [ $EXIT_STATUS -eq 124 ]; then
-        echo "模型启动超时（${TIMEOUT_SECONDS}秒）"
-    elif [ $EXIT_STATUS -eq 0 ]; then
-        echo ">>> Detected master service startup completion!"
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+    TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
+    if [ $NODE_RANK -eq 0 ]; then
+        timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
+        EXIT_STATUS=$?
+        if [ $EXIT_STATUS -eq 124 ]; then
+            echo "模型启动超时（${TIMEOUT_SECONDS}秒）"
+        elif [ $EXIT_STATUS -eq 0 ]; then
+            echo ">>> Detected master service startup completion!"
+        else
+            echo "模型启动失败，退出状态码：$EXIT_STATUS"
+        fi
+
+        exit $EXIT_STATUS
     else
-        echo "模型启动失败，退出状态码：$EXIT_STATUS"
+        timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 8 -E "worker initialization done!"
+        EXIT_STATUS=$?
+        if [ $EXIT_STATUS -eq 124 ]; then
+            echo "模型启动超时（${TIMEOUT_SECONDS}秒）"
+        elif [ $EXIT_STATUS -eq 0 ]; then
+            echo ">>> Detected worker service startup completion!"
+        else
+            echo "模型启动失败，退出状态码：$EXIT_STATUS"
+        fi
+
+        exit $EXIT_STATUS
     fi
 
-    exit $EXIT_STATUS
+    # 超时时间（30分钟）
+    # TIMEOUT=$((10 * 60))
+    # START_TIME=$(date +%s)
+
+    # while true; do
+    #     # 检查超时
+    #     CURRENT_TIME=$(date +%s)
+    #     ELAPSED=$((CURRENT_TIME - START_TIME))
+    #     if [ $ELAPSED -ge $TIMEOUT ]; then
+    #         echo ">>> 超时（${TIMEOUT}秒）。服务可能未正确启动。" >&2
+    #         exit 1
+    #     fi
+
+    #     # 检查日志
+    #     if tail -n 50 "$LOG_FILE" | grep -q "Engine core initialization failed" "$LOG_FILE"; then
+    #         echo ">>> 检测到服务启动失败！"
+    #         exit 5
+    #     fi
+
+    #     if tail -n 50 "$LOG_FILE" | grep -Eq "INFO:\s+Application startup complete\."; then
+    #         echo ">>> 检测到服务启动完成！"
+    #         exit 0
+    #     fi
+
+    #     sleep 5
+    # done
 else
-    timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 8 -E "worker initialization done!"
-    EXIT_STATUS=$?
-    if [ $EXIT_STATUS -eq 124 ]; then
-        echo "模型启动超时（${TIMEOUT_SECONDS}秒）"
-    elif [ $EXIT_STATUS -eq 0 ]; then
-        echo ">>> Detected worker service startup completion!"
-    else
-        echo "模型启动失败，退出状态码：$EXIT_STATUS"
-    fi
-
-    exit $EXIT_STATUS
+    exit 0
 fi
-
-# 超时时间（30分钟）
-# TIMEOUT=$((10 * 60))
-# START_TIME=$(date +%s)
-
-# while true; do
-#     # 检查超时
-#     CURRENT_TIME=$(date +%s)
-#     ELAPSED=$((CURRENT_TIME - START_TIME))
-#     if [ $ELAPSED -ge $TIMEOUT ]; then
-#         echo ">>> 超时（${TIMEOUT}秒）。服务可能未正确启动。" >&2
-#         exit 1
-#     fi
-
-#     # 检查日志
-#     if tail -n 50 "$LOG_FILE" | grep -q "Engine core initialization failed" "$LOG_FILE"; then
-#         echo ">>> 检测到服务启动失败！"
-#         exit 5
-#     fi
-
-#     if tail -n 50 "$LOG_FILE" | grep -Eq "INFO:\s+Application startup complete\."; then
-#         echo ">>> 检测到服务启动完成！"
-#         exit 0
-#     fi
-
-#     sleep 5
-# done

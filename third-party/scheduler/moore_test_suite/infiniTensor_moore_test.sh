@@ -179,6 +179,75 @@ trap handle_interrupt SIGINT SIGTERM
 # EXIT 信号仍然调用 cleanup（正常退出时 INTERRUPTED=0，不会额外 exit）
 trap cleanup_all_resources EXIT
 
+
+if [ $TEST_TYPE == "Unit" ]; then
+    echo "*************开始执行 UnitTest 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
+    model="None"
+    gpu_quantity=1
+    
+    filename="${log_name_suffix}_UnitTest.log"
+
+    cd $curr_dir
+
+    echo "尝试同时在${server_list[@]}服务器上面启动测试......"
+    
+    # 将 server_list 数组合并为用下划线分隔的字符串
+    server_list_str=$(
+        for i in "${server_list[@]}"; do
+            printf '%s\n' "${local_ip_map[$i]}"
+        done | paste -sd '_' -
+    )
+
+    unset pid_map
+    declare -A pid_map
+    ip=${server_list[0]}
+
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $session_id $version > "$curr_dir/logs/unit/$session_id/${filename}" &
+    ssh_pid=$!
+    pid_map[$ssh_pid]=$ip
+    SSH_PID_MAP[$ssh_pid]=$ip
+
+    wait $ssh_pid
+    err=$?
+    
+    echo "UnitTest 任务结束，服务器：${pid_map[$ssh_pid]} (PID=$ssh_pid)"
+
+    # 从 SSH_PID_MAP 中移除已完成的进程
+    unset SSH_PID_MAP[$ssh_pid]
+    
+    if [ $err -ne 0 ]; then
+        if [ $err -eq 10 ]; then
+            echo "${pid_map[$ssh_pid]}暂无资源, 中止当前模型测试任务，尝试进行下一个测试任务......"
+        else
+            echo "${pid_map[$ssh_pid]}测试环境配置失败, 中止当前模型测试任务，尝试进行下一个测试任务......"
+        fi
+    fi
+
+    # 清理工作
+    for ip in ${server_list[@]}; do
+        if [ $ENGINE_TYPE == "InfiniTensor" ]; then
+            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_moore_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_moore_UnitTest_${session_id}_0
+        fi
+    done
+
+    if [ $err -eq 0 ]; then
+        # 发送测试报告
+        # 获取模型启动命令，并做为参数传入
+        launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/unit/$session_id/${filename}"`
+
+        python3 ./get_info.py \
+            --file "$curr_dir/logs/unit/$session_id/${filename}" \
+            --email "limingge@xcoresigma.com" \
+            --model "InfiniOps" \
+            --gpu "A100" \
+            --cmd "${launch_cmd}"
+    fi
+    
+    exit $err
+fi
+
 model_list=($candidate_models)
 
 echo "*************开始执行${TEST_TYPE}测试任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"

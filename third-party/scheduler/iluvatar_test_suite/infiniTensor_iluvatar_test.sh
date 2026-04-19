@@ -226,8 +226,8 @@ if [ $TEST_TYPE == "Unit" ]; then
     # 清理工作
     for ip in ${server_list[@]}; do
         if [ $ENGINE_TYPE == "InfiniTensor" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_nvidia_UnitTest_${session_id}_0
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_nvidia_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_iluvatar_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_iluvatar_UnitTest_${session_id}_0
         fi
     done
 

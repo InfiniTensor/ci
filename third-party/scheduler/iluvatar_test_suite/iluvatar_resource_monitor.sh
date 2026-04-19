@@ -141,7 +141,7 @@ search_servers() {
             GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
             # 检查使用中的 GPU 数量
             USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
-            echo \"当前使用中的 GPU 数量：\$USE_COUNT, 索引: \${GPU_INFO[@]}\"
+            echo \"GPUs currently in use: \$USE_COUNT, indices: \${GPU_INFO[@]}\"
             TOTAL_COUNT=\$(docker exec zhuyue_test /bin/bash -ic 'ixsmi -L' | wc -l)
             FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
             FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))

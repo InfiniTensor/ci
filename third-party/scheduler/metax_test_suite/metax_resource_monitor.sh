@@ -63,6 +63,7 @@ if [ $ENGINE_TYPE == "InfiniTensor" ]; then
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
     else
+        version="${version##*:}"
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
     fi
 fi
@@ -71,7 +72,7 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID $curr_dir/logs/unit/$SESSION_ID
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Smoke" ]; then
@@ -89,6 +90,10 @@ elif [ $TEST_TYPE == "Stability" ]; then
 elif [ $TEST_TYPE == "Accuracy" ]; then
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+elif [ $TEST_TYPE == "Unit" ]; then
+    rm -rf $curr_dir/logs/unit/$SESSION_ID/*.log $curr_dir/logs/unit/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/unit/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 fi
 
@@ -171,10 +176,45 @@ search_servers() {
 }
 
 for name in "${!npu_server_list[@]}"; do
-    echo "$name => ${npu_server_list[$name]}"    
-    scp -P 14735 "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
-    scp -P 14735 "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+    echo "$name => ${npu_server_list[$name]}"
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
 done
+
+if [ $TEST_TYPE == "Unit" ]; then
+    while true; do
+        model="None"
+        GPU_QUANTITY=1
+        GPU_MODEL="C550"
+        echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
+        search_servers $model 0 $GPU_QUANTITY servers
+        if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
+            echo "Idle GPU(s) satisfying the conditions have been found, Unit Test will begin..."
+            echo
+            $curr_dir/infiniTensor_metax_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
+            last_pid=$!
+            wait $last_pid  # 等待子进程结束
+            err=$?          # 保存结束子进程的退出状态
+            if [ $err -ne 0 ]; then
+                if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                    echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
+                    sleep 10
+                    continue
+                fi
+            fi
+            break
+        else
+            echo "No sufficient idle GPUs are available, try it later..."
+            echo
+            # 等待一段时间后重新扫描（例如 10 秒）
+            sleep 10
+        fi
+    done
+
+    echo "All tests completed!"
+
+    exit $err
+fi
 
 GPU_resource_demand=()
 

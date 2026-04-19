@@ -27,7 +27,7 @@ declare -A npu_server_list=(
 for key in "${!npu_server_list[@]}"; do
     echo "$key => ${npu_server_list[$key]}"
     ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@${npu_server_list[$key]} "# 处理${TEST_TYPE} Test容器
-        container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"siginfer_ascend_${TEST_TYPE}Test_\")
+        container_list=\$(docker ps -a --format \"{{.Names}}\" | grep \"infiniTensor_metax_${TEST_TYPE}Test_\")
         for container in \$container_list; do
             if [ $SHUTDOWN -eq 1 ]; then
                 docker stop \$container
