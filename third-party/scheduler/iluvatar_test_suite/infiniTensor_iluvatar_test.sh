@@ -239,7 +239,7 @@ if [ $TEST_TYPE == "Unit" ]; then
         --file "$curr_dir/logs/unit/$session_id/${filename}" \
         --email "limingge@xcoresigma.com" \
         --model "InfiniOps" \
-        --gpu "A100" \
+        --gpu "V200" \
         --cmd "${launch_cmd}"
 
     exit $err
