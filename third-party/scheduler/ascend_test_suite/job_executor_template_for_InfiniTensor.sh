@@ -93,9 +93,11 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-docker pull docker.xcoresigma.com/docker/infiniTensor-aarch64-ascend:$LATEST_TAG
-if [ $? -ne 0 ]; then
-  exit 1;
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+    docker pull docker.xcoresigma.com/docker/infiniTensor-aarch64-ascend:$LATEST_TAG
+    if [ $? -ne 0 ]; then
+        exit 1;
+    fi
 fi
 
 ret=`docker ps -a | grep infiniTensor_ascend_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`

@@ -96,7 +96,7 @@ fi
 if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then 
     docker pull docker.xcoresigma.com/docker/infiniTensor-aarch64-iluvatar:$LATEST_TAG
     if [ $? -ne 0 ]; then
-    exit 1;
+        exit 1;
     fi
 fi
 
