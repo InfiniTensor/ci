@@ -134,6 +134,7 @@ platforms:
       gpu:
         type: unittest
         resources:
+          ngpus: 1
           gpu_style: none                  # MetaX: passthrough via --privileged, no CUDA_VISIBLE_DEVICES
           memory: 32GB
           shm_size: 16g
@@ -156,6 +157,7 @@ platforms:
       gpu:
         type: unittest
         resources:
+          ngpus: 1
           gpu_style: none                  # Moore: passthrough via --privileged, MTHREADS_VISIBLE_DEVICES set by base image
           memory: 32GB
           shm_size: 16g
