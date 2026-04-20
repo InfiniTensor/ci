@@ -105,7 +105,7 @@ for i in $(seq 1 "$NUM_STAGES"); do
   name="${!name_var}"
   cmd="${!cmd_var}"
   echo "========== Stage: $name =========="
-  [ -n "$cmd" ] && { eval "$cmd" || failed=1; }
+  [ -n "$cmd" ] && { eval "$cmd" || failed=20; }
 done
 echo "========== Summary =========="
 if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
