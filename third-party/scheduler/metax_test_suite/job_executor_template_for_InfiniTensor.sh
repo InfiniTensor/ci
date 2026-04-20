@@ -172,8 +172,8 @@ while true; do
     sleep 10
 done
 
-MACA_VISIBLE_DEVICES =$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
-echo "MACA_VISIBLE_DEVICES =$MACA_VISIBLE_DEVICES "
+MACA_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
+echo "MACA_VISIBLE_DEVICES=$MACA_VISIBLE_DEVICES"
 
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
@@ -238,7 +238,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
 fi
 
 EXEC_COMMAND="docker run --name=infiniTensor_metax_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
-EXEC_COMMAND+="-e MACA_VISIBLE_DEVICES =$MACA_VISIBLE_DEVICES  "
+EXEC_COMMAND+="-e MACA_VISIBLE_DEVICES=$MACA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF
