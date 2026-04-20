@@ -116,7 +116,7 @@ cleanup_all_resources() {
     
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
-        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip "
+        ssh -q -o ConnectionAttempts=3  zkjh@$ip "
             name=${engine_type}_moore_${TEST_TYPE}Test_${session_id}_${job_count}
             if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                 docker stop \$name
@@ -151,7 +151,7 @@ handle_interrupt() {
     for remote_ip in "${!unique_ips[@]}"; do
         echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
         # 通过 ssh 找到远程脚本进程并发送信号
-        ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 -p 14735 zkjh@$remote_ip "
+        ssh -o ConnectionAttempts=3 -o ConnectTimeout=5  zkjh@$remote_ip "
             pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
             if [ ! -z \"\$pids\" ]; then
                 for pid in \$pids; do
@@ -202,8 +202,8 @@ if [ $TEST_TYPE == "Unit" ]; then
     declare -A pid_map
     ip=${server_list[0]}
 
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $session_id $version > "$curr_dir/logs/unit/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_UnitTest.sh $model $gpu_quantity $server_list_str 0 0 $session_id $version > "$curr_dir/logs/unit/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
@@ -227,8 +227,8 @@ if [ $TEST_TYPE == "Unit" ]; then
     # 清理工作
     for ip in ${server_list[@]}; do
         if [ $ENGINE_TYPE == "InfiniTensor" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_moore_UnitTest_${session_id}_0
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_moore_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop infiniTensor_moore_UnitTest_${session_id}_0
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm infiniTensor_moore_UnitTest_${session_id}_0
         fi
     done
 
@@ -306,18 +306,18 @@ for item in "${model_list[@]}"; do
 
         if [ $TEST_TYPE == "Smoke" ]; then
             if [ $ENGINE_TYPE == "MindIE" ]; then
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
             else
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
             fi
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
             SSH_PID_MAP[$ssh_pid]=$ip
         else
             if [ $ENGINE_TYPE == "MindIE" ]; then
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
             else
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str $seq_num $job_count $session_id $version &
             fi
             ssh_pid=$!
             pid_map[$ssh_pid]=$ip
@@ -367,7 +367,7 @@ for item in "${model_list[@]}"; do
             exit 1
         fi
         for ip in ${server_list[@]}; do
-            scp -P 14735 $merged_rank_table zkjh@$ip:/home/zkjh/rank_table/$job_id/merged_rank_table.json
+            scp  $merged_rank_table zkjh@$ip:/home/zkjh/rank_table/$job_id/merged_rank_table.json
         done
         cd $curr_dir
     fi
@@ -397,14 +397,14 @@ for item in "${model_list[@]}"; do
                 # 启动失败，清理工作
                 for ip in ${server_list[@]}; do
                     if [ $ENGINE_TYPE == "InfiniTensor" ]; then
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
                     elif [ $ENGINE_TYPE == "vLLM" ]; then
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
                     elif [ $ENGINE_TYPE == "MindIE" ]; then
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-                        ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+                        ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
                     fi
                 done
                 
@@ -439,14 +439,14 @@ for item in "${model_list[@]}"; do
     else
         echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
         if [ $ENGINE_TYPE == "InfiniTensor" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         elif [ $ENGINE_TYPE == "vLLM" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         elif [ $ENGINE_TYPE == "MindIE" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         fi
         continue
     fi
@@ -521,7 +521,7 @@ for item in "${model_list[@]}"; do
                 # "126000:2048"
             )
             # Random
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@${server_list[0]} "
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@${server_list[0]} "
                 docker exec ${engine_type}_moore_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
                     export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
                     if [ ${engine_type} == \\\"infiniTensor\\\" ]; then
@@ -573,7 +573,7 @@ for item in "${model_list[@]}"; do
         else
             concurrency_list=(100 200 300 400 500 600 700 800 900 1000)
             # Sharegpt
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@${server_list[0]} "
+            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@${server_list[0]} "
                 docker exec ${engine_type}_moore_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
                     if [ ${engine_type} == \\\"infiniTensor\\\" ]; then
                         pip3 install dataSets pillow aiohttp
@@ -688,14 +688,14 @@ for item in "${model_list[@]}"; do
     # 测试完成，清理工作
     for ip in ${server_list[@]}; do
         if [ $ENGINE_TYPE == "InfiniTensor" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm infiniTensor_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         elif [ $ENGINE_TYPE == "vLLM" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm vllm_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         elif [ $ENGINE_TYPE == "MindIE" ]; then
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 -p 14735 zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker stop mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3  zkjh@$ip docker rm mindie_moore_${TEST_TYPE}Test_${session_id}_${job_count}
         fi
     done
     
