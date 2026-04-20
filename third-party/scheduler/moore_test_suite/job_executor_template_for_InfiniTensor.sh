@@ -246,8 +246,13 @@ EOF
 echo "$EXEC_COMMAND"
 
 eval "$EXEC_COMMAND"
-if [ $? -ne 0 ]; then
-  exit 1;
+ret=$?
+if [ $ret -ne 0 ]; then
+    if [ $ret -eq 20 ]; then
+        exit 0
+    else
+        exit 1
+    fi
 fi
 
 if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then

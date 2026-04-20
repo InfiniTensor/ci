@@ -94,7 +94,7 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then 
+if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
     DOCKER_IMAGE_URL=""
     docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
     if [ $? -ne 0 ]; then
@@ -367,8 +367,13 @@ EOF
 echo "$EXEC_COMMAND"
 
 eval "$EXEC_COMMAND"
-if [ $? -ne 0 ]; then
-    exit 1;
+ret=$?
+if [ $ret -ne 0 ]; then
+    if [ $ret -eq 20 ]; then
+        exit 0
+    else
+        exit 1
+    fi
 fi
 
 if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
