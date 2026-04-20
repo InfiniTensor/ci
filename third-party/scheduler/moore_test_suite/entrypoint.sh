@@ -36,13 +36,13 @@ EOF
 cd /CI_Workspace
 
 if [ ! -d ci_autotest ]; then
-    git clone git@github.com:Vincent777/ci_autotest.git ci_autotest
-    cd ci_autotest
+    git clone git@github.com:InfiniTensor/ci.git ci_autotest
+    cd ci_autotest/third-party/scheduler
 else
-    cd ci_autotest
+    cd ci_autotest/third-party/scheduler
     git fetch --all
-    git reset --hard origin/main
-    git pull origin main
+    git reset --hard origin/master
+    git pull origin master
 fi
 
 if [ $platform == "Ascend" ]; then
