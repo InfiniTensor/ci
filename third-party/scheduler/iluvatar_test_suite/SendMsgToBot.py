@@ -329,8 +329,8 @@ def main():
     log_file_path = sys.argv[2]
     
     # 提取 summary 连同版本信息一并发送或保存到本地
-    summary = read_and_format_summary(log_file_path, "aarch64-iluvatar-910B3:" + docker_image_version)
-    send_summary_to_server("aarch64-iluvatar-910B3:" + docker_image_version, None, summary)
+    summary = read_and_format_summary(log_file_path, "x86_64-iluvatar-V200:" + docker_image_version)
+    send_summary_to_server("x86_64-iluvatar-V200:" + docker_image_version, None, summary)
     
 if __name__ == "__main__":
     main()
