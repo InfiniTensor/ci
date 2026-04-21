@@ -16,7 +16,13 @@ engine=$3
 model_list=$4
 docker_args="$5"
 CI_job_id=$6
-version=$7
+
+if [ "$test_type" == "Performance" ]; then
+    test_param=$7
+    version=$8
+else
+    version=$7
+fi
 
 export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
 
@@ -43,13 +49,13 @@ if [ $platform == "Ascend" ]; then
     cd ascend_test_suite
     mkdir -p $version
     cp latest/model_list.yml $version
-    ./ascend_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $version &
+    ./ascend_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
     CHILD_PID=$!
 elif [ $platform == "Nvidia" ]; then
     cd nvidia_test_suite
     mkdir -p $version
     cp latest/model_list.yml $version
-    ./nvidia_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $version &
+    ./nvidia_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
     CHILD_PID=$!
 fi
 
