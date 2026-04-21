@@ -521,7 +521,7 @@ for item in "${model_list[@]}"; do
             # Random
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3  zkjh@${server_list[0]} "
                 docker exec ${engine_type}_moore_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
-                    export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
+                    export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
                     if [ ${engine_type} == \\\"infiniTensor\\\" ]; then
                         pip3 install dataSets pillow aiohttp
                     elif [ ${engine_type} == \\\"mindie\\\" ]; then

@@ -446,7 +446,7 @@ for item in "${model_list[@]}"; do
             # Random
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
                 docker exec ${engine_type}_nvidia_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
-                    export https_proxy=http://localhost:9991 http_proxy=http://localhost:9991
+                    export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
                     pip3 install dataSets pillow aiohttp
                     unset https_proxy http_proxy
 
