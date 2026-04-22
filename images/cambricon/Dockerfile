@@ -22,7 +22,8 @@ RUN pip install --no-cache-dir \
     pytest \
     pytest-cov \
     pytest-xdist \
-    ruff==0.15.7
+    ruff==0.15.7 \
+    pyyaml
 
 # Pin pre-installed Cambricon `torch` to prevent `pip` from replacing it with upstream version.
 RUN pip show torch >/dev/null 2>&1 && \
