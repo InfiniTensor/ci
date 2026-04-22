@@ -127,7 +127,7 @@ search_servers() {
     servers_found=()
     for key in "${!npu_server_list[@]}"; do
         echo "$key => ${npu_server_list[$key]}"
-        ssh -q -o -p 14735 ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@${npu_server_list[$key]} "# 目标空闲 GPU 数量
+        ssh -q -p 14735 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@${npu_server_list[$key]} "# 目标空闲 GPU 数量
             source /home/zkjh/npu_lock_manager_for_ci.sh
             if [ $NPU_QUANTITY -eq 16 ]; then
                 TARGET_FREE_GPUS=8
@@ -185,7 +185,7 @@ if [ $TEST_TYPE == "Unit" ]; then
     while true; do
         model="None"
         GPU_QUANTITY=1
-        GPU_MODEL="C550"
+        GPU_MODEL="MLU590"
         echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
         search_servers $model 0 $GPU_QUANTITY servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
