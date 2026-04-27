@@ -135,8 +135,8 @@ search_servers() {
                 TARGET_FREE_GPUS=$NPU_QUANTITY
             fi
             echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
-            # 使用 mthreads-gmi 获取 GPU 使用情况, 识别"真正在用的 GPU", 可以加阈值过滤(例如显存 > 100MiB)
-            GPU_INFO=(\$(mthreads-gmi | awk '/^Processes:/{p=1; next} p && \$1 ~ /^[0-9]+\$/ {mem=\$NF; gsub(/MiB/,\"\",mem); if (mem+0 > 100) print \$1}' | sort -nu))
+            # 使用 mthreads-gmi 获取 GPU 使用情况, 识别"真正在用的 GPU", 可以加阈值过滤(例如显存 >= 100MiB)
+            GPU_INFO=(\$(mthreads-gmi | awk '/^Processes:/{p=1; next} p && \$1 ~ /^[0-9]+\$/ {mem=\$NF; gsub(/MiB/,\"\",mem); if (mem+0 >= 100) print \$1}' | sort -nu))
             # 去重
             GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
             # 检查使用中的 GPU 数量

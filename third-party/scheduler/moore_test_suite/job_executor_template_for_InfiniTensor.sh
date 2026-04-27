@@ -141,7 +141,7 @@ while true; do
     fi
 
     # 使用 mthreads-gmi 获取 GPU 使用情况
-    GPU_INFO=($(mthreads-gmi | awk '/^Processes:/{p=1; next} p && $1 ~ /^[0-9]+$/ {mem=$NF; gsub(/MiB/,"",mem); if (mem+0 > 100) print $1}' | sort -nu))
+    GPU_INFO=($(mthreads-gmi | awk '/^Processes:/{p=1; next} p && $1 ~ /^[0-9]+$/ {mem=$NF; gsub(/MiB/,"",mem); if (mem+0 >= 100) print $1}' | sort -nu))
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
     # 检查使用中的 GPU 数量
