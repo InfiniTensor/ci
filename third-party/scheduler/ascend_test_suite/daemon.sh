@@ -30,13 +30,8 @@ fi
 
 curr_dir=$(pwd)
 
-if [ $platform == "Cambricon" ]; then
-    docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /data/shared/limingge/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock -v /usr/bin/cnmon:/usr/bin/cnmon auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
-    CHILD_PID=$!
-else
-    docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /data/shared/limingge/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
-    CHILD_PID=$!
-fi
+docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /home/zkjh/CI_Workspace:/CI_Workspace -v /data/shared/limingge/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
+CHILD_PID=$!
 
 echo -n "Running"
 while kill -0 $CHILD_PID 2>/dev/null; do
