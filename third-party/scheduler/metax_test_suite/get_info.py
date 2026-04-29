@@ -35,9 +35,10 @@ if not os.path.exists(log_path):
 
 tz = pytz.timezone("Asia/Shanghai")
 time_str = datetime.now(tz).strftime("%Y_%m_%d")
+session_id = os.path.basename(os.path.dirname(log_path))
 log_stem = os.path.splitext(os.path.basename(log_path))[0]
-excel_path = f"./{log_stem}.xlsx"
-html_path = f"./{log_stem}.html"
+excel_path = f"./report_{os.environ['TASK_START_TIME']}/{session_id}/{log_stem}.xlsx"
+html_path = f"./report_{os.environ['TASK_START_TIME']}/{session_id}/{log_stem}.html"
 
 
 def parse_unittest_log(file_path):
