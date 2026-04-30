@@ -465,8 +465,8 @@ for item in "${model_list[@]}"; do
         unset pid_map
         declare -A pid_map
         
-        echo "docker run --rm --name $container_name --volume /home/zkjh/CI_Workspace/ci_autotest/third-party/scheduler/iluvatar_test_suite/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
-        docker run --rm --name $container_name --volume /home/zkjh/CI_Workspace/ci_autotest/third-party/scheduler/iluvatar_test_suite/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
+        echo "docker run --rm --name $container_name --volume /data/shared/limingge/CI_Workspace/ci_autotest/third-party/scheduler/iluvatar_test_suite/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd \"$full_cmd\""
+        docker run --rm --name $container_name --volume /data/shared/limingge/CI_Workspace/ci_autotest/third-party/scheduler/iluvatar_test_suite/report_${log_name_suffix}/$session_id:/test/report_${log_name_suffix} -e TASK_START_TIME=${log_name_suffix} --entrypoint /test/start.sh openai:1110 --file $filename --email limingge@xcoresigma.com --env=${npu_server_list[${server_list[0]}]} --url http://${server_list[0]}:${server_port}/v1 --model=$model_name --gpu 910B --cmd "\"$full_cmd\"" 2>&1 &
         pid=$!
         pid_map[$pid]="$container_name"
         DOCKER_CONTAINER_NAMES+=("$container_name")
