@@ -301,6 +301,7 @@ while true; do
                     if [ $err -eq 10 ]; then  # 没有资源，等待超时
                         echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
                         temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
+                        continue
                     fi
                 else
                     echo "The program encountered an error!"
