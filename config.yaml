@@ -40,52 +40,52 @@ platforms:
         stages:
           - name: test
             run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
-  #     gpu_smoketest:
-  #       type: smoketest
-  #       docker_args:
-  #         - "--gpus all"
-  #         - "-u root"
-  #         - "--network host"
-  #         - "--privileged"
-  #         - "--cap-add=ALL"
-  #         - "--pid=host"
-  #         - "--ipc=host"
-  #         - "--entrypoint=''"
-  #         - "--workdir=/workspace"
-  #         - "-e CUDA_DEVICE_ORDER=PCI_BUS_ID"
-  #       volumes:
-  #         - /dev:/dev
-  #         - /data/shared/limingge/weight:/home/weight
-  #         - /home/zkjh/workspace:/workspace
-  #       resources:
-  #         shm_size: 80g
-  #       env:
-  #         MODEL_LIST: Qwen3-32B-FP8
-  #         IMAGE: v0.10.0
-  #         ENGINE: vLLM
-  #     gpu_performancetest:
-  #       type: performancetest
-  #       docker_args:
-  #         - "--gpus all"
-  #         - "-u root"
-  #         - "--network host"
-  #         - "--privileged"
-  #         - "--cap-add=ALL"
-  #         - "--pid=host"
-  #         - "--ipc=host"
-  #         - "--entrypoint=''"
-  #         - "--workdir=/workspace"
-  #         - "-e CUDA_DEVICE_ORDER=PCI_BUS_ID"
-  #       volumes:
-  #         - /dev:/dev
-  #         - /data/shared/limingge/weight:/home/weight
-  #         - /home/zkjh/workspace:/workspace
-  #       resources:
-  #         shm_size: 80g
-  #       env:
-  #         MODEL_LIST: Qwen3-32B-FP8
-  #         IMAGE: v0.10.0
-  #         ENGINE: vLLM
+      gpu_smoketest:
+        type: smoketest
+        docker_args:
+          - "--gpus all"
+          - "-u root"
+          - "--network host"
+          - "--privileged"
+          - "--cap-add=ALL"
+          - "--pid=host"
+          - "--ipc=host"
+          - "--entrypoint=''"
+          - "--workdir=/workspace"
+          - "-e CUDA_DEVICE_ORDER=PCI_BUS_ID"
+        volumes:
+          - /dev:/dev
+          - /data/shared/limingge/weight:/home/weight
+          - /data/shared/limingge/inferServ_logs:/workspace
+        resources:
+          shm_size: 80g
+        env:
+          MODEL_LIST: Qwen3-32B-FP8
+          IMAGE: v0.10.0
+          ENGINE: vLLM
+      gpu_performancetest:
+        type: performancetest
+        docker_args:
+          - "--gpus all"
+          - "-u root"
+          - "--network host"
+          - "--privileged"
+          - "--cap-add=ALL"
+          - "--pid=host"
+          - "--ipc=host"
+          - "--entrypoint=''"
+          - "--workdir=/workspace"
+          - "-e CUDA_DEVICE_ORDER=PCI_BUS_ID"
+        volumes:
+          - /dev:/dev
+          - /data/shared/limingge/weight:/home/weight
+          - /data/shared/limingge/inferServ_logs:/workspace
+        resources:
+          shm_size: 80g
+        env:
+          MODEL_LIST: Qwen3-32B-FP8
+          IMAGE: v0.10.0
+          ENGINE: vLLM
 
   # iluvatar:
   #   image:
@@ -215,6 +215,7 @@ platforms:
   #         - "--pid=host"
   #         - "--ipc=host"
   #         - "--net=host"
+  #         - "--workdir=/workspace"
   #         - "--device=/dev/davinci0"
   #         - "--device=/dev/davinci1"
   #         - "--device=/dev/davinci2"
@@ -237,6 +238,7 @@ platforms:
   #         - /etc/hccn.conf:/etc/hccn.conf
   #         - /home/zkjh/weight:/home/weight
   #         - /home/zkjh:/home/zkjh
+  #         - /data/shared/limingge/inferServ_logs:/workspace
   #       resources:
   #         shm_size: 500g
   #       env:
@@ -251,6 +253,7 @@ platforms:
   #         - "--pid=host"
   #         - "--ipc=host"
   #         - "--net=host"
+  #         - "--workdir=/workspace"
   #         - "--device=/dev/davinci0"
   #         - "--device=/dev/davinci1"
   #         - "--device=/dev/davinci2"
@@ -273,6 +276,7 @@ platforms:
   #         - /etc/hccn.conf:/etc/hccn.conf
   #         - /home/zkjh/weight:/home/weight
   #         - /home/zkjh:/home/zkjh
+  #         - /data/shared/limingge/inferServ_logs:/workspace
   #       resources:
   #         shm_size: 500g
   #       env:
