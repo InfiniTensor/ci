@@ -111,7 +111,7 @@ def test_detect_system_resources(monkeypatch, tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Tests for `get_free_gpus`.
+# Tests for `get_free_gpus` and least-loaded allocation.
 # ---------------------------------------------------------------------------
 
 
@@ -132,6 +132,42 @@ def test_get_free_gpus_filters_by_utilization(monkeypatch):
     assert 0 in free
     assert 2 in free
     assert 1 not in free
+
+
+def test_allocate_picks_least_loaded(monkeypatch):
+    csv_output = "0, 100, 8192, 8\n1, 200, 8192, 2\n2, 300, 8192, 5\n"
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = csv_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("nvidia", utilization_threshold=10)
+    gpu_ids, ok = pool.allocate(1)
+    assert ok is True
+    assert gpu_ids == [1]
+
+
+def test_allocate_picks_two_least_loaded(monkeypatch):
+    csv_output = "0, 100, 8192, 8\n1, 200, 8192, 2\n2, 300, 8192, 5\n"
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = csv_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("nvidia", utilization_threshold=10)
+    gpu_ids, ok = pool.allocate(2)
+    assert ok is True
+    assert gpu_ids == [1, 2]
 
 
 # ---------------------------------------------------------------------------
@@ -295,14 +331,29 @@ def test_get_status(monkeypatch):
 # ---------------------------------------------------------------------------
 
 
-def test_parse_gpu_requirement_nvidia():
+def test_parse_gpu_requirement_auto_default():
+    job = {"resources": {"ngpus": 1}}
+    assert res.parse_gpu_requirement(job) == 1
+
+
+def test_parse_gpu_requirement_auto_explicit():
+    job = {"resources": {"gpu_ids": "auto", "ngpus": 2}}
+    assert res.parse_gpu_requirement(job) == 2
+
+
+def test_parse_gpu_requirement_auto_no_ngpus():
+    job = {"resources": {"gpu_ids": "auto"}}
+    assert res.parse_gpu_requirement(job) == 1
+
+
+def test_parse_gpu_requirement_static_pinning():
     job = {"resources": {"gpu_ids": "0,1", "gpu_style": "nvidia"}}
     assert res.parse_gpu_requirement(job) == 2
 
 
-def test_parse_gpu_requirement_none():
+def test_parse_gpu_requirement_none_still_counts_ngpus():
     job = {"resources": {"gpu_style": "none"}}
-    assert res.parse_gpu_requirement(job) == 0
+    assert res.parse_gpu_requirement(job) == 1
 
 
 def test_parse_gpu_requirement_all():
@@ -315,6 +366,41 @@ def test_parse_gpu_requirement_default():
     assert res.parse_gpu_requirement(job) == 1
 
 
+def test_parse_gpu_requirement_ngpus_mismatch_warns(capsys):
+    job = {"resources": {"gpu_ids": "0,1", "ngpus": 3}}
+    assert res.parse_gpu_requirement(job) == 2
+
+    captured = capsys.readouterr()
+    assert "warning:" in captured.err
+    assert "ngpus=3" in captured.err
+
+
+def test_detect_gpus_ascend_hbm_parsing(monkeypatch):
+    npu_output = (
+        "+---------------------------+---------------+-------------------------------+\n"
+        "| 0     910B4               | OK            | 86.5  41                      |\n"
+        "| 0                         | 0000:c1:00.0  | 5     0 / 0   2789 / 32768    |\n"
+        "+---------------------------+---------------+-------------------------------+\n"
+    )
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = npu_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("ascend")
+    gpus = pool.detect_gpus()
+    assert len(gpus) == 1
+    assert gpus[0].index == 0
+    assert gpus[0].utilization_pct == 5.0
+    assert gpus[0].memory_used_mb == 2789.0
+    assert gpus[0].memory_total_mb == 32768.0
+
+
 def test_parse_memory_requirement_gb():
     assert res.parse_memory_requirement({"resources": {"memory": "32GB"}}) == 32 * 1024
 
@@ -325,3 +411,12 @@ def test_parse_memory_requirement_mb():
 
 def test_parse_memory_requirement_empty():
     assert res.parse_memory_requirement({"resources": {}}) == 0
+
+
+def test_parse_memory_requirement_invalid_warns(capsys):
+    result = res.parse_memory_requirement({"resources": {"memory": "abc xyz"}})
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert "warning:" in captured.err
+    assert "abc xyz" in captured.err

@@ -169,7 +169,10 @@ def main():
         "--platform",
         type=str,
         default="all",
-        help="Platform to build: nvidia, ascend, or all (default: all)",
+        help=(
+            "Platform to build: nvidia, iluvatar, metax, moore, cambricon, "
+            "ascend, or all (default: all)"
+        ),
     )
     parser.add_argument(
         "--config",

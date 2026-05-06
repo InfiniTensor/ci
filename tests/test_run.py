@@ -178,6 +178,19 @@ def test_docker_args_gpu_device(minimal_config):
     assert "device=0" in args[idx + 1]
 
 
+def test_docker_args_gpu_auto_no_override(minimal_config):
+    minimal_config["jobs"]["nvidia_gpu"]["resources"]["gpu_ids"] = "auto"
+    args = _make_args(minimal_config)
+    assert "--gpus" not in args
+
+
+def test_docker_args_gpu_auto_with_override(minimal_config):
+    minimal_config["jobs"]["nvidia_gpu"]["resources"]["gpu_ids"] = "auto"
+    args = _make_args(minimal_config, gpu_id_override="2")
+    idx = args.index("--gpus")
+    assert "device=2" in args[idx + 1]
+
+
 def test_docker_args_gpu_all(minimal_config):
     minimal_config["jobs"]["nvidia_gpu"]["resources"]["gpu_ids"] = "all"
     args = _make_args(minimal_config)
@@ -196,6 +209,90 @@ def test_docker_args_gpu_override(minimal_config):
     args = _make_args(minimal_config, gpu_id_override="2,3")
     idx = args.index("--gpus")
     assert "2,3" in args[idx + 1]
+
+
+# ---------------------------------------------------------------------------
+# Tests for `build_docker_args` platform-specific device env vars.
+# ---------------------------------------------------------------------------
+
+
+def _make_platform_config(platform, gpu_style="none", job_suffix="gpu"):
+    from utils import normalize_config
+
+    raw = {
+        "platforms": {
+            platform: {
+                "image": {"dockerfile": f".ci/images/{platform}/"},
+                "setup": "pip install .[dev]",
+                "jobs": {
+                    job_suffix: {
+                        "resources": {
+                            "ngpus": 1,
+                            "gpu_style": gpu_style,
+                            "memory": "32GB",
+                        },
+                        "stages": [{"name": "test", "run": "pytest tests/ -v"}],
+                    }
+                },
+            }
+        }
+    }
+
+    return normalize_config(raw)
+
+
+def _make_platform_args(platform, gpu_style="none", job_suffix="gpu"):
+    config = _make_platform_config(platform, gpu_style, job_suffix)
+    job_name = f"{platform}_{job_suffix}"
+
+    return run.build_docker_args(
+        config,
+        job_name,
+        "https://github.com/example/repo.git",
+        "master",
+        config["jobs"][job_name]["stages"],
+        "/workspace",
+        None,
+        gpu_id_override="0",
+    )
+
+
+def test_docker_args_moore_mthreads_visible_devices():
+    args = _make_platform_args("moore")
+    assert "MTHREADS_VISIBLE_DEVICES=0" in args
+    assert all("CUDA_VISIBLE_DEVICES" not in a for a in args)
+
+
+def test_docker_args_iluvatar_cuda_visible_devices():
+    args = _make_platform_args("iluvatar")
+    assert "CUDA_VISIBLE_DEVICES=0" in args
+
+
+def test_docker_args_cambricon_mlu_visible_devices():
+    args = _make_platform_args("cambricon", gpu_style="mlu")
+    assert "MLU_VISIBLE_DEVICES=0" in args
+
+
+def test_docker_args_ascend_visible_devices():
+    args = _make_platform_args("ascend", job_suffix="npu")
+    assert "ASCEND_VISIBLE_DEVICES=0" in args
+
+
+def test_docker_args_metax_cuda_visible_devices():
+    args = _make_platform_args("metax")
+    assert "CUDA_VISIBLE_DEVICES=0" in args
+
+
+def test_docker_args_non_nvidia_no_gpus_flag():
+    for platform, gpu_style in (
+        ("iluvatar", "none"),
+        ("metax", "none"),
+        ("moore", "none"),
+        ("cambricon", "mlu"),
+        ("ascend", "none"),
+    ):
+        args = _make_platform_args(platform, gpu_style=gpu_style)
+        assert "--gpus" not in args
 
 
 # ---------------------------------------------------------------------------

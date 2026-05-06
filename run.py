@@ -10,11 +10,14 @@ from datetime import datetime
 from pathlib import Path
 
 from ci_resource import (
+    PLATFORM_DEVICE_ENV,
     GPU_STYLE_NVIDIA,
     GPU_STYLE_NONE,
     GPU_STYLE_MLU,
     ResourcePool,
     detect_platform,
+    parse_gpu_requirement,
+    parse_memory_requirement,
 )
 from utils import get_git_commit, load_config
 
@@ -192,7 +195,8 @@ def build_docker_args(
     for vol in job.get("volumes", []):
         args.extend(["-v", vol])
 
-    gpu_id = gpu_id_override or str(resources.get("gpu_ids", ""))
+    raw_gpu_ids = str(resources.get("gpu_ids", "auto")).strip()
+    gpu_id = gpu_id_override or ("" if raw_gpu_ids == "auto" else raw_gpu_ids)
     ngpus = resources.get("ngpus")
     gpu_style = resources.get("gpu_style", GPU_STYLE_NVIDIA)
 
@@ -202,16 +206,17 @@ def build_docker_args(
                 args.extend(["--gpus", "all"])
             else:
                 args.extend(["--gpus", f'"device={gpu_id}"'])
-        elif ngpus:
+        elif raw_gpu_ids != "auto" and ngpus:
             args.extend(["--gpus", f"count={ngpus}"])
     elif gpu_style == GPU_STYLE_NONE and gpu_id and gpu_id != "all":
-        # For platforms like Iluvatar/CoreX that use --privileged + /dev mount,
-        # control visible GPUs via CUDA_VISIBLE_DEVICES.
-        args.extend(["-e", f"CUDA_VISIBLE_DEVICES={gpu_id}"])
+        # For passthrough platforms, control visible devices via platform env.
+        device_env = PLATFORM_DEVICE_ENV.get(platform)
+
+        if device_env:
+            args.extend(["-e", f"{device_env}={gpu_id}"])
     elif gpu_style == GPU_STYLE_MLU and gpu_id and gpu_id != "all":
-        # For Cambricon MLU platforms that use --privileged,
-        # control visible devices via MLU_VISIBLE_DEVICES.
-        args.extend(["-e", f"MLU_VISIBLE_DEVICES={gpu_id}"])
+        device_env = PLATFORM_DEVICE_ENV.get(platform, "MLU_VISIBLE_DEVICES")
+        args.extend(["-e", f"{device_env}={gpu_id}"])
 
     memory = resources.get("memory")
 
@@ -350,6 +355,7 @@ def main():
         sys.exit(1)
 
     job_names = resolve_job_names(jobs, platform, job=args.job)
+    pool = ResourcePool(platform)
     failed = 0
 
     for job_name in job_names:
@@ -374,6 +380,38 @@ def main():
                 for s in stages
             ]
 
+        gpu_id_override = args.gpu_id
+        allocated_ids = []
+        raw_gpu_ids = str(job.get("resources", {}).get("gpu_ids", "auto")).strip()
+
+        if not gpu_id_override and raw_gpu_ids == "auto":
+            gpu_count = parse_gpu_requirement(job)
+            memory_mb = parse_memory_requirement(job)
+            allocated_ids, ok = pool.allocate(gpu_count, memory_mb)
+
+            if not ok:
+                detected = pool.detect_gpus()
+                if not detected:
+                    hint = (
+                        f"error: cannot allocate {gpu_count} GPU(s) for {job_name}"
+                        f" - GPU detection returned no devices"
+                        f" (is {ResourcePool.GPU_QUERY_TOOLS.get(platform, '?')} working?)"
+                        f"\nhint: use --gpu-id 0 to bypass auto-allocation"
+                    )
+                else:
+                    hint = (
+                        f"error: cannot allocate {gpu_count} GPU(s) for {job_name}"
+                        f" - {len(detected)} GPU(s) detected but none available"
+                        f" (utilization threshold: {pool._utilization_threshold}%)"
+                        f"\nhint: use --gpu-id 0 to bypass auto-allocation"
+                    )
+                print(hint, file=sys.stderr)
+                failed += 1
+                continue
+
+            if allocated_ids:
+                gpu_id_override = ",".join(str(g) for g in allocated_ids)
+
         job_platform = job.get("platform", platform)
         commit = get_git_commit()
         results_dir = build_results_dir(args.results_dir, job_platform, stages, commit)
@@ -387,18 +425,23 @@ def main():
             stages,
             "/workspace",
             args.image_tag,
-            gpu_id_override=args.gpu_id,
+            gpu_id_override=gpu_id_override,
             results_dir=results_dir,
             local_path=local_path,
         )
 
         if args.dry_run:
             print(shlex.join(docker_args))
+            pool.release(allocated_ids)
             continue
 
         print(f"==> running job: {job_name}", file=sys.stderr)
         results_dir.mkdir(parents=True, exist_ok=True)
-        returncode = subprocess.run(docker_args).returncode
+
+        try:
+            returncode = subprocess.run(docker_args).returncode
+        finally:
+            pool.release(allocated_ids)
 
         if returncode != 0:
             print(f"job {job_name} failed (exit code {returncode})", file=sys.stderr)

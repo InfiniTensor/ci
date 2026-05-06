@@ -24,7 +24,7 @@ def normalize_config(raw):
             jobs:
               gpu: {resources: ..., stages: ...}
 
-    Output (flat format consumed by run.py / build.py / agent.py):
+    Output (flat format consumed by run.py and build.py):
         images:
           nvidia: {dockerfile: ..., build_args: ...}
         jobs:
