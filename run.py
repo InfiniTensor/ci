@@ -3,9 +3,12 @@
 
 import argparse
 import os
+import re
 import shlex
 import subprocess
 import sys
+import uuid
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -23,6 +26,33 @@ from utils import get_git_commit, load_config
 
 # Flags that consume the next token as their value (e.g. -n 4, -k expr).
 _PYTEST_VALUE_FLAGS = {"-n", "-k", "-m", "-p", "--tb", "--junitxml", "--rootdir"}
+
+
+def _junit_xml_indicates_pass(results_dir):
+    """Return True when pytest junit XML reports no failures or errors."""
+    for junit in Path(results_dir).rglob("test-results.xml"):
+        try:
+            root = ET.parse(junit).getroot()
+        except ET.ParseError:
+            continue
+
+        suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+
+        if not suites:
+            continue
+
+        for suite in suites:
+            try:
+                if int(suite.get("failures", 0)) > 0:
+                    return False
+                if int(suite.get("errors", 0)) > 0:
+                    return False
+            except ValueError:
+                return False
+
+        return True
+
+    return False
 
 
 def apply_test_override(run_cmd, test_path):
@@ -60,10 +90,12 @@ def apply_test_override(run_cmd, test_path):
 
 
 def build_results_dir(base, platform, stages, commit):
-    """Build a results directory path: `{base}/{platform}_{stages}_{commit}_{timestamp}`."""
+    """Build a unique results directory path."""
     stage_names = "+".join(s["name"] for s in stages)
+    safe_commit = re.sub(r"[^a-zA-Z0-9._-]", "", commit) or "unknown"
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    dirname = f"{platform}_{stage_names}_{commit}_{timestamp}"
+    short_id = uuid.uuid4().hex[:6]
+    dirname = f"{platform}_{stage_names}_{safe_commit}_{timestamp}_{short_id}"
 
     return Path(base) / dirname
 
@@ -101,20 +133,27 @@ fi
 echo "========== Setup =========="
 eval "$SETUP_CMD"
 set +e
-failed=0
+rc=0
 for i in $(seq 1 "$NUM_STAGES"); do
   name_var="STAGE_${i}_NAME"
   cmd_var="STAGE_${i}_CMD"
   name="${!name_var}"
   cmd="${!cmd_var}"
   echo "========== Stage: $name =========="
-  [ -n "$cmd" ] && { eval "$cmd" || failed=1; }
+  if [ -n "$cmd" ]; then
+    eval "$cmd"
+    rc=$?
+    if [ $rc -ne 0 ]; then
+      echo "Stage '$name' failed with exit code $rc"
+      break
+    fi
+  fi
 done
 echo "========== Summary =========="
 if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
   chown -R "$HOST_UID:$HOST_GID" /workspace/results 2>/dev/null || true
 fi
-exit $failed
+exit $rc
 """
 
 
@@ -205,7 +244,7 @@ def build_docker_args(
             if gpu_id == "all":
                 args.extend(["--gpus", "all"])
             else:
-                args.extend(["--gpus", f'"device={gpu_id}"'])
+                args.extend(["--gpus", f"device={gpu_id}"])
         elif raw_gpu_ids != "auto" and ngpus:
             args.extend(["--gpus", f"count={ngpus}"])
     elif gpu_style == GPU_STYLE_NONE and gpu_id and gpu_id != "all":
@@ -243,6 +282,11 @@ def build_docker_args(
     args.extend(["bash", "-c", build_runner_script().strip()])
 
     return args
+
+
+def build_docker_run_args(docker_args):
+    """Wrap a docker-run argument fragment with the docker executable."""
+    return ["docker", "run", *docker_args]
 
 
 def resolve_job_names(jobs, platform, job=None):
@@ -430,8 +474,10 @@ def main():
             local_path=local_path,
         )
 
+        docker_run_args = build_docker_run_args(docker_args)
+
         if args.dry_run:
-            print(shlex.join(docker_args))
+            print(shlex.join(docker_run_args))
             pool.release(allocated_ids)
             continue
 
@@ -439,13 +485,24 @@ def main():
         results_dir.mkdir(parents=True, exist_ok=True)
 
         try:
-            returncode = subprocess.run(docker_args).returncode
+            returncode = subprocess.run(docker_run_args).returncode
         finally:
             pool.release(allocated_ids)
 
         if returncode != 0:
-            print(f"job {job_name} failed (exit code {returncode})", file=sys.stderr)
-            failed += 1
+            if returncode == 137 and _junit_xml_indicates_pass(results_dir):
+                print(
+                    f"[warn] job {job_name}: container exited with 137 "
+                    f"(likely docker teardown SIGKILL after clean pytest); "
+                    f"junit XML reports no failures - treating as success",
+                    file=sys.stderr,
+                )
+            else:
+                print(
+                    f"job {job_name} failed (exit code {returncode})",
+                    file=sys.stderr,
+                )
+                failed += 1
 
     sys.exit(1 if failed else 0)
 

@@ -38,7 +38,7 @@ def test_runner_script_contains_setup_cmd():
 
 def test_runner_script_exits_on_failure():
     script = run.build_runner_script()
-    assert "exit $failed" in script
+    assert "exit $rc" in script
 
 
 def test_runner_script_creates_results_dir():
@@ -63,6 +63,11 @@ def test_docker_args_basic_structure(minimal_config):
     )
     assert args[0] == "--rm"
     assert "--rm" in args
+
+
+def test_docker_run_args_wraps_fragment():
+    args = run.build_docker_run_args(["--rm", "image", "bash"])
+    assert args == ["docker", "run", "--rm", "image", "bash"]
 
 
 def test_docker_args_correct_image(minimal_config):
@@ -392,3 +397,72 @@ def test_build_results_dir_under_base():
     stages = [{"name": "test", "run": "pytest"}]
     d = run.build_results_dir("/tmp/my-results", "ascend", stages, "def5678")
     assert d.parent == Path("/tmp/my-results")
+
+
+def test_build_results_dir_unique():
+    stages = [{"name": "test", "run": "pytest"}]
+    d1 = run.build_results_dir("ci-results", "nvidia", stages, "abc1234")
+    d2 = run.build_results_dir("ci-results", "nvidia", stages, "abc1234")
+    assert d1 != d2
+
+
+def test_build_results_dir_sanitizes_commit():
+    stages = [{"name": "test", "run": "pytest"}]
+    d = run.build_results_dir("ci-results", "nvidia", stages, "../../etc/passwd")
+    assert "/" not in d.name
+    assert d.parent == Path("ci-results")
+
+
+# ---------------------------------------------------------------------------
+# Tests for `apply_test_override`.
+# ---------------------------------------------------------------------------
+
+
+def test_apply_test_override_replaces_test_path():
+    result = run.apply_test_override("pytest tests/ -v", "tests/test_add.py")
+    assert result == "pytest tests/test_add.py -v"
+
+
+def test_apply_test_override_preserves_flags():
+    result = run.apply_test_override(
+        "pytest tests/ -n 4 -v --tb=short", "tests/test_gemm.py"
+    )
+    assert "tests/test_gemm.py" in result
+    assert "-n 4" in result
+    assert "-v" in result
+    assert "--tb=short" in result
+
+
+def test_apply_test_override_non_pytest_passthrough():
+    assert run.apply_test_override("ruff check .", "tests/foo.py") == "ruff check ."
+
+
+def test_apply_test_override_empty_passthrough():
+    assert run.apply_test_override("", "tests/foo.py") == ""
+
+
+# ---------------------------------------------------------------------------
+# Tests for runner script fail-fast behavior and junit fallback.
+# ---------------------------------------------------------------------------
+
+
+def test_runner_script_breaks_on_failure():
+    script = run.build_runner_script()
+    assert "break" in script
+
+
+def test_runner_script_preserves_exit_code():
+    script = run.build_runner_script()
+    assert "rc=$?" in script
+
+
+def test_junit_xml_indicates_pass(tmp_path):
+    junit = tmp_path / "test-results.xml"
+    junit.write_text('<testsuite tests="1" failures="0" errors="0"></testsuite>')
+    assert run._junit_xml_indicates_pass(tmp_path) is True
+
+
+def test_junit_xml_indicates_failure(tmp_path):
+    junit = tmp_path / "test-results.xml"
+    junit.write_text('<testsuite tests="1" failures="1" errors="0"></testsuite>')
+    assert run._junit_xml_indicates_pass(tmp_path) is False

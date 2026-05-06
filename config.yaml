@@ -25,36 +25,36 @@ platforms:
         stages:
           - name: test
             run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
-  # iluvatar:
-  #   image:
-  #     dockerfile: .ci/images/iluvatar/
-  #     build_args:
-  #       BASE_IMAGE: corex:qs_pj20250825
-  #       APT_MIRROR: http://archive.ubuntu.com/ubuntu
-  #       PIP_INDEX_URL: https://pypi.org/simple
-  #   docker_args:
-  #     - "--privileged"
-  #     - "--cap-add=ALL"
-  #     - "--pid=host"
-  #     - "--ipc=host"
-  #   volumes:
-  #     - /dev:/dev
-  #     - /lib/firmware:/lib/firmware
-  #     - /usr/src:/usr/src
-  #     - /lib/modules:/lib/modules
-  #   setup: pip install .[dev] --no-build-isolation
-  #   jobs:
-  #     gpu:
-  #       type: unittest
-  #       resources:
-  #         ngpus: 1
-  #         gpu_style: none
-  #         memory: 32GB
-  #         shm_size: 16g
-  #         timeout: 3600
-  #       stages:
-  #         - name: test
-  #           run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
+  iluvatar:
+    image:
+      dockerfile: .ci/images/iluvatar/
+      build_args:
+        BASE_IMAGE: corex:qs_pj20250825
+        APT_MIRROR: http://archive.ubuntu.com/ubuntu
+        PIP_INDEX_URL: https://pypi.org/simple
+    docker_args:
+      - "--privileged"
+      - "--cap-add=ALL"
+      - "--pid=host"
+      - "--ipc=host"
+    volumes:
+      - /dev:/dev
+      - /lib/firmware:/lib/firmware
+      - /usr/src:/usr/src
+      - /lib/modules:/lib/modules
+    setup: pip install .[dev] --no-build-isolation
+    jobs:
+      gpu:
+        type: unittest
+        resources:
+          ngpus: 1
+          gpu_style: none
+          memory: 32GB
+          shm_size: 16g
+          timeout: 3600
+        stages:
+          - name: test
+            run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
 
   metax:
     image:
@@ -126,22 +126,35 @@ platforms:
           - name: test
             run: pytest tests/test_gemm.py -n 4 -v --tb=short --junitxml=/workspace/results/test-results.xml
 
-  # ascend:
-  #   image:
-  #     dockerfile: .ci/images/ascend/
-  #     build_args:
-  #       BASE_IMAGE: swr.cn-south-1.myhuaweicloud.com/ascendhub/mindie:2.1.RC1-800I-A2-py311-openeuler24.03-lts
-  #   jobs:
-  #     npu:
-  #       type: unittest
-  #       resources:
-  #         ngpus: 1                         # Auto allocator picks this many free GPUs
-  #         gpu_style: none
-  #         memory: 32GB
-  #         shm_size: 16g                    # Prevent PyTorch default 64MB shared memory limit
-  #         timeout: 3600
-  #       # env:                             # Uncomment to inject extra env vars into the container.
-  #       #   MY_VAR: value
-  #       stages:
-  #         - name: test
-  #           run: pytest tests/ -n 8 -v --tb=short --junitxml=/workspace/results/test-results.xml
+  ascend:
+    image:
+      dockerfile: .ci/images/ascend/
+      build_args:
+        BASE_IMAGE: quay.io/ascend/vllm-ascend:v0.18.0rc1-openeuler
+        PIP_INDEX_URL: https://pypi.org/simple
+    docker_args:
+      - "--runtime=runc"
+      - "--privileged"
+      - "--device=/dev/davinci0"
+      - "--device=/dev/davinci_manager"
+      - "--device=/dev/devmm_svm"
+      - "--device=/dev/hisi_hdc"
+    volumes:
+      - /usr/local/Ascend/driver:/usr/local/Ascend/driver:ro
+      - /usr/local/dcmi:/usr/local/dcmi:ro
+      - /usr/local/bin/npu-smi:/usr/local/bin/npu-smi:ro
+    env:
+      ASCEND_HOME_PATH: /usr/local/Ascend/ascend-toolkit/latest
+    setup: pip install .[dev] --no-build-isolation
+    jobs:
+      npu:
+        type: unittest
+        resources:
+          ngpus: 1
+          gpu_style: none
+          memory: 32GB
+          shm_size: 16g
+          timeout: 3600
+        stages:
+          - name: test
+            run: pytest tests/ -n 1 --devices ascend -v --tb=short --junitxml=/workspace/results/test-results.xml
