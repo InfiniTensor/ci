@@ -92,7 +92,7 @@ def main():
             src_code += result
             src_code += " > $LOG_NAME 2>&1 &\"\n"
 
-        src_code += "fi\n"        
+        src_code += "fi\n"
         m = re.search(r"-v\s+(/[^:\s]+):/workspace", docker_args)
         log_path = m.group(1) if m else ""
 
