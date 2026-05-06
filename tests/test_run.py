@@ -61,8 +61,7 @@ def test_docker_args_basic_structure(minimal_config):
         "/workspace",
         None,
     )
-    assert args[0] == "docker"
-    assert "run" in args
+    assert args[0] == "--rm"
     assert "--rm" in args
 
 

@@ -1,367 +1,0 @@
-*************开始执行Performance测试任务，日期时间:20260319_122317***************
-测试模型列表: Qwen3-32B-FP8:2:A100
-推理引擎版本: v0.10.0
-开始测试模型: Qwen3-32B-FP8, 启动选项: --schedule-policy DynamicSplitFuseV2, --swap-space=40
-尝试同时在192.168.163.40服务器上面启动测试......
-启动第0台服务器: 192.168.163.40......
-The specified version : v0.10.0
-开始扫描 GPU, 目标: 寻找 2 张空闲 GPU...
-当前使用中的 GPU 数量：4, 索引: 1 3 4 5
-成功找到 2 张空闲 GPU, 索引: 0 2
-尝试锁定其中 2 张 GPU
-成功锁定 2 张 GPU, 索引：0 2
-CUDA_VISIBLE_DEVICES=0,2
-48076b8680bb4902f505e67b28b84caf859140eec5145ba76aa68c6fd3ec4a1c
-vllm_nvidia_PerformanceTest_00000_0
-vllm serve  /home/weight/Qwen3/Qwen3-32B-FP8/ --served-model-name Qwen3-32B-FP8 --port 20000 --no-enable-prefix-caching -tp 2 --no-enable-prefix-caching > server_log_PerformanceTest_20260319_122320.log 2>&1 &
-INFO:     Application startup complete.
->>> Detected master service startup completion!
-正常退出（退出码: 0），保留GPU锁
-任务启动结束，服务器：192.168.163.40 (PID=743067)
-开始执行模型Performance测试任务......
-WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.
-
-[notice] A new release of pip is available: 25.1.1 -> 26.0.1
-[notice] To update, run: python3.12 -m pip install --upgrade pip
-  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:02<00:06,  2.07s/it] 50%|█████     | 2/4 [00:04<00:04,  2.07s/it] 75%|███████▌  | 3/4 [00:06<00:02,  2.07s/it]100%|██████████| 4/4 [00:08<00:00,  2.07s/it]100%|██████████| 4/4 [00:08<00:00,  2.07s/it]
-  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:02<00:44,  2.32s/it] 30%|███       | 6/20 [00:04<00:09,  1.45it/s] 55%|█████▌    | 11/20 [00:06<00:05,  1.78it/s] 80%|████████  | 16/20 [00:09<00:02,  1.93it/s]100%|██████████| 20/20 [00:09<00:00,  2.16it/s]
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:02<01:39,  2.55s/it] 28%|██▊       | 11/40 [00:05<00:11,  2.48it/s] 52%|█████▎    | 21/40 [00:07<00:06,  3.14it/s] 78%|███████▊  | 31/40 [00:10<00:02,  3.45it/s]100%|██████████| 40/40 [00:10<00:00,  3.92it/s]
-  0%|          | 0/80 [00:00<?, ?it/s]  1%|▏         | 1/80 [00:03<04:10,  3.17s/it] 26%|██▋       | 21/80 [00:06<00:15,  3.89it/s] 35%|███▌      | 28/80 [00:06<00:09,  5.59it/s] 51%|█████▏    | 41/80 [00:09<00:07,  4.92it/s] 54%|█████▍    | 43/80 [00:09<00:07,  5.27it/s] 76%|███████▋  | 61/80 [00:12<00:03,  5.61it/s] 80%|████████  | 64/80 [00:12<00:02,  6.18it/s]100%|██████████| 80/80 [00:12<00:00,  6.32it/s]
-  0%|          | 0/200 [00:00<?, ?it/s]  0%|          | 1/200 [00:04<15:07,  4.56s/it] 24%|██▎       | 47/200 [00:04<00:10, 14.17it/s] 37%|███▋      | 74/200 [00:09<00:14,  8.78it/s] 44%|████▍     | 89/200 [00:09<00:09, 11.12it/s] 50%|█████     | 100/200 [00:09<00:07, 12.67it/s] 54%|█████▍    | 108/200 [00:13<00:13,  6.79it/s] 73%|███████▎  | 146/200 [00:13<00:03, 13.93it/s] 76%|███████▋  | 153/200 [00:18<00:06,  7.34it/s]100%|██████████| 200/200 [00:18<00:00, 11.07it/s]
-  0%|          | 0/400 [00:00<?, ?it/s]  0%|          | 1/400 [00:08<54:13,  8.15s/it]  2%|▎         | 10/400 [00:08<03:54,  1.67it/s]  6%|▋         | 25/400 [00:08<01:14,  5.02it/s] 10%|█         | 41/400 [00:08<00:39,  8.99it/s] 14%|█▍        | 57/400 [00:09<00:26, 13.13it/s] 18%|█▊        | 72/400 [00:09<00:19, 16.83it/s] 22%|██▏       | 88/400 [00:10<00:14, 20.86it/s] 25%|██▌       | 101/400 [00:16<00:49,  6.04it/s] 28%|██▊       | 110/400 [00:16<00:38,  7.61it/s] 31%|███▏      | 125/400 [00:16<00:25, 10.89it/s] 35%|███▌      | 140/400 [00:17<00:18, 14.01it/s] 39%|███▉      | 155/400 [00:17<00:14, 17.22it/s] 43%|████▎     | 171/400 [00:17<00:11, 20.77it/s] 46%|████▋     | 186/400 [00:18<00:09, 23.45it/s] 50%|█████     | 201/400 [00:24<00:29,  6.71it/s] 52%|█████▎    | 210/400 [00:24<00:22,  8.27it/s] 56%|█████▋    | 225/400 [00:24<00:15, 11.52it/s] 60%|██████    | 240/400 [00:25<00:10, 14.60it/s] 64%|██████▍   | 255/400 [00:25<00:08, 17.68it/s] 68%|██████▊   | 270/400 [00:25<00:06, 20.70it/s] 71%|███████▏  | 285/400 [00:26<00:04, 23.58it/s] 75%|███████▌  | 301/400 [00:32<00:14,  6.81it/s] 81%|████████▏ | 325/400 [00:32<00:06, 11.20it/s]100%|██████████| 400/400 [00:32<00:00, 12.30it/s]
-  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:16<00:49, 16.43s/it] 50%|█████     | 2/4 [00:32<00:32, 16.43s/it] 75%|███████▌  | 3/4 [00:49<00:16, 16.42s/it]100%|██████████| 4/4 [01:05<00:00, 16.42s/it]100%|██████████| 4/4 [01:05<00:00, 16.43s/it]
-  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:17<05:38, 17.84s/it] 30%|███       | 6/20 [00:35<01:14,  5.32s/it] 55%|█████▌    | 11/20 [00:53<00:39,  4.34s/it] 80%|████████  | 16/20 [01:11<00:16,  4.00s/it]100%|██████████| 20/20 [01:11<00:00,  3.57s/it]
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:18<12:18, 18.93s/it] 28%|██▊       | 11/40 [00:37<01:27,  3.01s/it] 52%|█████▎    | 21/40 [00:56<00:45,  2.37s/it] 55%|█████▌    | 22/40 [00:56<00:39,  2.20s/it] 78%|███████▊  | 31/40 [01:15<00:19,  2.14s/it] 80%|████████  | 32/40 [01:15<00:15,  2.00s/it]100%|██████████| 40/40 [01:15<00:00,  1.90s/it]
-  0%|          | 0/80 [00:00<?, ?it/s]  1%|▏         | 1/80 [00:22<29:08, 22.13s/it] 26%|██▋       | 21/80 [00:44<01:47,  1.82s/it] 48%|████▊     | 38/80 [00:44<00:35,  1.19it/s] 50%|█████     | 40/80 [01:00<00:33,  1.19it/s] 51%|█████▏    | 41/80 [01:06<01:03,  1.62s/it] 76%|███████▋  | 61/80 [01:28<00:25,  1.34s/it]100%|██████████| 80/80 [01:28<00:00,  1.11s/it]
-  0%|          | 0/200 [00:00<?, ?it/s]  0%|          | 1/200 [00:28<1:33:11, 28.10s/it] 24%|██▍       | 49/200 [00:28<01:01,  2.46it/s]  25%|██▌       | 50/200 [00:40<01:00,  2.46it/s] 26%|██▌       | 51/200 [00:56<02:52,  1.16s/it] 34%|███▎      | 67/200 [00:56<01:34,  1.41it/s] 49%|████▉     | 98/200 [00:56<00:35,  2.85it/s] 50%|█████     | 100/200 [01:10<00:35,  2.85it/s] 50%|█████     | 101/200 [01:24<01:33,  1.06it/s] 58%|█████▊    | 117/200 [01:24<00:51,  1.60it/s] 74%|███████▍  | 148/200 [01:24<00:17,  3.02it/s] 75%|███████▌  | 150/200 [01:40<00:16,  3.02it/s] 76%|███████▌  | 151/200 [01:52<00:43,  1.13it/s] 92%|█████████▏| 184/200 [01:52<00:07,  2.23it/s]100%|██████████| 200/200 [01:52<00:00,  1.78it/s]
-  0%|          | 0/400 [00:00<?, ?it/s]  0%|          | 1/400 [00:48<5:24:56, 48.86s/it]  4%|▍         | 15/400 [00:49<15:00,  2.34s/it]   8%|▊         | 30/400 [00:49<05:58,  1.03it/s] 12%|█▏        | 46/400 [00:49<03:04,  1.91it/s] 16%|█▌        | 62/400 [00:50<01:49,  3.10it/s] 19%|█▉        | 77/400 [00:50<01:11,  4.54it/s] 23%|██▎       | 93/400 [00:51<00:47,  6.52it/s] 25%|██▌       | 100/400 [01:10<00:45,  6.52it/s] 25%|██▌       | 101/400 [01:37<06:23,  1.28s/it] 29%|██▉       | 115/400 [01:37<04:04,  1.16it/s] 32%|███▎      | 130/400 [01:38<02:36,  1.73it/s] 36%|███▋      | 145/400 [01:38<01:42,  2.49it/s] 40%|████      | 160/400 [01:39<01:08,  3.53it/s] 44%|████▍     | 176/400 [01:39<00:44,  4.99it/s] 48%|████▊     | 192/400 [01:40<00:30,  6.86it/s] 50%|█████     | 200/400 [02:00<00:29,  6.86it/s] 50%|█████     | 201/400 [02:26<03:52,  1.17s/it] 54%|█████▍    | 215/400 [02:26<02:29,  1.24it/s] 57%|█████▊    | 230/400 [02:27<01:34,  1.80it/s] 61%|██████▏   | 245/400 [02:27<01:00,  2.56it/s] 65%|██████▌   | 260/400 [02:28<00:39,  3.59it/s] 69%|██████▉   | 275/400 [02:28<00:25,  4.94it/s] 72%|███████▎  | 290/400 [02:29<00:16,  6.68it/s] 75%|███████▌  | 300/400 [02:40<00:14,  6.68it/s] 75%|███████▌  | 301/400 [03:15<01:52,  1.14s/it] 79%|███████▉  | 315/400 [03:15<01:07,  1.26it/s] 94%|█████████▍| 375/400 [03:15<00:06,  3.61it/s]100%|██████████| 400/400 [03:15<00:00,  2.04it/s]
-  0%|          | 0/4 [00:00<?, ?it/s] 25%|██▌       | 1/4 [00:32<01:38, 32.98s/it] 50%|█████     | 2/4 [01:05<01:05, 32.98s/it] 75%|███████▌  | 3/4 [01:39<00:33, 33.07s/it]100%|██████████| 4/4 [02:12<00:00, 33.16s/it]100%|██████████| 4/4 [02:12<00:00, 33.11s/it]
-  0%|          | 0/20 [00:00<?, ?it/s]  5%|▌         | 1/20 [00:36<11:27, 36.20s/it] 30%|███       | 6/20 [01:12<02:31, 10.81s/it] 55%|█████▌    | 11/20 [01:48<01:19,  8.83s/it] 80%|████████  | 16/20 [02:24<00:32,  8.13s/it]100%|██████████| 20/20 [02:24<00:00,  7.25s/it]
-  0%|          | 0/40 [00:00<?, ?it/s]  2%|▎         | 1/40 [00:38<25:11, 38.75s/it] 28%|██▊       | 11/40 [01:17<02:58,  6.15s/it] 52%|█████▎    | 21/40 [01:56<01:32,  4.84s/it] 78%|███████▊  | 31/40 [02:34<00:39,  4.41s/it]100%|██████████| 40/40 [02:34<00:00,  3.87s/it]
-  0%|          | 0/80 [00:00<?, ?it/s]  1%|▏         | 1/80 [00:45<1:00:15, 45.76s/it] 26%|██▋       | 21/80 [01:31<03:41,  3.76s/it]  50%|█████     | 40/80 [01:31<01:05,  1.63s/it] 50%|█████     | 40/80 [01:50<01:05,  1.63s/it] 51%|█████▏    | 41/80 [02:17<02:13,  3.43s/it] 76%|███████▋  | 61/80 [03:03<00:53,  2.82s/it]100%|██████████| 80/80 [03:03<00:00,  2.29s/it]
-  0%|          | 0/200 [00:00<?, ?it/s]  0%|          | 1/200 [00:59<3:16:44, 59.32s/it] 16%|█▋        | 33/200 [00:59<03:32,  1.27s/it]  25%|██▌       | 50/200 [01:10<03:11,  1.27s/it] 26%|██▌       | 51/200 [01:58<05:21,  2.16s/it] 34%|███▎      | 67/200 [01:58<03:04,  1.39s/it] 42%|████▎     | 85/200 [01:58<01:41,  1.13it/s] 49%|████▉     | 98/200 [01:59<01:06,  1.53it/s] 50%|█████     | 100/200 [02:10<01:05,  1.53it/s] 50%|█████     | 101/200 [02:57<03:38,  2.21s/it] 56%|█████▌    | 111/200 [02:57<02:21,  1.59s/it] 63%|██████▎   | 126/200 [02:58<01:13,  1.00it/s] 71%|███████   | 142/200 [02:58<00:37,  1.56it/s] 75%|███████▌  | 150/200 [03:10<00:32,  1.56it/s] 76%|███████▌  | 151/200 [03:57<01:36,  1.97s/it] 96%|█████████▌| 192/200 [03:57<00:06,  1.25it/s]100%|██████████| 200/200 [03:57<00:00,  1.19s/it]
-  0%|          | 0/400 [00:00<?, ?it/s]  0%|          | 1/400 [01:43<11:26:58, 103.31s/it]  4%|▍         | 17/400 [01:43<27:43,  4.34s/it]     8%|▊         | 33/400 [01:44<11:19,  1.85s/it] 12%|█▏        | 49/400 [01:44<06:01,  1.03s/it] 16%|█▋        | 65/400 [01:45<03:33,  1.57it/s] 20%|██        | 80/400 [01:45<02:17,  2.33it/s] 24%|██▍       | 96/400 [01:45<01:28,  3.44it/s] 25%|██▌       | 100/400 [02:00<01:27,  3.44it/s] 25%|██▌       | 101/400 [03:26<14:38,  2.94s/it] 29%|██▉       | 117/400 [03:27<08:38,  1.83s/it] 33%|███▎      | 132/400 [03:27<05:28,  1.23s/it] 37%|███▋      | 148/400 [03:28<03:27,  1.22it/s] 41%|████      | 163/400 [03:28<02:16,  1.74it/s] 45%|████▍     | 179/400 [03:29<01:28,  2.50it/s] 48%|████▊     | 194/400 [03:29<00:59,  3.47it/s] 50%|█████     | 200/400 [03:40<00:57,  3.47it/s] 50%|█████     | 201/400 [05:10<08:48,  2.66s/it] 54%|█████▍    | 217/400 [05:10<05:15,  1.72s/it] 58%|█████▊    | 232/400 [05:11<03:18,  1.18s/it] 62%|██████▏   | 247/400 [05:11<02:05,  1.22it/s] 66%|██████▌   | 262/400 [05:12<01:19,  1.74it/s] 70%|██████▉   | 278/400 [05:12<00:48,  2.50it/s] 73%|███████▎  | 293/400 [05:13<00:30,  3.46it/s] 75%|███████▌  | 300/400 [05:30<00:28,  3.46it/s] 75%|███████▌  | 301/400 [06:54<04:16,  2.59s/it] 79%|███████▉  | 317/400 [06:54<02:20,  1.69s/it] 90%|█████████ | 362/400 [06:54<00:26,  1.41it/s]100%|██████████| 400/400 [06:54<00:00,  1.04s/it]
-测试完成！
-vllm_nvidia_PerformanceTest_00000_0
-vllm_nvidia_PerformanceTest_00000_0
-('128+128', 1):
-  Successful requests: 4.0
-  Benchmark duration (s): 8.29
-  Total input tokens: 512.0
-  Total generated tokens: 512.0
-  Request throughput (req/s): 0.48
-  Output token throughput (tok/s): 61.76
-  Total Token throughput (tok/s): 123.52
-  Mean TTFT (ms): 46.96
-  Median TTFT (ms): 46.9
-  P99 TTFT (ms): 48.96
-  Mean TPOT (ms): 15.94
-  Median TPOT (ms): 15.94
-  P99 TPOT (ms): 15.95
-  Mean ITL (ms): 15.94
-  Median ITL (ms): 15.92
-  P99 ITL (ms): 16.66
-('128+128', 5):
-  Successful requests: 20.0
-  Benchmark duration (s): 9.26
-  Total input tokens: 2560.0
-  Total generated tokens: 2560.0
-  Request throughput (req/s): 2.16
-  Output token throughput (tok/s): 276.32
-  Total Token throughput (tok/s): 552.63
-  Mean TTFT (ms): 136.32
-  Median TTFT (ms): 151.16
-  P99 TTFT (ms): 179.4
-  Mean TPOT (ms): 17.14
-  Median TPOT (ms): 16.98
-  P99 TPOT (ms): 17.8
-  Mean ITL (ms): 17.14
-  Median ITL (ms): 16.96
-  P99 ITL (ms): 17.91
-('128+128', 10):
-  Successful requests: 40.0
-  Benchmark duration (s): 10.21
-  Total input tokens: 5120.0
-  Total generated tokens: 5120.0
-  Request throughput (req/s): 3.92
-  Output token throughput (tok/s): 501.22
-  Total Token throughput (tok/s): 1002.45
-  Mean TTFT (ms): 251.97
-  Median TTFT (ms): 300.1
-  P99 TTFT (ms): 326.61
-  Mean TPOT (ms): 18.07
-  Median TPOT (ms): 17.69
-  P99 TPOT (ms): 19.55
-  Mean ITL (ms): 18.07
-  Median ITL (ms): 17.64
-  P99 ITL (ms): 20.38
-('128+128', 20):
-  Successful requests: 80.0
-  Benchmark duration (s): 12.67
-  Total input tokens: 10240.0
-  Total generated tokens: 10240.0
-  Request throughput (req/s): 6.32
-  Output token throughput (tok/s): 808.49
-  Total Token throughput (tok/s): 1616.98
-  Mean TTFT (ms): 475.63
-  Median TTFT (ms): 528.85
-  P99 TTFT (ms): 636.76
-  Mean TPOT (ms): 21.1
-  Median TPOT (ms): 20.63
-  P99 TPOT (ms): 24.05
-  Mean ITL (ms): 21.1
-  Median ITL (ms): 20.11
-  P99 ITL (ms): 48.47
-('128+128', 50):
-  Successful requests: 200.0
-  Benchmark duration (s): 18.06
-  Total input tokens: 25553.0
-  Total generated tokens: 25600.0
-  Request throughput (req/s): 11.07
-  Output token throughput (tok/s): 1417.4
-  Total Token throughput (tok/s): 2832.21
-  Mean TTFT (ms): 893.86
-  Median TTFT (ms): 873.89
-  P99 TTFT (ms): 1488.84
-  Mean TPOT (ms): 28.39
-  Median TPOT (ms): 28.18
-  P99 TPOT (ms): 34.33
-  Mean ITL (ms): 28.39
-  Median ITL (ms): 24.29
-  P99 ITL (ms): 141.68
-('128+128', 100):
-  Successful requests: 400.0
-  Benchmark duration (s): 32.53
-  Total input tokens: 51073.0
-  Total generated tokens: 51200.0
-  Request throughput (req/s): 12.3
-  Output token throughput (tok/s): 1573.82
-  Total Token throughput (tok/s): 3143.74
-  Mean TTFT (ms): 1084.31
-  Median TTFT (ms): 885.5
-  P99 TTFT (ms): 3090.71
-  Mean TPOT (ms): 55.25
-  Median TPOT (ms): 56.29
-  P99 TPOT (ms): 61.05
-  Mean ITL (ms): 55.25
-  Median ITL (ms): 41.61
-  P99 ITL (ms): 450.23
-('128+1024', 1):
-  Successful requests: 4.0
-  Benchmark duration (s): 65.7
-  Total input tokens: 512.0
-  Total generated tokens: 4096.0
-  Request throughput (req/s): 0.06
-  Output token throughput (tok/s): 62.34
-  Total Token throughput (tok/s): 70.14
-  Mean TTFT (ms): 48.81
-  Median TTFT (ms): 49.28
-  P99 TTFT (ms): 52.4
-  Mean TPOT (ms): 16.01
-  Median TPOT (ms): 16.01
-  P99 TPOT (ms): 16.01
-  Mean ITL (ms): 16.01
-  Median ITL (ms): 16.01
-  P99 ITL (ms): 16.56
-('128+1024', 5):
-  Successful requests: 20.0
-  Benchmark duration (s): 71.37
-  Total input tokens: 2560.0
-  Total generated tokens: 20480.0
-  Request throughput (req/s): 0.28
-  Output token throughput (tok/s): 286.96
-  Total Token throughput (tok/s): 322.83
-  Mean TTFT (ms): 137.87
-  Median TTFT (ms): 152.29
-  P99 TTFT (ms): 182.46
-  Mean TPOT (ms): 17.3
-  Median TPOT (ms): 17.29
-  P99 TPOT (ms): 17.39
-  Mean ITL (ms): 17.3
-  Median ITL (ms): 17.28
-  P99 ITL (ms): 17.93
-('128+1024', 10):
-  Successful requests: 40.0
-  Benchmark duration (s): 75.8
-  Total input tokens: 5120.0
-  Total generated tokens: 40960.0
-  Request throughput (req/s): 0.53
-  Output token throughput (tok/s): 540.35
-  Total Token throughput (tok/s): 607.89
-  Mean TTFT (ms): 268.89
-  Median TTFT (ms): 298.69
-  P99 TTFT (ms): 329.33
-  Mean TPOT (ms): 18.25
-  Median TPOT (ms): 18.24
-  P99 TPOT (ms): 18.44
-  Mean ITL (ms): 18.25
-  Median ITL (ms): 18.23
-  P99 ITL (ms): 19.01
-('128+1024', 20):
-  Successful requests: 80.0
-  Benchmark duration (s): 88.49
-  Total input tokens: 10240.0
-  Total generated tokens: 81920.0
-  Request throughput (req/s): 0.9
-  Output token throughput (tok/s): 925.78
-  Total Token throughput (tok/s): 1041.5
-  Mean TTFT (ms): 479.15
-  Median TTFT (ms): 521.0
-  P99 TTFT (ms): 624.49
-  Mean TPOT (ms): 21.14
-  Median TPOT (ms): 21.11
-  P99 TPOT (ms): 21.53
-  Mean ITL (ms): 21.14
-  Median ITL (ms): 21.01
-  P99 ITL (ms): 22.41
-('128+1024', 50):
-  Successful requests: 200.0
-  Benchmark duration (s): 112.49
-  Total input tokens: 25553.0
-  Total generated tokens: 204800.0
-  Request throughput (req/s): 1.78
-  Output token throughput (tok/s): 1820.65
-  Total Token throughput (tok/s): 2047.82
-  Mean TTFT (ms): 937.35
-  Median TTFT (ms): 929.81
-  P99 TTFT (ms): 1485.23
-  Mean TPOT (ms): 26.55
-  Median TPOT (ms): 26.52
-  P99 TPOT (ms): 27.33
-  Mean ITL (ms): 26.55
-  Median ITL (ms): 26.13
-  P99 ITL (ms): 29.37
-('128+1024', 100):
-  Successful requests: 400.0
-  Benchmark duration (s): 195.94
-  Total input tokens: 51073.0
-  Total generated tokens: 409600.0
-  Request throughput (req/s): 2.04
-  Output token throughput (tok/s): 2090.43
-  Total Token throughput (tok/s): 2351.09
-  Mean TTFT (ms): 1106.5
-  Median TTFT (ms): 903.17
-  P99 TTFT (ms): 3105.29
-  Mean TPOT (ms): 46.77
-  Median TPOT (ms): 46.93
-  P99 TPOT (ms): 47.37
-  Mean ITL (ms): 46.77
-  Median ITL (ms): 44.86
-  P99 ITL (ms): 51.62
-('128+2048', 1):
-  Successful requests: 4.0
-  Benchmark duration (s): 132.43
-  Total input tokens: 512.0
-  Total generated tokens: 8192.0
-  Request throughput (req/s): 0.03
-  Output token throughput (tok/s): 61.86
-  Total Token throughput (tok/s): 65.73
-  Mean TTFT (ms): 45.08
-  Median TTFT (ms): 45.13
-  P99 TTFT (ms): 46.04
-  Mean TPOT (ms): 16.15
-  Median TPOT (ms): 16.14
-  P99 TPOT (ms): 16.24
-  Mean ITL (ms): 16.16
-  Median ITL (ms): 16.13
-  P99 ITL (ms): 17.41
-('128+2048', 5):
-  Successful requests: 20.0
-  Benchmark duration (s): 145.0
-  Total input tokens: 2560.0
-  Total generated tokens: 40960.0
-  Request throughput (req/s): 0.14
-  Output token throughput (tok/s): 282.49
-  Total Token throughput (tok/s): 300.14
-  Mean TTFT (ms): 139.21
-  Median TTFT (ms): 158.95
-  P99 TTFT (ms): 173.66
-  Mean TPOT (ms): 17.64
-  Median TPOT (ms): 17.63
-  P99 TPOT (ms): 17.69
-  Mean ITL (ms): 17.64
-  Median ITL (ms): 17.66
-  P99 ITL (ms): 18.5
-('128+2048', 10):
-  Successful requests: 40.0
-  Benchmark duration (s): 154.85
-  Total input tokens: 5120.0
-  Total generated tokens: 81920.0
-  Request throughput (req/s): 0.26
-  Output token throughput (tok/s): 529.03
-  Total Token throughput (tok/s): 562.09
-  Mean TTFT (ms): 258.52
-  Median TTFT (ms): 304.8
-  P99 TTFT (ms): 335.45
-  Mean TPOT (ms): 18.78
-  Median TPOT (ms): 18.77
-  P99 TPOT (ms): 18.89
-  Mean ITL (ms): 18.78
-  Median ITL (ms): 18.75
-  P99 ITL (ms): 20.4
-('128+2048', 20):
-  Successful requests: 80.0
-  Benchmark duration (s): 183.18
-  Total input tokens: 10240.0
-  Total generated tokens: 163840.0
-  Request throughput (req/s): 0.44
-  Output token throughput (tok/s): 894.42
-  Total Token throughput (tok/s): 950.32
-  Mean TTFT (ms): 484.14
-  Median TTFT (ms): 525.19
-  P99 TTFT (ms): 616.97
-  Mean TPOT (ms): 22.13
-  Median TPOT (ms): 22.1
-  P99 TPOT (ms): 22.34
-  Mean ITL (ms): 22.13
-  Median ITL (ms): 22.12
-  P99 ITL (ms): 24.23
-('128+2048', 50):
-  Successful requests: 200.0
-  Benchmark duration (s): 237.21
-  Total input tokens: 25553.0
-  Total generated tokens: 409600.0
-  Request throughput (req/s): 0.84
-  Output token throughput (tok/s): 1726.74
-  Total Token throughput (tok/s): 1834.46
-  Mean TTFT (ms): 860.63
-  Median TTFT (ms): 876.41
-  P99 TTFT (ms): 1484.53
-  Mean TPOT (ms): 28.54
-  Median TPOT (ms): 28.5
-  P99 TPOT (ms): 28.86
-  Mean ITL (ms): 28.54
-  Median ITL (ms): 28.27
-  P99 ITL (ms): 32.29
-('128+2048', 100):
-  Successful requests: 400.0
-  Benchmark duration (s): 414.46
-  Total input tokens: 51073.0
-  Total generated tokens: 819200.0
-  Request throughput (req/s): 0.97
-  Output token throughput (tok/s): 1976.56
-  Total Token throughput (tok/s): 2099.79
-  Mean TTFT (ms): 1144.2
-  Median TTFT (ms): 951.5
-  P99 TTFT (ms): 3080.82
-  Mean TPOT (ms): 50.04
-  Median TPOT (ms): 50.1
-  P99 TPOT (ms): 50.36
-  Mean ITL (ms): 50.04
-  Median ITL (ms): 49.17
-  P99 ITL (ms): 57.05
-Excel 文件已生成: ./report_20260319/00000/Qwen3-32B-FP8#A100_DynamicSplitFuseV2_Swap-space.xlsx
-基准测试结果已填充到: ./report_20260319/00000/Qwen3-32B-FP8#A100_DynamicSplitFuseV2_Swap-space.xlsx
-测试全部完成！
-
-==========================================
-vllm_nvidia_test.sh 退出，开始清理资源...
-==========================================
-正在释放 NPU 锁...
-NPU 锁释放完成
-Server Config文件锁释放完成
-Error response from daemon: No such container: vllm_nvidia_PerformanceTest_00000_0
-Error response from daemon: No such container: vllm_nvidia_PerformanceTest_00000_0
-==========================================
-资源清理完成
-==========================================
