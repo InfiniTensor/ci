@@ -10,8 +10,7 @@ local runner helpers, GitHub Actions matrix converter, and tests.
 ├── run.py
 ├── ci_resource.py
 ├── daemon.sh
-├── scripts/
-│   └── config_to_matrix.py
+├── config_to_matrix.py
 ├── images/
 │   ├── nvidia/
 │   ├── iluvatar/
@@ -82,7 +81,7 @@ read-only and copied into the container before setup.
 `.github/workflows/ci_test.yml` calls:
 
 ```bash
-python .ci/scripts/config_to_matrix.py --config .ci/config.yaml --write-github-outputs
+python .ci/config_to_matrix.py --config .ci/config.yaml --write-github-outputs
 ```
 
 The child workflows use the generated matrix and call `.ci/daemon.sh` to hand
@@ -93,7 +92,7 @@ the Docker argument string to the platform test launcher.
 Run these from `.ci/` after changes:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 python3 scripts/config_to_matrix.py --config config.yaml --dump-by-type >/tmp/ci-matrix.json
+PYTHONDONTWRITEBYTECODE=1 python3 config_to_matrix.py --config config.yaml --dump-by-type >/tmp/ci-matrix.json
 bash -n daemon.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests -q
 ```
