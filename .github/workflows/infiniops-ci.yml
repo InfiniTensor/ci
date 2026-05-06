@@ -99,6 +99,7 @@ jobs:
 
       - name: Install CI dependency
         working-directory: repo
+        if: ${{ matrix.platform == 'cambricon' }}
         run: pip install pyyaml
 
       - name: Show stage plan
