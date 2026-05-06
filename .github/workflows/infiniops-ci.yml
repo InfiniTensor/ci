@@ -249,7 +249,7 @@ jobs:
           src_dir=$(pwd)
           echo "src_dir: ${src_dir}"
 
-          cd /data/shared/limingge/artifacts
+          cd /data-aisoft/artifacts
           if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
             mkdir -p "CI_${{ matrix.platform }}_test"
           fi
@@ -350,7 +350,7 @@ jobs:
           src_dir=$(pwd)
           echo "src_dir: ${src_dir}"
 
-          cd /data/shared/limingge/artifacts
+          cd /data-aisoft/artifacts
           if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
             mkdir -p "CI_${{ matrix.platform }}_test"
           fi
@@ -456,7 +456,7 @@ jobs:
           src_dir=$(pwd)
           echo "src_dir: ${src_dir}"
 
-          cd /data/shared/limingge/artifacts
+          cd /data-aisoft/artifacts
           if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
             mkdir -p "CI_${{ matrix.platform }}_test"
           fi
@@ -497,5 +497,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: performance-test-report-${{ matrix.id }}-${{ github.run_attempt }}
-          path: /data/shared/limingge/artifacts/CI_${{ matrix.platform }}_test/${{ github.run_id }}_${{ matrix.id }}/*.xlsx
+          path: /data-aisoft/artifacts/CI_${{ matrix.platform }}_test/${{ github.run_id }}_${{ matrix.id }}/*.xlsx
           retention-days: 7
