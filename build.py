@@ -11,6 +11,8 @@ from pathlib import Path
 
 from utils import get_git_commit, load_config
 
+CI_DIR = Path(__file__).resolve().parent
+
 
 def has_dockerfile_changed(dockerfile_dir, base_ref="HEAD~1"):
     """Check if any file under `dockerfile_dir` changed since `base_ref`."""
@@ -82,11 +84,26 @@ def build_image_tag(registry_url, project, platform, tag):
     return f"{project}-ci/{platform}:{tag}"
 
 
+def resolve_dockerfile_dir(dockerfile_dir):
+    """Resolve Dockerfile directories from caller or CI-tool relative paths."""
+    path = Path(dockerfile_dir)
+
+    if path.is_dir():
+        return str(path)
+
+    tool_path = CI_DIR / dockerfile_dir
+
+    if tool_path.is_dir():
+        return str(tool_path)
+
+    return str(path)
+
+
 def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, logged_in):
     """Build a single platform image. Returns True on success."""
     registry_url = registry_cfg.get("url", "")
     project = registry_cfg.get("project", "infiniops")
-    dockerfile_dir = platform_cfg["dockerfile"]
+    dockerfile_dir = resolve_dockerfile_dir(platform_cfg["dockerfile"])
     commit_tag = build_image_tag(registry_url, project, platform, commit)
     latest_tag = build_image_tag(registry_url, project, platform, "latest")
 
@@ -228,7 +245,7 @@ def main():
 
     for platform in platforms:
         platform_cfg = images_cfg[platform]
-        dockerfile_dir = platform_cfg["dockerfile"]
+        dockerfile_dir = resolve_dockerfile_dir(platform_cfg["dockerfile"])
 
         if not Path(dockerfile_dir).is_dir():
             print(

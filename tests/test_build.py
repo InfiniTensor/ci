@@ -110,6 +110,11 @@ def _platform_cfg():
     }
 
 
+def test_resolve_dockerfile_dir_tool_relative():
+    resolved = build.resolve_dockerfile_dir("images/nvidia/")
+    assert resolved.endswith("images/nvidia")
+
+
 def _registry_cfg():
     return {"url": "localhost:5000", "project": "infiniops"}
 

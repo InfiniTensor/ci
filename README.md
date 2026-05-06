@@ -1,7 +1,7 @@
 # .ci - CI Images and Pipeline
 
-This directory contains the shared CI configuration, Docker image builder,
-local runner helpers, GitHub Actions matrix converter, and tests.
+This directory contains reusable CI tooling: Docker image builder, local runner
+helpers, GitHub Actions matrix converter, reusable workflow, and tests.
 
 ```
 .ci/
@@ -11,6 +11,9 @@ local runner helpers, GitHub Actions matrix converter, and tests.
 ├── ci_resource.py
 ├── daemon.sh
 ├── config_to_matrix.py
+├── .github/
+│   └── workflows/
+│       └── infiniops-ci.yml
 ├── images/
 │   ├── nvidia/
 │   ├── iluvatar/
@@ -25,8 +28,12 @@ Prerequisites: Docker, Python 3.10+, and `pip install pyyaml`.
 
 ## Configuration
 
-`config.yaml` uses a platform-centric structure. `utils.normalize_config()`
-flattens each platform job to `{platform}_{job}`, for example `nvidia_gpu`.
+For repository CI, the caller repository owns the project config, usually at
+`.github/ci_config.yaml`. The bundled `config.yaml` is kept as a local example
+and test fixture.
+
+The config uses a platform-centric structure. `utils.normalize_config()` flattens
+each platform job to `{platform}_{job}`, for example `nvidia_gpu`.
 
 Important resource fields:
 
@@ -76,16 +83,23 @@ matching jobs, allocates GPUs for `gpu_ids: auto`, builds Docker arguments, and
 runs the configured stages. With `--local`, the current checkout is mounted
 read-only and copied into the container before setup.
 
-## GitHub Actions
+## Reusable GitHub Actions
 
-`.github/workflows/ci_test.yml` calls:
+Caller repositories should keep a thin workflow:
 
-```bash
-python .ci/config_to_matrix.py --config .ci/config.yaml --write-github-outputs
+```yaml
+jobs:
+  ci:
+    uses: InfiniTensor/ci/.github/workflows/infiniops-ci.yml@codex/prune-unused-ci-artifacts
+    with:
+      config_path: .github/ci_config.yaml
+      ci_ref: codex/prune-unused-ci-artifacts
+    secrets: inherit
 ```
 
-The child workflows use the generated matrix and call `.ci/daemon.sh` to hand
-the Docker argument string to the platform test launcher.
+The reusable workflow checks out the caller repository, replaces any caller
+`.ci` placeholder with the selected `InfiniTensor/ci` ref, converts the caller
+config to matrices, and runs unit/smoke/performance jobs.
 
 ## Validation
 

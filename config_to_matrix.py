@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 THIS_FILE = Path(__file__).resolve()
-CI_DIR = THIS_FILE.parents[1]
+CI_DIR = THIS_FILE.parent
 if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
 
