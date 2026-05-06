@@ -56,7 +56,7 @@ platforms:
         volumes:
           - /dev:/dev
           - /data/shared/limingge/weight:/home/weight
-          - /data/shared/limingge/inferServ_logs:/workspace
+          - /data-aisoft/artifacts/CI_nvidia_test/<WORKSPACE>:/workspace
         resources:
           shm_size: 80g
         env:
@@ -79,7 +79,7 @@ platforms:
         volumes:
           - /dev:/dev
           - /data/shared/limingge/weight:/home/weight
-          - /data/shared/limingge/inferServ_logs:/workspace
+          - /data-aisoft/artifacts/CI_nvidia_test/<WORKSPACE>:/workspace
         resources:
           shm_size: 80g
         env:
@@ -238,7 +238,7 @@ platforms:
   #         - /etc/hccn.conf:/etc/hccn.conf
   #         - /home/zkjh/weight:/home/weight
   #         - /home/zkjh:/home/zkjh
-  #         - /data/shared/limingge/inferServ_logs:/workspace
+  #         - /data-aisoft/artifacts/CI_ascend_test/<WORKSPACE>:/workspace
   #       resources:
   #         shm_size: 500g
   #       env:
@@ -276,7 +276,7 @@ platforms:
   #         - /etc/hccn.conf:/etc/hccn.conf
   #         - /home/zkjh/weight:/home/weight
   #         - /home/zkjh:/home/zkjh
-  #         - /data/shared/limingge/inferServ_logs:/workspace
+  #         - /data-aisoft/artifacts/CI_ascend_test/<WORKSPACE>:/workspace
   #       resources:
   #         shm_size: 500g
   #       env:

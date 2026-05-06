@@ -173,6 +173,7 @@ done
 CUDA_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
+LOG_PATH="<<<LOG_PATH>>>"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
 if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
@@ -254,7 +255,7 @@ fi
 if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
     TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
     if [ $NODE_RANK -eq 0 ]; then
-        timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
+        timeout $TIMEOUT_SECONDS tail -F "$LOG_PATH/$LOG_NAME" | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
         EXIT_STATUS=$?
         if [ $EXIT_STATUS -eq 124 ]; then
             echo "模型启动超时（${TIMEOUT_SECONDS}秒）"
@@ -266,7 +267,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
 
         exit $EXIT_STATUS
     else
-        timeout $TIMEOUT_SECONDS tail -F $LOG_NAME | grep --line-buffered -m 8 -E "worker initialization done!"
+        timeout $TIMEOUT_SECONDS tail -F "$LOG_PATH/$LOG_NAME" | grep --line-buffered -m 8 -E "worker initialization done!"
         EXIT_STATUS=$?
         if [ $EXIT_STATUS -eq 124 ]; then
             echo "模型启动超时（${TIMEOUT_SECONDS}秒）"

@@ -180,8 +180,8 @@ def main():
     parser.add_argument(
         "--commit",
         type=str,
-        default="HEAD",
-        help="Git ref for tagging the image (default: HEAD)",
+        default=None,
+        help="Git ref or tag string for the image; omit to use current HEAD (short SHA)",
     )
     parser.add_argument(
         "--push",
@@ -219,7 +219,7 @@ def main():
             sys.exit(1)
         platforms = [args.platform]
 
-    commit = get_git_commit(args.commit)
+    commit = args.commit if args.commit is not None else get_git_commit()
     logged_in = docker_login(registry_cfg, args.dry_run) if args.push else True
     failed = False
 

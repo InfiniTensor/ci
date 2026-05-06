@@ -124,6 +124,8 @@ def main():
                 src_code += result
                 src_code += " > $LOG_NAME 2>&1 &\"\n"
         src_code += "fi\n"
+        m = re.search(r"-v\s+(/[^:\s]+):/workspace", docker_args)
+        log_path = m.group(1) if m else ""
 
     template_file = "job_executor_template_for_InfiniTensor.sh"
 
@@ -149,6 +151,8 @@ def main():
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
                 elif test_type == "Stability":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
+            elif "<<<LOG_PATH>>>" in line:
+                lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
                 if test_type == "Unit":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
