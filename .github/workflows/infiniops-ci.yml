@@ -97,6 +97,9 @@ jobs:
           ref: ${{ inputs.ci_ref }}
           path: repo/.ci
 
+      - name: Short SHA for image tags
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
       - name: Install CI dependency
         working-directory: repo
         if: ${{ matrix.platform == 'cambricon' }}
@@ -142,6 +145,7 @@ jobs:
           python3 .ci/build.py \
             --config "${{ inputs.config_path }}" \
             --platform "${{ matrix.platform }}" \
+            --commit "${SHORT_SHA}" \
             --force
 
       - name: Build docker args and write GITHUB_ENV
@@ -150,7 +154,7 @@ jobs:
           CONFIG: ${{ inputs.config_path }}
           BRANCH: None
           STAGE: None
-          IMAGE_TAG: None
+          IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
           RESULT_DIR: None
           TEST: None
