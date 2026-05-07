@@ -286,7 +286,7 @@ jobs:
             "${IMAGE_TAG}"
 
   run-smoketest:
-    name: smoke / ${{ matrix.platform }}
+    name: smoke
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'smoketest')
     strategy:
@@ -394,7 +394,7 @@ jobs:
             ${{ matrix.job_env.IMAGE }}
 
   run-performancetest:
-    name: performance / ${{ matrix.platform }}
+    name: performance
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'performancetest')
     strategy:
