@@ -51,7 +51,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install converter dependency
-        run: pip install pyyaml
+        run: python -m pip install pyyaml
 
       - name: Convert config to matrix JSON
         id: generate
@@ -97,13 +97,18 @@ jobs:
           ref: ${{ inputs.ci_ref }}
           path: repo/.ci
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Short SHA for image tags
         run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
         if: ${{ matrix.platform == 'cambricon' }}
-        run: pip install pyyaml
+        run: python -m pip install pyyaml
 
       - name: Show stage plan
         env:
