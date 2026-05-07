@@ -274,6 +274,7 @@ jobs:
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
+          export CI_REF="${{ inputs.ci_ref }}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             "Unit" \
@@ -380,6 +381,7 @@ jobs:
           echo "${{ matrix.job_env.IMAGE }}"
           echo "************************************************************************"
 
+          export CI_REF="${{ inputs.ci_ref }}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             Smoke \
@@ -487,6 +489,7 @@ jobs:
           echo "${{ matrix.job_env.IMAGE }}"
           echo "************************************************************************"
 
+          export CI_REF="${{ inputs.ci_ref }}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             Performance \
