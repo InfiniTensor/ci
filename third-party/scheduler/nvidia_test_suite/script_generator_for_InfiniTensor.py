@@ -71,6 +71,7 @@ def main():
 
     target_file = ""
     src_code = ""
+    log_path = ""
 
     if test_type == "Smoke":
         target_file = "InfiniTensor_job_executor_for_SmokeTest.sh"
