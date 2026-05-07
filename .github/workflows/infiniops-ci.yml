@@ -68,7 +68,7 @@ jobs:
           echo "matrix_json_for_performancetest=${{ steps.generate.outputs.matrix_json_for_performancetest }}"
 
   run-unittest:
-    name: Execute unittest jobs
+    name: unit / ${{ matrix.platform }}
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')
     strategy:
@@ -237,7 +237,7 @@ jobs:
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
 
-      - name: Trigger ${{ matrix.platform }} XPU Unit Test Task
+      - name: Trigger ${{ matrix.platform }} Unit Test Task
         working-directory: repo
         env:
           ${{ matrix.job_env }}
@@ -286,7 +286,7 @@ jobs:
             "${IMAGE_TAG}"
 
   run-smoketest:
-    name: Execute smoketest jobs
+    name: smoke / ${{ matrix.platform }}
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'smoketest')
     strategy:
@@ -342,7 +342,7 @@ jobs:
           print(text)
           PY
 
-      - name: Trigger ${{ matrix.platform }} GPU Smoke Test task
+      - name: Trigger ${{ matrix.platform }} Smoke Test Task
         working-directory: repo
         env: ${{ matrix.job_env }}
         run: |
@@ -394,7 +394,7 @@ jobs:
             ${{ matrix.job_env.IMAGE }}
 
   run-performancetest:
-    name: Execute performancetest jobs
+    name: performance / ${{ matrix.platform }}
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'performancetest')
     strategy:
@@ -450,7 +450,7 @@ jobs:
           print(text)
           PY
 
-      - name: Trigger ${{ matrix.platform }} GPU Performance Test task
+      - name: Trigger ${{ matrix.platform }} Performance Test Task
         working-directory: repo
         env: ${{ matrix.job_env }}
         run: |
