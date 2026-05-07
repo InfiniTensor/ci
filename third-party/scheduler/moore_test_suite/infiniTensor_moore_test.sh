@@ -210,6 +210,11 @@ if [ $TEST_TYPE == "Unit" ]; then
 
     wait $ssh_pid
     err=$?
+
+    if [ $err -ne 0 ]; then
+        echo "UnitTest failed with exit code $err. Last 200 lines of $filename:"
+        tail -n 200 "$curr_dir/logs/unit/$session_id/${filename}" || true
+    fi
     
     echo "UnitTest 任务结束，服务器：${pid_map[$ssh_pid]} (PID=$ssh_pid)"
 
