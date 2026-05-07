@@ -329,8 +329,8 @@ def main():
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(__file__).resolve().parent / "config.yaml",
-        help="Path to config.yaml",
+        default=Path(__file__).resolve().parent / "config.yml",
+        help="Path to config.yml",
     )
     parser.add_argument(
         "--branch", type=str, help="Override repo branch (default: config repo.branch)"

@@ -5,7 +5,7 @@ helpers, GitHub Actions matrix converter, reusable workflow, and tests.
 
 ```
 .ci/
-├── config.yaml
+├── config.yml
 ├── build.py
 ├── run.py
 ├── ci_resource.py
@@ -29,7 +29,7 @@ Prerequisites: Docker, Python 3.10+, and `pip install pyyaml`.
 ## Configuration
 
 For repository CI, the caller repository owns the project config, usually at
-`.github/ci_config.yaml`. The bundled `config.yaml` is kept as a local example
+`.github/ci_config.yml`. The bundled `config.yml` is kept as a local example
 and test fixture.
 
 The config uses a platform-centric structure. `utils.normalize_config()` flattens
@@ -92,7 +92,7 @@ jobs:
   ci:
     uses: InfiniTensor/ci/.github/workflows/infiniops-ci.yml@codex/prune-unused-ci-artifacts
     with:
-      config_path: .github/ci_config.yaml
+      config_path: .github/ci_config.yml
       ci_ref: codex/prune-unused-ci-artifacts
     secrets: inherit
 ```
@@ -106,7 +106,7 @@ config to matrices, and runs unit/smoke/performance jobs.
 Run these from `.ci/` after changes:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 python3 config_to_matrix.py --config config.yaml --dump-by-type >/tmp/ci-matrix.json
+PYTHONDONTWRITEBYTECODE=1 python3 config_to_matrix.py --config config.yml --dump-by-type >/tmp/ci-matrix.json
 bash -n daemon.sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m pytest tests -q
 ```

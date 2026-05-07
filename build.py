@@ -38,7 +38,7 @@ def docker_login(registry_cfg, dry_run):
 
     Returns True on success.
 
-    NOTE: Registry support is currently unused (`config.yaml` has no registry
+    NOTE: Registry support is currently unused (`config.yml` has no registry
     section). Retained for future integration with an external image management
     system.
     """
@@ -194,8 +194,8 @@ def main():
     parser.add_argument(
         "--config",
         type=Path,
-        default=Path(__file__).resolve().parent / "config.yaml",
-        help="Path to config.yaml",
+        default=Path(__file__).resolve().parent / "config.yml",
+        help="Path to config.yml",
     )
     parser.add_argument(
         "--commit",

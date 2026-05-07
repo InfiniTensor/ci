@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert .ci/config.yaml into GitHub Actions matrix JSON (optionally split by job type)."""
+"""Convert .ci/config.yml into GitHub Actions matrix JSON (optionally split by job type)."""
 
 from __future__ import annotations
 
@@ -147,7 +147,7 @@ def parse_args() -> argparse.Namespace:
         description="Convert custom CI config to GitHub matrix JSON"
     )
     parser.add_argument(
-        "--config", type=Path, default=Path(".ci/config.yaml"), help="Path to config file"
+        "--config", type=Path, default=Path(".ci/config.yml"), help="Path to config file"
     )
     parser.add_argument(
         "--write-github-outputs",

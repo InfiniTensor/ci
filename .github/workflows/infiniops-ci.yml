@@ -7,7 +7,7 @@ on:
         description: "Path to the caller repository CI config"
         required: false
         type: string
-        default: ".github/ci_config.yaml"
+        default: ".github/ci_config.yml"
       ci_ref:
         description: "Ref of InfiniTensor/ci to use for CI tooling"
         required: false
