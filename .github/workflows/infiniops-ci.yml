@@ -275,6 +275,7 @@ jobs:
           echo "**************************************************************************************"
 
           export CI_REF="${{ inputs.ci_ref }}"
+          export CI_SOURCE_DIR="${src_dir}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             "Unit" \
@@ -382,6 +383,7 @@ jobs:
           echo "************************************************************************"
 
           export CI_REF="${{ inputs.ci_ref }}"
+          export CI_SOURCE_DIR="${src_dir}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             Smoke \
@@ -490,6 +492,7 @@ jobs:
           echo "************************************************************************"
 
           export CI_REF="${{ inputs.ci_ref }}"
+          export CI_SOURCE_DIR="${src_dir}"
           exec ./daemon.sh \
             "${PLATFORM^}" \
             Performance \

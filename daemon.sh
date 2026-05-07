@@ -32,9 +32,18 @@ fi
 curr_dir=$(pwd)
 ci_ref=${CI_REF:-master}
 platform_suite=$(echo "$platform" | tr '[:upper:]' '[:lower:]')
+source_ci_dir=${CI_SOURCE_DIR:-}
+source_mount_args=()
+
+if [ -n "$source_ci_dir" ] && [ -d "${source_ci_dir}/.ci" ]; then
+    source_mount_args=(-v "${source_ci_dir}/.ci:/CI_Source/ci:ro")
+fi
 
 echo "Using CI ref: ${ci_ref}"
 echo "Using scheduler suite: ${platform_suite}_test_suite"
+if [ ${#source_mount_args[@]} -gt 0 ]; then
+    echo "Using CI source: ${source_ci_dir}/.ci"
+fi
 
 container_script='
 set -euo pipefail
@@ -49,14 +58,24 @@ Host *
     UserKnownHostsFile /dev/null
 EOF
 
-cd /CI_Workspace
-if [ ! -d ci_autotest/.git ]; then
-    git clone git@github.com:InfiniTensor/ci.git ci_autotest
-fi
+if [ -d /CI_Source/ci/third-party/scheduler ]; then
+    worktree="/CI_Workspace/ci_autotest_${6}_${CI_PLATFORM_SUITE}_${2}_$$"
+    rm -rf "${worktree}"
+    cp -a /CI_Source/ci "${worktree}"
+    cd "${worktree}"
+else
+    cd /CI_Workspace
+    if [ ! -d ci_autotest/.git ]; then
+        git clone git@github.com:InfiniTensor/ci.git ci_autotest
+    fi
 
-cd ci_autotest
-git fetch origin "${CI_REF}"
-git checkout -f --detach FETCH_HEAD
+    cd ci_autotest
+    if git fetch origin "${CI_REF}"; then
+        git checkout -f --detach FETCH_HEAD
+    else
+        echo "Warning: failed to fetch ${CI_REF}; using existing ci_autotest checkout"
+    fi
+fi
 
 cd "third-party/scheduler/${CI_PLATFORM_SUITE}_test_suite"
 if [ "$2" = "Performance" ]; then
@@ -86,6 +105,7 @@ docker_args_list=(
     -v /data-aisoft/artifacts:/artifacts
     -v "${HOME}/.ssh:/root/.ssh"
     -v /var/run/docker.sock:/var/run/docker.sock
+    "${source_mount_args[@]}"
     -e "CI_REF=${ci_ref}"
     -e "CI_PLATFORM_SUITE=${platform_suite}"
     --entrypoint /bin/bash
