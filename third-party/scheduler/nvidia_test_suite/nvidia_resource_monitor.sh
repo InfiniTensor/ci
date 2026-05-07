@@ -534,7 +534,8 @@ if [ $TEST_TYPE == "Unit" ]; then
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Unit Test will begin..."
             echo
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log 2>&1 &
+            unit_log=$curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $unit_log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
@@ -544,6 +545,8 @@ if [ $TEST_TYPE == "Unit" ]; then
                     sleep 10
                     continue
                 fi
+                echo "Unit test failed with exit code $err. Last 200 lines of $unit_log:"
+                tail -n 200 "$unit_log" || true
             fi
             break
         else
