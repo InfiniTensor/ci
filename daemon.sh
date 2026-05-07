@@ -86,6 +86,11 @@ fi
 
 mkdir -p "${version}"
 cp latest/model_list.yml "${version}"
+version_tag="${version##*:}"
+if [ "${version_tag}" != "${version}" ]; then
+    mkdir -p "${version_tag}"
+    cp latest/model_list.yml "${version_tag}"
+fi
 
 if [ "$2" = "Performance" ]; then
     exec "./${CI_PLATFORM_SUITE}_resource_monitor.sh" "$2" "$3" "$4" "$5" "$6" "$7" "$8"
