@@ -1,0 +1,622 @@
+name: InfiniOps Reusable CI
+
+on:
+  workflow_call:
+    inputs:
+      config_path:
+        description: "Path to the caller repository CI config"
+        required: false
+        type: string
+        default: ".github/ci_config.yml"
+      ci_ref:
+        description: "Ref of InfiniTensor/ci to use for CI tooling"
+        required: false
+        type: string
+        default: "infiniCore_ci"
+      max_parallel:
+        description: "Maximum parallel matrix jobs per job type"
+        required: false
+        type: number
+        default: 5
+
+jobs:
+  prepare:
+    name: Generate matrix from config
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_json_for_inferencetest: ${{ steps.generate.outputs.matrix_json_for_inferencetest }}
+      matrix_json_for_benchtest: ${{ steps.generate.outputs.matrix_json_for_benchtest }}
+      matrix_json_for_accuracytest: ${{ steps.generate.outputs.matrix_json_for_accracytest }}
+      matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
+      job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: true
+
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /config_to_matrix.py
+            /ci_resource.py
+            /utils.py
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install converter dependency
+        run: python -m pip install pyyaml
+
+      - name: Convert config to matrix JSON
+        id: generate
+        working-directory: repo
+        run: python .ci/config_to_matrix.py --config "${{ inputs.config_path }}" --write-github-outputs
+
+      - name: Show generated job types
+        run: |
+          echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
+          echo "matrix_json_for_inferencetest=${{ steps.generate.outputs.matrix_json_for_inferencetest }}"
+          echo
+          echo "matrix_json_for_benchtest=${{ steps.generate.outputs.matrix_json_for_benchtest }}"
+          echo
+          echo "matrix_json_for_accuracytest=${{ steps.generate.outputs.matrix_json_for_accuracytest }}"
+          echo
+          echo "matrix_json_for_servicetest=${{ steps.generate.outputs.matrix_json_for_servicetest }}"
+
+  run-inferencetest:
+    name: inference / ${{ matrix.platform }}
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'inferencetest')
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_inferencetest) }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.platform }}
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+    steps:
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+          fetch-depth: 1
+          sparse-checkout: |
+            images/${{ matrix.platform }}
+
+      - name: Short SHA for image tags
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Install CI dependency
+        working-directory: repo
+        if: ${{ matrix.platform == 'cambricon' }}
+        run: python3 -m pip install pyyaml
+
+      - name: Show stage plan
+        env:
+          MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_inferencetest }}
+          CURRENT_JOB: ${{ matrix.id }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+
+          data = json.loads(os.environ["MATRIX_JSON"])
+          current = os.environ["CURRENT_JOB"]
+          entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
+          if not entry:
+              print(f"[warn] matrix entry not found for {current}")
+              raise SystemExit(0)
+
+          test_cmd = entry.get("test_cmd", "")
+          text = "\n".join([
+              f"job: {entry.get('id')}",
+              f"platform: {entry.get('platform')}",
+              "stage order:",
+              "  1) setup",
+              f"  2) test -> {test_cmd}",
+          ])
+          print(text)
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as f:
+                  f.write("### Stage plan\n\n```\n")
+                  f.write(text)
+                  f.write("\n```\n\n")
+          PY
+
+      - name: Build and Package
+        working-directory: repo
+        run: |
+          docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9990 --build-arg http_proxy=http://localhost:9990 --build-arg HTTPS_PROXY=http://localhost:9990 --build-arg HTTP_PROXY=http://localhost:9990 -t infinilm-ci/${{ matrix.platform }}:${SHORT_SHA} .
+
+      # - name: Build docker args and write GITHUB_ENV
+      #   working-directory: repo
+      #   env:
+      #     CONFIG: ${{ inputs.config_path }}
+      #     BRANCH: None
+      #     STAGE: None
+      #     IMAGE_TAG: "${{ env.SHORT_SHA }}"
+      #     GPU_ID: all
+      #     RESULT_DIR: None
+      #     TEST: None
+      #     LOCAL: True
+      #   run: |
+      #     PYTHONPATH=.ci python3 - <<'PY'
+      #     import os
+      #     import shlex
+      #     import sys
+      #     import uuid
+      #     from pathlib import Path
+
+      #     from run import (
+      #         apply_test_override,
+      #         build_docker_args,
+      #         build_results_dir,
+      #         resolve_image,
+      #     )
+      #     from utils import get_git_commit, load_config
+
+      #     def env_opt(key):
+      #         v = os.environ.get(key, "")
+      #         return None if not v or v == "None" else v
+
+      #     config = load_config(Path(os.environ["CONFIG"]))
+      #     repo = config.get("repo", {})
+      #     repo_url = repo.get("url", "https://github.com/InfiniTensor/InfiniOps.git")
+      #     branch = env_opt("BRANCH") or repo.get("branch", "master")
+      #     platform = "${{ matrix.platform }}"
+      #     job_key = "${{ matrix.id }}"
+
+      #     jobs = config.get("jobs", {})
+      #     if job_key not in jobs:
+      #         print(f"error: job {job_key!r} not in config", file=sys.stderr)
+      #         sys.exit(1)
+
+      #     job = jobs[job_key]
+      #     all_stages = job.get("stages", [])
+      #     stage_filter = env_opt("STAGE")
+      #     stages = [s for s in all_stages if s["name"] == stage_filter] if stage_filter else all_stages
+
+      #     if stage_filter and not stages:
+      #         print(f"error: stage {stage_filter!r} not found in {job_key}", file=sys.stderr)
+      #         sys.exit(1)
+
+      #     test_override = env_opt("TEST")
+      #     if test_override:
+      #         stages = [{**s, "run": apply_test_override(s.get("run", ""), test_override)} for s in stages]
+
+      #     commit = get_git_commit()
+      #     results_base = Path(env_opt("RESULT_DIR") or "ci-results")
+      #     results_dir = build_results_dir(results_base, platform, stages, commit)
+      #     local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
+
+      #     docker_args = build_docker_args(
+      #         config,
+      #         job_key,
+      #         repo_url,
+      #         branch,
+      #         stages,
+      #         "/workspace",
+      #         env_opt("IMAGE_TAG"),
+      #         gpu_id_override=os.environ.get("GPU_ID") or None,
+      #         results_dir=results_dir,
+      #         local_path=local_path,
+      #     )
+
+      #     image_ref = resolve_image(
+      #         config,
+      #         job.get("platform", platform),
+      #         env_opt("IMAGE_TAG") or job.get("image", "latest"),
+      #     )
+
+      #     delimiter = f"EOF_{uuid.uuid4().hex}"
+      #     with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
+      #         f.write(f"DOCKER_ARGS<<{delimiter}\n")
+      #         f.write(shlex.join(docker_args) + "\n")
+      #         f.write(f"{delimiter}\n")
+      #         f.write(f"RESULT_DIR={results_dir}\n")
+      #         f.write(f"IMAGE_TAG={image_ref}\n")
+      #     PY
+
+      # - name: Trigger ${{ matrix.platform }} Inference Test Task
+      #   working-directory: repo
+      #   env:
+      #     ${{ matrix.job_env }}
+      #   run: |
+      #     set -e
+      #     echo "==> running job: ${{ matrix.job_name }}"
+      #     set -m
+
+      #     if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
+      #       mkdir -p "${RESULT_DIR}"
+      #     fi
+
+      #     src_dir=$(pwd)
+      #     echo "src_dir: ${src_dir}"
+
+      #     cd /data-aisoft/artifacts
+      #     if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+      #       mkdir -p "CI_${{ matrix.platform }}_test"
+      #     fi
+      #     cd CI_${{ matrix.platform }}_test
+      #     mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+      #     cd ${{ github.run_id }}_${{ matrix.id }}
+
+      #     cp "${src_dir}/.ci/daemon.sh" .
+      #     chmod a+x ./daemon.sh
+
+      #     PLATFORM=${{ matrix.platform }}
+      #     echo "**************************************************************************************"
+      #     echo "${PLATFORM^}"
+      #     echo "Inference"
+      #     echo "InfiniTensor"
+      #     echo "${DOCKER_ARGS}"
+      #     echo "${{ github.run_id }}"
+      #     echo "${IMAGE_TAG}"
+      #     echo "**************************************************************************************"
+
+      #     export CI_SOURCE_DIR="${src_dir}"
+      #     exec ./daemon.sh \
+      #       "${PLATFORM^}" \
+      #       "Inference" \
+      #       "InfiniTensor" \
+      #       "None" \
+      #       "${DOCKER_ARGS}" \
+      #       ${{ github.run_id }} \
+      #       "${IMAGE_TAG}"
+
+  # run-benchtest:
+  #   name: bench
+  #   needs: prepare
+  #   if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'benchtest')
+  #   strategy:
+  #     fail-fast: false
+  #     max-parallel: ${{ inputs.max_parallel }}
+  #     matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_benchtest) }}
+  #   runs-on:
+  #     - self-hosted
+  #     - linux
+  #     - ${{ matrix.platform }}
+  #   timeout-minutes: ${{ matrix.timeout_minutes }}
+  #   steps:
+  #     - name: Checkout caller repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: repo
+  #         submodules: false
+
+  #     - name: Replace caller .ci with CI tools
+  #       run: rm -rf repo/.ci
+
+  #     - name: Checkout CI tools
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: InfiniTensor/ci
+  #         ref: ${{ inputs.ci_ref }}
+  #         path: repo/.ci
+
+  #     - name: Show stage plan
+  #       env:
+  #         MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_benchtest }}
+  #         CURRENT_JOB: ${{ matrix.id }}
+  #       run: |
+  #         python3 - <<'PY'
+  #         import json
+  #         import os
+
+  #         data = json.loads(os.environ["MATRIX_JSON"])
+  #         current = os.environ["CURRENT_JOB"]
+  #         entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
+  #         if not entry:
+  #             print(f"[warn] matrix entry not found for {current}")
+  #             raise SystemExit(0)
+
+  #         test_cmd = entry.get("test_cmd", "")
+  #         text = "\n".join([
+  #             f"job: {entry.get('id')}",
+  #             f"platform: {entry.get('platform')}",
+  #             "stage order:",
+  #             "  1) setup",
+  #             f"  2) test -> {test_cmd}",
+  #         ])
+  #         print(text)
+  #         PY
+
+  #     - name: Trigger ${{ matrix.platform }} Bench Test Task
+  #       working-directory: repo
+  #       env: ${{ matrix.job_env }}
+  #       run: |
+  #         set -e
+  #         echo "==> running job: ${{ matrix.job_name }}"
+  #         echo "Bench Test Starting..."
+  #         echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "Version = ${{ matrix.job_env.IMAGE }}"
+  #         set -m
+
+  #         src_dir=$(pwd)
+  #         echo "src_dir: ${src_dir}"
+
+  #         cd /data-aisoft/artifacts
+  #         if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+  #           mkdir -p "CI_${{ matrix.platform }}_test"
+  #         fi
+  #         cd CI_${{ matrix.platform }}_test
+  #         mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+  #         cd ${{ github.run_id }}_${{ matrix.id }}
+
+  #         cp "${src_dir}/.ci/daemon.sh" .
+  #         chmod a+x ./daemon.sh
+
+  #         DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
+  #         VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
+  #         SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
+  #         PLATFORM=${{ matrix.platform }}
+
+  #         echo "************************************************************************"
+  #         echo "PLATFORM=${PLATFORM^}"
+  #         echo "Bench"
+  #         echo "${{ matrix.job_env.ENGINE }}"
+  #         echo "${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
+  #         echo "${{ github.run_id }}"
+  #         echo "${{ matrix.job_env.IMAGE }}"
+  #         echo "************************************************************************"
+
+  #         export CI_REF="${{ inputs.ci_ref }}"
+  #         export CI_SOURCE_DIR="${src_dir}"
+  #         exec ./daemon.sh \
+  #           "${PLATFORM^}" \
+  #           Bench \
+  #           ${{ matrix.job_env.ENGINE }} \
+  #           "${{ matrix.job_env.MODEL_LIST }}" \
+  #           "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
+  #           ${{ github.run_id }} \
+  #           ${{ matrix.job_env.IMAGE }}
+  #     - name: Upload Test Report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: bench-test-report-${{ matrix.id }}-${{ github.run_attempt }}
+  #         path: /data-aisoft/artifacts/CI_${{ matrix.platform }}_test/${{ github.run_id }}_${{ matrix.id }}/*.xlsx
+  #         retention-days: 7
+
+  # run-accuracytest:
+  #   name: accuracy
+  #   needs: prepare
+  #   if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'accuracytest')
+  #   strategy:
+  #     fail-fast: false
+  #     max-parallel: ${{ inputs.max_parallel }}
+  #     matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_accuracytest) }}
+  #   runs-on:
+  #     - self-hosted
+  #     - linux
+  #     - ${{ matrix.platform }}
+  #   timeout-minutes: ${{ matrix.timeout_minutes }}
+  #   steps:
+  #     - name: Checkout caller repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: repo
+  #         submodules: false
+
+  #     - name: Replace caller .ci with CI tools
+  #       run: rm -rf repo/.ci
+
+  #     - name: Checkout CI tools
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: InfiniTensor/ci
+  #         ref: ${{ inputs.ci_ref }}
+  #         path: repo/.ci
+
+  #     - name: Show stage plan
+  #       env:
+  #         MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_accuracytest }}
+  #         CURRENT_JOB: ${{ matrix.id }}
+  #       run: |
+  #         python3 - <<'PY'
+  #         import json
+  #         import os
+
+  #         data = json.loads(os.environ["MATRIX_JSON"])
+  #         current = os.environ["CURRENT_JOB"]
+  #         entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
+  #         if not entry:
+  #             print(f"[warn] matrix entry not found for {current}")
+  #             raise SystemExit(0)
+
+  #         test_cmd = entry.get("test_cmd", "")
+  #         text = "\n".join([
+  #             f"job: {entry.get('id')}",
+  #             f"platform: {entry.get('platform')}",
+  #             "stage order:",
+  #             "  1) setup",
+  #             f"  2) test -> {test_cmd}",
+  #         ])
+  #         print(text)
+  #         PY
+
+  #     - name: Trigger ${{ matrix.platform }} Accuracy Test Task
+  #       working-directory: repo
+  #       env: ${{ matrix.job_env }}
+  #       run: |
+  #         set -e
+  #         echo "==> running job: ${{ matrix.job_name }}"
+  #         echo "Accuracy Test Starting..."
+  #         echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "Version = ${{ matrix.job_env.IMAGE }}"
+  #         set -m
+
+  #         src_dir=$(pwd)
+  #         echo "src_dir: ${src_dir}"
+
+  #         cd /data-aisoft/artifacts
+  #         if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+  #           mkdir -p "CI_${{ matrix.platform }}_test"
+  #         fi
+  #         cd CI_${{ matrix.platform }}_test
+  #         mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+  #         cd ${{ github.run_id }}_${{ matrix.id }}
+
+  #         cp "${src_dir}/.ci/daemon.sh" .
+  #         chmod a+x ./daemon.sh
+
+  #         DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
+  #         VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
+  #         SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
+  #         PLATFORM=${{ matrix.platform }}
+
+  #         echo "************************************************************************"
+  #         echo "PLATFORM=${PLATFORM^}"
+  #         echo "Accuracy"
+  #         echo "${{ matrix.job_env.ENGINE }}"
+  #         echo "${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
+  #         echo "${{ github.run_id }}"
+  #         echo "Random"
+  #         echo "${{ matrix.job_env.IMAGE }}"
+  #         echo "************************************************************************"
+
+  #         export CI_REF="${{ inputs.ci_ref }}"
+  #         export CI_SOURCE_DIR="${src_dir}"
+  #         exec ./daemon.sh \
+  #           "${PLATFORM^}" \
+  #           Accuracy \
+  #           ${{ matrix.job_env.ENGINE }} \
+  #           "${{ matrix.job_env.MODEL_LIST }}" \
+  #           "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
+  #           ${{ github.run_id }} \
+  #           "Random" \
+  #           ${{ matrix.job_env.IMAGE }}
+
+  #     - name: Upload Test Report
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: accuracy-test-report-${{ matrix.id }}-${{ github.run_attempt }}
+  #         path: /data-aisoft/artifacts/CI_${{ matrix.platform }}_test/${{ github.run_id }}_${{ matrix.id }}/*.xlsx
+  #         retention-days: 7
+
+  # run-servicetest:
+  #   name: service
+  #   needs: prepare
+  #   if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'servicetest')
+  #   strategy:
+  #     fail-fast: false
+  #     max-parallel: ${{ inputs.max_parallel }}
+  #     matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_servicetest) }}
+  #   runs-on:
+  #     - self-hosted
+  #     - linux
+  #     - ${{ matrix.platform }}
+  #   timeout-minutes: ${{ matrix.timeout_minutes }}
+  #   steps:
+  #     - name: Checkout caller repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         path: repo
+  #         submodules: false
+
+  #     - name: Replace caller .ci with CI tools
+  #       run: rm -rf repo/.ci
+
+  #     - name: Checkout CI tools
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: InfiniTensor/ci
+  #         ref: ${{ inputs.ci_ref }}
+  #         path: repo/.ci
+
+  #     - name: Show stage plan
+  #       env:
+  #         MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_servicetest }}
+  #         CURRENT_JOB: ${{ matrix.id }}
+  #       run: |
+  #         python3 - <<'PY'
+  #         import json
+  #         import os
+
+  #         data = json.loads(os.environ["MATRIX_JSON"])
+  #         current = os.environ["CURRENT_JOB"]
+  #         entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
+  #         if not entry:
+  #             print(f"[warn] matrix entry not found for {current}")
+  #             raise SystemExit(0)
+
+  #         test_cmd = entry.get("test_cmd", "")
+  #         text = "\n".join([
+  #             f"job: {entry.get('id')}",
+  #             f"platform: {entry.get('platform')}",
+  #             "stage order:",
+  #             "  1) setup",
+  #             f"  2) test -> {test_cmd}",
+  #         ])
+  #         print(text)
+  #         PY
+
+  #     - name: Trigger ${{ matrix.platform }} Service Test Task
+  #       working-directory: repo
+  #       env: ${{ matrix.job_env }}
+  #       run: |
+  #         set -e
+  #         echo "==> running job: ${{ matrix.job_name }}"
+  #         echo "Service Test Starting..."
+  #         echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "Version = ${{ matrix.job_env.IMAGE }}"
+  #         set -m
+
+  #         src_dir=$(pwd)
+  #         echo "src_dir: ${src_dir}"
+
+  #         cd /data-aisoft/artifacts
+  #         if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+  #           mkdir -p "CI_${{ matrix.platform }}_test"
+  #         fi
+  #         cd CI_${{ matrix.platform }}_test
+  #         mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+  #         cd ${{ github.run_id }}_${{ matrix.id }}
+
+  #         cp "${src_dir}/.ci/daemon.sh" .
+  #         chmod a+x ./daemon.sh
+
+  #         DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
+  #         VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
+  #         SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
+  #         PLATFORM=${{ matrix.platform }}
+
+  #         echo "************************************************************************"
+  #         echo "PLATFORM=${PLATFORM^}"
+  #         echo "Service"
+  #         echo "${{ matrix.job_env.ENGINE }}"
+  #         echo "${{ matrix.job_env.MODEL_LIST }}"
+  #         echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
+  #         echo "${{ github.run_id }}"
+  #         echo "Random"
+  #         echo "${{ matrix.job_env.IMAGE }}"
+  #         echo "************************************************************************"
+
+  #         export CI_REF="${{ inputs.ci_ref }}"
+  #         export CI_SOURCE_DIR="${src_dir}"
+  #         exec ./daemon.sh \
+  #           "${PLATFORM^}" \
+  #           Service \
+  #           ${{ matrix.job_env.ENGINE }} \
+  #           "${{ matrix.job_env.MODEL_LIST }}" \
+  #           "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
+  #           ${{ github.run_id }} \
+  #           "Random" \
+  #           ${{ matrix.job_env.IMAGE }}
