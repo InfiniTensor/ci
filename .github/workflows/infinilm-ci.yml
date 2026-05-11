@@ -217,7 +217,7 @@ jobs:
           if test_override:
               stages = [{**s, "run": apply_test_override(s.get("run", ""), test_override)} for s in stages]
 
-          commit = ${GITHUB_SHA}
+          commit = env_opt("GITHUB_SHA")
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
           local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
