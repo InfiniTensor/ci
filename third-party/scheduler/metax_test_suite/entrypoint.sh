@@ -32,8 +32,9 @@ cd /CI_Workspace
 
 if [ ! -d ci_autotest ]; then
     git clone https://github.com/InfiniTensor/ci.git ci_autotest
+    cd ci_autotest
     git switch infiniCore_ci
-    cd ci_autotest/third-party/scheduler
+    cd third-party/scheduler
 else
     cd ci_autotest/third-party/scheduler
     git switch infiniCore_ci
