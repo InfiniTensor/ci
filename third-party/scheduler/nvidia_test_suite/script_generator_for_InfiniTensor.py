@@ -73,18 +73,16 @@ def main():
     src_code = ""
     log_path = ""
 
-    if test_type == "Smoke":
-        target_file = "InfiniTensor_job_executor_for_SmokeTest.sh"
-    elif test_type == "Unit":
-        target_file = "InfiniTensor_job_executor_for_UnitTest.sh"
-    elif test_type == "Performance":
-        target_file = "InfiniTensor_job_executor_for_PerformanceTest.sh"
-    elif test_type == "Stability":
-        target_file = "InfiniTensor_job_executor_for_StabilityTest.sh"
+    if test_type == "Inference":
+        target_file = "InfiniTensor_job_executor_for_InferenceTest.sh"
+    elif test_type == "Bench":
+        target_file = "InfiniTensor_job_executor_for_BenchTest.sh"
+    elif test_type == "Service":
+        target_file = "InfiniTensor_job_executor_for_ServiceTest.sh"
     elif test_type == "Accuracy":
         target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
 
-    if test_type != "Unit":
+    if test_type != "Inference":
         model_list = ""
         start = True
         for model in models:
@@ -137,25 +135,23 @@ def main():
         line_num = 0
         for line in lines:
             if "<<<generated source code>>>" in line:
-                if test_type == "Unit":
+                if test_type == "Inference":
                     lines[line_num] = line.replace("<<<generated source code>>>", "")
                 else:
                     lines[line_num] = src_code
             elif "<<<TEST_TYPE>>>" in line:
-                if test_type == "Smoke":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
-                elif test_type == "Unit":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "UnitTest")
-                elif test_type == "Performance":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "PerformanceTest")
+                if test_type == "Inference":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "InferenceTest")
+                elif test_type == "Bench":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "BenchTest")
                 elif test_type == "Accuracy":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
-                elif test_type == "Stability":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
+                elif test_type == "Service":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "ServiceTest")
             elif "<<<LOG_PATH>>>" in line:
                 lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
-                if test_type == "Unit":
+                if test_type == "Inference":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
                 else:
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL")
@@ -170,7 +166,7 @@ def main():
 
     os.system(f"chmod 777 {target_file}")
 
-    if test_type != "Unit":
+    if test_type != "Inference":
         print(model_list.rstrip())
     else:
         print("None")
