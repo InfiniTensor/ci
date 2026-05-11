@@ -19,7 +19,7 @@ CI_job_id=$6
 test_param=$7
 version=$8
 
-export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
+export https_proxy=http://localhost:9992 http_proxy=http://localhost:9992
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF

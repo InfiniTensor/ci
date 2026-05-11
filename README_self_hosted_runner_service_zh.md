@@ -32,8 +32,8 @@ sudo systemctl edit <actions.runner.<org>-<repo>.<runner>.service>
 
 ```ini
 [Service]
-Environment="http_proxy=http://localhost:9990"
-Environment="https_proxy=http://localhost:9990"
+Environment="http_proxy=http://localhost:9992"
+Environment="https_proxy=http://localhost:9992"
 Environment="no_proxy=localhost,127.0.0.1,::1"
 ```
 
