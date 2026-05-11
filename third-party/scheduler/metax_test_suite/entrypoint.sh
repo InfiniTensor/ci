@@ -19,11 +19,6 @@ CI_job_id=$6
 test_param=$7
 version=$8
 
-if [ "$test_type" == "Performance" ]; then
-else
-    version=$7
-fi
-
 export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
 
 mkdir -p ~/.ssh/
