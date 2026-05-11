@@ -183,18 +183,7 @@ def build_docker_args(
 
     args = [
         "--rm",
-        "-u",
-        "root",
-        "--network",
-        "host",
         "-i",
-        "--workdir",
-        workdir,
-        "--cap-add=ALL",
-        "--pid=host",
-        "--ipc=host",
-        "-v /data:/data",
-        "-v /data-aisoft:/data-aisoft",
         "-e",
         f"REPO_URL={repo_url}",
         "-e",
