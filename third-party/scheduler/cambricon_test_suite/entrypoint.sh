@@ -32,12 +32,14 @@ cd /CI_Workspace
 
 if [ ! -d ci_autotest ]; then
     git clone git@github.com:InfiniTensor/ci.git ci_autotest
+    git switch infiniCore_ci
     cd ci_autotest/third-party/scheduler
 else
     cd ci_autotest/third-party/scheduler
+    git switch infiniCore_ci
     git fetch --all
-    git reset --hard origin/master
-    git pull origin master
+    git reset --hard origin/infiniCore_ci
+    git pull origin infiniCore_ci
 fi
 
 if [ $platform == "Ascend" ]; then
