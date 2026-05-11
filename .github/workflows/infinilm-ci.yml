@@ -250,52 +250,51 @@ jobs:
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
 
-      # - name: Trigger ${{ matrix.platform }} Inference Test Task
-      #   working-directory: repo
-      #   env:
-      #     ${{ matrix.job_env }}
-      #   run: |
-      #     set -e
-      #     echo "==> running job: ${{ matrix.job_name }}"
-      #     set -m
+      - name: Trigger ${{ matrix.platform }} Inference Test Task
+        working-directory: repo
+        env:
+          ${{ matrix.job_env }}
+        run: |
+          set -e
+          echo "==> running job: ${{ matrix.job_name }}"
+          set -m
 
-      #     if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
-      #       mkdir -p "${RESULT_DIR}"
-      #     fi
+          if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
+            mkdir -p "${RESULT_DIR}"
+          fi
 
-      #     src_dir=$(pwd)
-      #     echo "src_dir: ${src_dir}"
+          src_dir=$(pwd)
+          echo "src_dir: ${src_dir}"
 
-      #     cd /data-aisoft/artifacts
-      #     if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
-      #       mkdir -p "CI_${{ matrix.platform }}_test"
-      #     fi
-      #     cd CI_${{ matrix.platform }}_test
-      #     mkdir -p ${{ github.run_id }}_${{ matrix.id }}
-      #     cd ${{ github.run_id }}_${{ matrix.id }}
+          cd /data-aisoft/artifacts
+          if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+            mkdir -p "CI_${{ matrix.platform }}_test"
+          fi
+          cd CI_${{ matrix.platform }}_test
+          mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+          cd ${{ github.run_id }}_${{ matrix.id }}
 
-      #     cp "${src_dir}/.ci/daemon.sh" .
-      #     chmod a+x ./daemon.sh
+          cp "${src_dir}/.ci/daemon.sh" .
+          chmod a+x ./daemon.sh
 
-      #     PLATFORM=${{ matrix.platform }}
-      #     echo "**************************************************************************************"
-      #     echo "${PLATFORM^}"
-      #     echo "Inference"
-      #     echo "InfiniTensor"
-      #     echo "${DOCKER_ARGS}"
-      #     echo "${{ github.run_id }}"
-      #     echo "${IMAGE_TAG}"
-      #     echo "**************************************************************************************"
+          PLATFORM=${{ matrix.platform }}
+          echo "**************************************************************************************"
+          echo "${PLATFORM^}"
+          echo "Inference"
+          echo "InfiniTensor"
+          echo "${DOCKER_ARGS}"
+          echo "${{ github.run_id }}"
+          echo "${IMAGE_TAG}"
+          echo "**************************************************************************************"
 
-      #     export CI_SOURCE_DIR="${src_dir}"
-      #     exec ./daemon.sh \
-      #       "${PLATFORM^}" \
-      #       "Inference" \
-      #       "InfiniTensor" \
-      #       "None" \
-      #       "${DOCKER_ARGS}" \
-      #       ${{ github.run_id }} \
-      #       "${IMAGE_TAG}"
+          # exec ./daemon.sh \
+          #   "${PLATFORM^}" \
+          #   "Inference" \
+          #   "InfiniTensor" \
+          #   "None" \
+          #   "${DOCKER_ARGS}" \
+          #   ${{ github.run_id }} \
+          #   "${IMAGE_TAG}"
 
   # run-benchtest:
   #   name: bench
