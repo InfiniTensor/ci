@@ -158,7 +158,6 @@ jobs:
         run: |
           src_dir=$(pwd)
           echo "src_dir: $src_dir"
-          ls -lah
           docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 -t infinilm-ci/${{ matrix.platform }}:${SHORT_SHA} .
 
       - name: Build docker args and write GITHUB_ENV
