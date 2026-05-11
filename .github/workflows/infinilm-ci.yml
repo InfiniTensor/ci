@@ -30,6 +30,15 @@ jobs:
       matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
       job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
