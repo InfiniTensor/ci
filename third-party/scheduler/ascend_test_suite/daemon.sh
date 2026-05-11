@@ -20,17 +20,12 @@ engine=$3
 model_list=$4
 docker_args="$5"
 CI_job_id=$6
-
-if [ "$test_type" == "Performance" ]; then
-    test_param=$7
-    version=$8
-else
-    version=$7
-fi
+test_param=$7
+version=$8
 
 curr_dir=$(pwd)
 
-docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /data/shared/limingge/CI_Workspace:/CI_Workspace -v /data-aisoft/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
+docker run --rm --name="CI_test_job_${platform}_${test_type}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /data/shared/limingge/CI_Workspace_for_InfiniLM:/CI_Workspace -v /data-aisoft/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
 CHILD_PID=$!
 
 echo -n "Running"

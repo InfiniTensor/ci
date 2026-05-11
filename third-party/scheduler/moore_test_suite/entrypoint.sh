@@ -16,13 +16,8 @@ engine=$3
 model_list=$4
 docker_args="$5"
 CI_job_id=$6
-
-if [ "$test_type" == "Performance" ]; then
-    test_param=$7
-    version=$8
-else
-    version=$7
-fi
+test_param=$7
+version=$8
 
 export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
 
