@@ -15,12 +15,14 @@ ENGINE_TYPE=$2
 MODEL_LIST=$3
 DOCKER_ARGS="$4"
 SESSION_ID=$5
+TEST_PARAM=$6
+version=$7
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"
     exit 1
-elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ] && [ $TEST_TYPE != "Unit" ]; then
+elif [ $TEST_TYPE != "Inference" ] && [ $TEST_TYPE != "Bench" ] && [ $TEST_TYPE != "Service" ] && [ $TEST_TYPE != "Accuracy" ]; then
     echo "Test_Type is wrong!"
     exit 1
 fi
@@ -36,20 +38,6 @@ fi
 if [ -z $MODEL_LIST ]; then
     echo "Parameter Model List required!"
     exit 1
-fi
-
-if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$6
-    version=$7
-    if [ -z $TEST_PARAM ]; then
-        echo "Parameter Test_Param required!"
-        exit 1
-    elif [ $TEST_PARAM != "Random" ] && [ $TEST_PARAM != "SharedGPT" ]; then
-        echo "Test_Param is wrong!"
-        exit 1
-    fi
-else
-    version=$6
 fi
 
 echo "################################### Nvidia ######################################"
@@ -74,28 +62,24 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID $curr_dir/logs/unit/$SESSION_ID
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/bench/$SESSION_ID $curr_dir/logs/inference/$SESSION_ID $curr_dir/logs/service/$SESSION_ID
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
-if [ $TEST_TYPE == "Smoke" ]; then
-    rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
+if [ $TEST_TYPE == "Inference" ]; then
+    rm -rf $curr_dir/logs/inference/$SESSION_ID/*.log $curr_dir/logs/inference/$SESSION_ID/*.log_* $curr_dir/logs/inference/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/inference/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-elif [ $TEST_TYPE == "Performance" ]; then
-    rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
+elif [ $TEST_TYPE == "Bench" ]; then
+    rm -rf $curr_dir/logs/bench/$SESSION_ID/*.log $curr_dir/logs/bench/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/bench/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-elif [ $TEST_TYPE == "Stability" ]; then
-    rm -rf $curr_dir/logs/stability/$SESSION_ID/*.log $curr_dir/logs/stability/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/stability/$SESSION_ID/"processed_models"_${log_name_suffix}
+elif [ $TEST_TYPE == "Service" ]; then
+    rm -rf $curr_dir/logs/service/$SESSION_ID/*.log $curr_dir/logs/service/$SESSION_ID/processed_models_*
+    processed_models=${curr_dir}/logs/service/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 elif [ $TEST_TYPE == "Accuracy" ]; then
     rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
-    touch ${processed_models}
-elif [ $TEST_TYPE == "Unit" ]; then
-    rm -rf $curr_dir/logs/unit/$SESSION_ID/*.log $curr_dir/logs/unit/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/unit/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 fi
 
@@ -524,18 +508,18 @@ for name in "${!H800_server_list[@]}"; do
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
 
-if [ $TEST_TYPE == "Unit" ]; then
+if [ $TEST_TYPE == "Inference" ]; then
     while true; do
         model="None"
-        GPU_QUANTITY=1
+        GPU_QUANTITY=4
         GPU_MODEL="A100"
         echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
         search_servers $model 0 $GPU_QUANTITY $GPU_MODEL servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
-            echo "Idle GPU(s) satisfying the conditions have been found, Unit Test will begin..."
+            echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
-            unit_log=$curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $unit_log 2>&1 &
+            inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $inference_log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
@@ -545,8 +529,8 @@ if [ $TEST_TYPE == "Unit" ]; then
                     sleep 10
                     continue
                 fi
-                echo "Unit test failed with exit code $err. Last 200 lines of $unit_log:"
-                tail -n 200 "$unit_log" || true
+                echo "Inference test failed with exit code $err. Last 200 lines of $inference_log:"
+                tail -n 200 "$inference_log" || true
             fi
             break
         else
