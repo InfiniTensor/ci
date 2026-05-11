@@ -85,6 +85,7 @@ jobs:
       - self-hosted
       - linux
       - ${{ matrix.platform }}
+      - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
       - name: Checkout CI tools
@@ -142,6 +143,9 @@ jobs:
       - name: Build and Package
         working-directory: repo
         run: |
+          src_dir=$(pwd)
+          echo "src_dir: $src_dir"
+          ls -lah
           docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9990 --build-arg http_proxy=http://localhost:9990 --build-arg HTTPS_PROXY=http://localhost:9990 --build-arg HTTP_PROXY=http://localhost:9990 -t infinilm-ci/${{ matrix.platform }}:${SHORT_SHA} .
 
       # - name: Build docker args and write GITHUB_ENV
