@@ -30,12 +30,6 @@ jobs:
       matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
       job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
     steps:
-      - name: Checkout caller repository
-        uses: actions/checkout@v4
-        with:
-          path: repo
-          submodules: true
-
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
@@ -88,6 +82,12 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: true
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
