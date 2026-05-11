@@ -109,7 +109,7 @@ def resolve_image(config, platform, image_tag):
     """
     registry = config.get("registry", {})
     registry_url = registry.get("url", "")
-    project = registry.get("project", "infiniops")
+    project = registry.get("project", "infinilm")
 
     if not registry_url:
         return f"{project}-ci/{platform}:{image_tag}"
@@ -380,7 +380,7 @@ def main():
 
     config = load_config(args.config)
     repo = config.get("repo", {})
-    repo_url = repo.get("url", "https://github.com/InfiniTensor/InfiniOps.git")
+    repo_url = repo.get("url", "https://github.com/Vincent777/InfiniLM.git")
     branch = args.branch or repo.get("branch", "master")
 
     platform = detect_platform()

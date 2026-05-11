@@ -106,6 +106,10 @@ jobs:
           fetch-depth: 1
           sparse-checkout: |
             images/${{ matrix.platform }}
+            /ci_resource.py
+            /daemon.sh
+            /run.py
+            /utils.py
 
       - name: Short SHA for image tags
         run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
@@ -190,8 +194,8 @@ jobs:
 
           config = load_config(Path(os.environ["CONFIG"]))
           repo = config.get("repo", {})
-          repo_url = repo.get("url", "https://github.com/InfiniTensor/InfiniOps.git")
-          branch = env_opt("BRANCH") or repo.get("branch", "master")
+          repo_url = repo.get("url", "https://github.com/Vincent777/InfiniLM.git")
+          branch = env_opt("BRANCH") or repo.get("branch", "main")
           platform = "${{ matrix.platform }}"
           job_key = "${{ matrix.id }}"
 
@@ -213,7 +217,7 @@ jobs:
           if test_override:
               stages = [{**s, "run": apply_test_override(s.get("run", ""), test_override)} for s in stages]
 
-          commit = get_git_commit()
+          commit = ${GITHUB_SHA}
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
           local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
@@ -226,7 +230,7 @@ jobs:
               stages,
               "/workspace",
               env_opt("IMAGE_TAG"),
-              gpu_id_override=os.environ.get("GPU_ID") or None,
+              gpu_id_override=env_opt("GPU_ID") or None,
               results_dir=results_dir,
               local_path=local_path,
           )
