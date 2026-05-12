@@ -705,7 +705,7 @@ jobs:
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
 
-      - name: Trigger ${{ matrix.platform }} Bench Test Task
+      - name: Trigger ${{ matrix.platform }} Accuracy Test Task
         working-directory: repo
         env:
           ${{ matrix.job_env }}
