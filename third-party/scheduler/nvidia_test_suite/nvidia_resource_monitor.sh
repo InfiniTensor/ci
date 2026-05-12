@@ -519,7 +519,7 @@ if [ $TEST_TYPE == "Inference" ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
             inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $inference_log 2>&1 &
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $inference_log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
