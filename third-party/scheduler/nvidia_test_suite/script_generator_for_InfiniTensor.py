@@ -82,7 +82,7 @@ def main():
     elif test_type == "Accuracy":
         target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
 
-    if test_type != "Inference":
+    if test_type == "Service":
         model_list = ""
         start = True
         for model in models:
@@ -135,10 +135,10 @@ def main():
         line_num = 0
         for line in lines:
             if "<<<generated source code>>>" in line:
-                if test_type == "Inference":
-                    lines[line_num] = line.replace("<<<generated source code>>>", "")
-                else:
+                if test_type == "Service":
                     lines[line_num] = src_code
+                else:
+                    lines[line_num] = line.replace("<<<generated source code>>>", "")
             elif "<<<TEST_TYPE>>>" in line:
                 if test_type == "Inference":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "InferenceTest")
@@ -151,10 +151,10 @@ def main():
             elif "<<<LOG_PATH>>>" in line:
                 lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
-                if test_type == "Inference":
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
-                else:
+                if test_type == "Service":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL")
+                else:
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:
@@ -166,7 +166,7 @@ def main():
 
     os.system(f"chmod 777 {target_file}")
 
-    if test_type != "Inference":
+    if test_type == "Service":
         print(model_list.rstrip())
     else:
         print("None")

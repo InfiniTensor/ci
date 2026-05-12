@@ -673,7 +673,7 @@ if [ $TEST_TYPE == "Service" ]; then
 else
     echo "*************开始执行 ${TEST_TYPE}Test 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
     model="None"
-    gpu_quantity=4
+    gpu_quantity=${TEST_PARAM}
     gpu_model="A100"
 
     test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')

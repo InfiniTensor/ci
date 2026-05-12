@@ -509,9 +509,18 @@ for name in "${!H800_server_list[@]}"; do
 done
 
 if [ $TEST_TYPE == "Inference" ]; then
+    item_list=($(echo "${TEST_PARAM}" | tr ',' '\n'))
+    eval "declare -A test_param_map=( ${item_list[@]} )"
+    GPU_QUANTITY=0
+    for param in "${!test_param_map[@]}"; do
+        echo "$param => ${test_param_map[$param]}"
+        if [ ${test_param_map[$param]} -gt $GPU_QUANTITY ]; then
+            GPU_QUANTITY=${test_param_map[$param]}
+        fi
+    done
+
     while true; do
         model="None"
-        GPU_QUANTITY=4
         GPU_MODEL="A100"
         echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
         search_servers $model 0 $GPU_QUANTITY $GPU_MODEL servers
@@ -519,7 +528,7 @@ if [ $TEST_TYPE == "Inference" ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
             inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $inference_log 2>&1 &
+            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
