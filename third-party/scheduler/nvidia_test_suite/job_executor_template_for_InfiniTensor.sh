@@ -94,19 +94,17 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
-    DOCKER_IMAGE_URL=""
-    docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
-    if [ $? -ne 0 ]; then
-        docker pull docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
-        if [ $? -ne 0 ]; then
-            exit 1;
-        fi
-        DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
-    else
-        DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
-    fi
-fi
+# DOCKER_IMAGE_URL=""
+# docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+# if [ $? -ne 0 ]; then
+#     docker pull docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+#     if [ $? -ne 0 ]; then
+#         exit 1;
+#     fi
+#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
+# else
+#     DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
+# fi
 
 ret=`docker ps -a | grep infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
@@ -297,7 +295,7 @@ echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 LOG_PATH="<<<LOG_PATH>>>"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
     if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
         # 获取文件锁（阻塞）
@@ -373,7 +371,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
     if [ $NODE_RANK -eq 0 ]; then
         timeout $TIMEOUT_SECONDS tail -F "$LOG_PATH/$LOG_NAME" | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."
