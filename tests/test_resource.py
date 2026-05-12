@@ -135,7 +135,7 @@ def test_get_free_gpus_filters_by_utilization(monkeypatch):
 
 
 def test_allocate_picks_least_loaded(monkeypatch):
-    csv_output = "0, 100, 8192, 8\n1, 200, 8192, 2\n2, 300, 8192, 5\n"
+    csv_output = "0, 10, 8192, 8\n1, 20, 8192, 2\n2, 30, 8192, 5\n"
 
     def mock_run(cmd, **kwargs):
         class R:
@@ -153,7 +153,7 @@ def test_allocate_picks_least_loaded(monkeypatch):
 
 
 def test_allocate_picks_two_least_loaded(monkeypatch):
-    csv_output = "0, 100, 8192, 8\n1, 200, 8192, 2\n2, 300, 8192, 5\n"
+    csv_output = "0, 10, 8192, 8\n1, 20, 8192, 2\n2, 30, 8192, 5\n"
 
     def mock_run(cmd, **kwargs):
         class R:
@@ -176,7 +176,7 @@ def test_allocate_picks_two_least_loaded(monkeypatch):
 
 
 def test_allocate_success(monkeypatch):
-    csv_output = "0, 100, 8192, 5\n1, 200, 8192, 3\n"
+    csv_output = "0, 10, 8192, 5\n1, 20, 8192, 3\n"
 
     def mock_run(cmd, **kwargs):
         class R:
@@ -220,7 +220,7 @@ def test_allocate_zero_gpus():
 
 
 def test_release_frees_gpus(monkeypatch):
-    csv_output = "0, 100, 8192, 5\n1, 200, 8192, 3\n"
+    csv_output = "0, 10, 8192, 5\n1, 20, 8192, 3\n"
 
     def mock_run(cmd, **kwargs):
         class R:
@@ -248,7 +248,7 @@ def test_release_frees_gpus(monkeypatch):
 
 
 def test_allocate_excludes_allocated(monkeypatch):
-    csv_output = "0, 100, 8192, 5\n1, 200, 8192, 3\n"
+    csv_output = "0, 10, 8192, 5\n1, 20, 8192, 3\n"
 
     def mock_run(cmd, **kwargs):
         class R:

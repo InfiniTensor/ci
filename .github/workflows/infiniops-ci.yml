@@ -237,7 +237,32 @@ jobs:
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
 
+      - name: Run nvidia Unit Test directly
+        if: ${{ matrix.platform == 'nvidia' }}
+        working-directory: repo
+        env:
+          ${{ matrix.job_env }}
+        run: |
+          set -e
+          echo "==> running job: ${{ matrix.job_name }}"
+
+          if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
+            mkdir -p "${RESULT_DIR}"
+          fi
+
+          echo "**************************************************************************************"
+          echo "Nvidia"
+          echo "Unit"
+          echo "InfiniTensor"
+          echo "${DOCKER_ARGS}"
+          echo "${{ github.run_id }}"
+          echo "${IMAGE_TAG}"
+          echo "**************************************************************************************"
+
+          eval "docker run ${DOCKER_ARGS}"
+
       - name: Trigger ${{ matrix.platform }} Unit Test Task
+        if: ${{ matrix.platform != 'nvidia' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
