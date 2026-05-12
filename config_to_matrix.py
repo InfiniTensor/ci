@@ -111,7 +111,7 @@ def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
             else:
                 pv = str(raw_param).strip()
                 label = pv[:60] + ("…" if len(pv) > 60 else "")
-            new_job["short_name"] = f"{base_short} ({label})"
+            new_job["short_name"] = f"{base_short}_{label}"
 
             new_jobs[new_id] = new_job
 
