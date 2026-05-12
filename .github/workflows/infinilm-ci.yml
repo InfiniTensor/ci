@@ -110,6 +110,7 @@ jobs:
             /daemon.sh
             /run.py
             /utils.py
+            /config_to_matrix.py
 
       - name: Short SHA for image tags
         run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
