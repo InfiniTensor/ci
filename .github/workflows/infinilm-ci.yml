@@ -78,10 +78,9 @@ jobs:
           echo
           echo "matrix_json_for_servicetest=${{ steps.generate.outputs.matrix_json_for_servicetest }}"
 
-  build-inference-deploy-image:
-    name: inference build image / ${{ matrix.platform }}
+  build-deploy-image:
+    name: build and package image / ${{ matrix.platform }}
     needs: prepare
-    if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'inferencetest')
     strategy:
       fail-fast: false
       max-parallel: ${{ inputs.max_parallel }}
