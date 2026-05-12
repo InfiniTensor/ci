@@ -315,6 +315,7 @@ jobs:
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
+          echo "${TEST_PARAM}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -325,7 +326,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            ${TEST_PARAM} \
+            "${TEST_PARAM}" \
             "${IMAGE_TAG}"
 
   run-benchtest:
@@ -525,6 +526,7 @@ jobs:
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
+          echo "${TEST_PARAM}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -535,7 +537,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            ${TEST_PARAM} \
+            "${TEST_PARAM}" \
             "${IMAGE_TAG}"
 
   run-accuracytest:
@@ -735,6 +737,7 @@ jobs:
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
+          echo "${TEST_PARAM}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -745,7 +748,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            ${TEST_PARAM} \
+            "${TEST_PARAM}" \
             "${IMAGE_TAG}"
 
   # run-benchtest:
