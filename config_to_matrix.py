@@ -200,10 +200,27 @@ def convert_by_job_type(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {k: {"include": v} for k, v in sorted(grouped.items())}
 
 
+def inferencetest_deploy_build_matrix(
+    matrices_by_type: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Matrix for the standalone inference deploy-image job: one row per distinct platform."""
+    inf = matrices_by_type.get("inferencetest")
+    if not inf:
+        return {"include": []}
+    platforms: list[str] = []
+    for entry in inf.get("include", []) or []:
+        if not isinstance(entry, dict):
+            continue
+        p = str(entry.get("platform", "")).strip()
+        if p and p not in platforms:
+            platforms.append(p)
+    return {"include": [{"platform": p} for p in platforms]}
+
+
 def write_github_matrix_outputs(
     github_output: Path, matrices_by_type: dict[str, dict[str, Any]]
 ) -> None:
-    """Append matrix_json_for_<type> and job_types_with_jobs to GITHUB_OUTPUT."""
+    """Append matrix_json_for_<type>, matrix_json_for_inferencetest_build, and job_types_with_jobs."""
     types_ordered = sorted(matrices_by_type.keys())
     payload = json.dumps(types_ordered, ensure_ascii=True)
 
@@ -221,6 +238,19 @@ def write_github_matrix_outputs(
             f.write(f"{key}<<{delim_m}\n")
             f.write(body + "\n")
             f.write(f"{delim_m}\n")
+
+        infer_build = inferencetest_deploy_build_matrix(matrices_by_type)
+        inf_matrix = matrices_by_type.get("inferencetest")
+        inf_include = (inf_matrix or {}).get("include") or []
+        if inf_include and not infer_build.get("include"):
+            raise ValueError(
+                "inferencetest jobs are present but every job has an empty platform; "
+                "set a non-empty platform for each inferencetest job."
+            )
+        delim_ib = f"INF_BUILD_{uuid.uuid4().hex}"
+        f.write(f"matrix_json_for_inferencetest_build<<{delim_ib}\n")
+        f.write(json.dumps(infer_build, ensure_ascii=True) + "\n")
+        f.write(f"{delim_ib}\n")
 
 
 def parse_args() -> argparse.Namespace:

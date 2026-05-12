@@ -25,6 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix_json_for_inferencetest: ${{ steps.generate.outputs.matrix_json_for_inferencetest }}
+      matrix_json_for_inferencetest_build: ${{ steps.generate.outputs.matrix_json_for_inferencetest_build }}
       matrix_json_for_benchtest: ${{ steps.generate.outputs.matrix_json_for_benchtest }}
       matrix_json_for_accuracytest: ${{ steps.generate.outputs.matrix_json_for_accracytest }}
       matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
@@ -69,6 +70,7 @@ jobs:
         run: |
           echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
           echo "matrix_json_for_inferencetest=${{ steps.generate.outputs.matrix_json_for_inferencetest }}"
+          echo "matrix_json_for_inferencetest_build=${{ steps.generate.outputs.matrix_json_for_inferencetest_build }}"
           echo
           echo "matrix_json_for_benchtest=${{ steps.generate.outputs.matrix_json_for_benchtest }}"
           echo
@@ -76,9 +78,52 @@ jobs:
           echo
           echo "matrix_json_for_servicetest=${{ steps.generate.outputs.matrix_json_for_servicetest }}"
 
+  build-inference-deploy-image:
+    name: inference build image / ${{ matrix.platform }}
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'inferencetest')
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_inferencetest_build) }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.platform }}
+      - InfiniLM
+    timeout-minutes: 180
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: true
+
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+          fetch-depth: 1
+          sparse-checkout: |
+            images/${{ matrix.platform }}
+
+      - name: Short SHA for image tags
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Build and Package
+        working-directory: repo
+        run: |
+          src_dir=$(pwd)
+          echo "src_dir: $src_dir"
+          docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 -t infinilm-ci/${{ matrix.platform }}:${SHORT_SHA} .
+
   run-inferencetest:
     name: inference / ${{ matrix.platform }}
-    needs: prepare
+    needs:
+      - prepare
+      - build-inference-deploy-image
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'inferencetest')
     strategy:
       fail-fast: false
@@ -153,13 +198,6 @@ jobs:
                   f.write(text)
                   f.write("\n```\n\n")
           PY
-
-      - name: Build and Package
-        working-directory: repo
-        run: |
-          src_dir=$(pwd)
-          echo "src_dir: $src_dir"
-          docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 -t infinilm-ci/${{ matrix.platform }}:${SHORT_SHA} .
 
       - name: Build docker args and write GITHUB_ENV
         working-directory: repo
