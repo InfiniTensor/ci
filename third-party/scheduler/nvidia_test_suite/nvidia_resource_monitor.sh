@@ -512,7 +512,7 @@ if [ $TEST_TYPE != "Service" ]; then
     if [ $TEST_TYPE == "Inference" ]; then
         if [ $TEST_PARAM == "default" ]; then
             GPU_QUANTITY=1
-        elsev
+        else
             GPU_QUANTITY=`echo "${TEST_PARAM}" | awk -F '=' '{print $2}'`
         fi
     elif [ $TEST_TYPE == "Accuracy" ] || [ $TEST_TYPE == "Bench" ]; then
