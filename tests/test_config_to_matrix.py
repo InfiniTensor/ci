@@ -33,9 +33,9 @@ def _multi_platform_config():
                     "image": {"dockerfile": ".ci/images/metax/"},
                     "jobs": {
                         "gpu": {
-                            "type": "smoketest",
+                            "type": "unittest",
                             "resources": {"timeout": 1800},
-                            "stages": [{"name": "smoke", "run": "pytest metax"}],
+                            "stages": [{"name": "test", "run": "pytest metax"}],
                         }
                     },
                 },
@@ -62,8 +62,11 @@ def test_convert_by_job_type_all_keeps_all_platforms():
         _multi_platform_config(), platform_filter="all"
     )
 
-    assert _matrix_ids(matrices["unittest"]) == ["nvidia_gpu", "ascend_npu"]
-    assert _matrix_ids(matrices["smoketest"]) == ["metax_gpu"]
+    assert _matrix_ids(matrices["unittest"]) == [
+        "nvidia_gpu",
+        "ascend_npu",
+        "metax_gpu",
+    ]
 
 
 def test_convert_by_job_type_rejects_unknown_platform():
