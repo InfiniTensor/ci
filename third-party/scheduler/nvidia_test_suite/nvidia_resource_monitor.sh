@@ -509,15 +509,11 @@ for name in "${!H800_server_list[@]}"; do
 done
 
 if [ $TEST_TYPE == "Inference" ]; then
-    item_list=($(echo "${TEST_PARAM}" | tr ',' '\n'))
-    eval "declare -A test_param_map=( ${item_list[@]} )"
-    GPU_QUANTITY=0
-    for param in "${!test_param_map[@]}"; do
-        echo "$param => ${test_param_map[$param]}"
-        if [ ${test_param_map[$param]} -gt $GPU_QUANTITY ]; then
-            GPU_QUANTITY=${test_param_map[$param]}
-        fi
-    done
+    if [ $TEST_PARAM == "default" ]; then
+        GPU_QUANTITY=1
+    else
+        GPU_QUANTITY=`echo "${TEST_PARAM}" | awk -F '=' '{print $2}'`
+    fi
 
     while true; do
         model="None"
