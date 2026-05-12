@@ -508,7 +508,7 @@ for name in "${!H800_server_list[@]}"; do
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
 
-if [ $TEST_TYPE == "Inference" ]; then
+if [ $TEST_TYPE != "Service" ]; then
     if [ $TEST_PARAM == "default" ]; then
         GPU_QUANTITY=1
     else
