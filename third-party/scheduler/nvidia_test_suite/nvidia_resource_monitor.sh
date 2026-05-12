@@ -517,7 +517,7 @@ if [ $TEST_TYPE != "Service" ]; then
         fi
     elif [ $TEST_TYPE == "Accuracy" ] || [ $TEST_TYPE == "Bench" ]; then
         GPU_QUANTITY=1
-    fi   
+    fi
 
     while true; do
         model="None"
