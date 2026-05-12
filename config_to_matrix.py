@@ -86,9 +86,16 @@ def _entry_from_flat_job(
     }
 
 
-def _matches_platform(job_cfg: dict[str, Any], platform_filter: str) -> bool:
+def _selected_platforms(platform_filter: str) -> set[str] | None:
     selected = str(platform_filter or "all").strip()
-    return selected == "all" or str(job_cfg.get("platform", "")).strip() == selected
+    if selected == "all":
+        return None
+    return {part.strip() for part in selected.split(",") if part.strip()}
+
+
+def _matches_platform(job_cfg: dict[str, Any], platform_filter: str) -> bool:
+    selected = _selected_platforms(platform_filter)
+    return selected is None or str(job_cfg.get("platform", "")).strip() in selected
 
 
 def _platform_filter_error(platform_filter: str) -> ValueError:

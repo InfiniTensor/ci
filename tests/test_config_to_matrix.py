@@ -69,6 +69,17 @@ def test_convert_by_job_type_all_keeps_all_platforms():
     ]
 
 
+def test_convert_by_job_type_accepts_platform_list():
+    matrices = config_to_matrix.convert_by_job_type(
+        _multi_platform_config(), platform_filter="nvidia,metax"
+    )
+
+    assert _matrix_ids(matrices["unittest"]) == [
+        "nvidia_gpu",
+        "metax_gpu",
+    ]
+
+
 def test_convert_by_job_type_rejects_unknown_platform():
     with pytest.raises(ValueError, match="No jobs found for platform 'unknown'"):
         config_to_matrix.convert_by_job_type(
