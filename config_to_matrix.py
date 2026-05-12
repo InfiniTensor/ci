@@ -100,7 +100,7 @@ def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
             new_env = dict(new_job.get("env") or {})
             new_env.pop("TEST_PARAM", None)
             if _is_default_test_param(raw_param):
-                new_env["TEST_PARAM"] = ""
+                new_env["TEST_PARAM"] = "default"
             else:
                 new_env["TEST_PARAM"] = str(raw_param).strip()
             new_job["env"] = new_env

@@ -668,8 +668,6 @@ if [ $TEST_TYPE == "Service" ]; then
         # 记录测试进度
         echo "${model}:${gpu_quantity}:${gpu_model}" >> ${processed_models}
     done
-
-
 else
     echo "*************开始执行 ${TEST_TYPE}Test 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
     model="None"
