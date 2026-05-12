@@ -24,8 +24,8 @@ jobs:
     name: Generate matrix from config
     runs-on: ubuntu-latest
     outputs:
+      matrix_json_for_build: ${{ steps.generate.outputs.matrix_json_for_build }}
       matrix_json_for_inferencetest: ${{ steps.generate.outputs.matrix_json_for_inferencetest }}
-      matrix_json_for_inferencetest_build: ${{ steps.generate.outputs.matrix_json_for_inferencetest_build }}
       matrix_json_for_benchtest: ${{ steps.generate.outputs.matrix_json_for_benchtest }}
       matrix_json_for_accuracytest: ${{ steps.generate.outputs.matrix_json_for_accracytest }}
       matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
@@ -70,7 +70,7 @@ jobs:
         run: |
           echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
           echo "matrix_json_for_inferencetest=${{ steps.generate.outputs.matrix_json_for_inferencetest }}"
-          echo "matrix_json_for_inferencetest_build=${{ steps.generate.outputs.matrix_json_for_inferencetest_build }}"
+          echo "matrix_json_for_build=${{ steps.generate.outputs.matrix_json_for_build }}"
           echo
           echo "matrix_json_for_benchtest=${{ steps.generate.outputs.matrix_json_for_benchtest }}"
           echo
@@ -85,7 +85,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: ${{ inputs.max_parallel }}
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_inferencetest_build) }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_build) }}
     runs-on:
       - self-hosted
       - linux
@@ -136,12 +136,6 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
-      - name: Checkout caller repository
-        uses: actions/checkout@v4
-        with:
-          path: repo
-          submodules: true
-
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:

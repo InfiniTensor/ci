@@ -220,7 +220,6 @@ def inferencetest_deploy_build_matrix(
 def write_github_matrix_outputs(
     github_output: Path, matrices_by_type: dict[str, dict[str, Any]]
 ) -> None:
-    """Append matrix_json_for_<type>, matrix_json_for_inferencetest_build, and job_types_with_jobs."""
     types_ordered = sorted(matrices_by_type.keys())
     payload = json.dumps(types_ordered, ensure_ascii=True)
 
@@ -248,7 +247,7 @@ def write_github_matrix_outputs(
                 "set a non-empty platform for each inferencetest job."
             )
         delim_ib = f"INF_BUILD_{uuid.uuid4().hex}"
-        f.write(f"matrix_json_for_inferencetest_build<<{delim_ib}\n")
+        f.write(f"matrix_json_for_build<<{delim_ib}\n")
         f.write(json.dumps(infer_build, ensure_ascii=True) + "\n")
         f.write(f"{delim_ib}\n")
 
