@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: "codex/prune-unused-ci-artifacts"
+      platform:
+        description: "Platform to run, or 'all' for every configured platform"
+        required: false
+        type: string
+        default: "all"
       max_parallel:
         description: "Maximum parallel matrix jobs per job type"
         required: false
@@ -56,10 +61,11 @@ jobs:
       - name: Convert config to matrix JSON
         id: generate
         working-directory: repo
-        run: python .ci/config_to_matrix.py --config "${{ inputs.config_path }}" --write-github-outputs
+        run: python .ci/config_to_matrix.py --config "${{ inputs.config_path }}" --platform "${{ inputs.platform }}" --write-github-outputs
 
       - name: Show generated job types
         run: |
+          echo "platform=${{ inputs.platform }}"
           echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
           echo "matrix_json_for_unittest=${{ steps.generate.outputs.matrix_json_for_unittest }}"
           echo

@@ -86,35 +86,58 @@ def _entry_from_flat_job(
     }
 
 
-def convert_combined(config: dict[str, Any]) -> dict[str, Any]:
+def _matches_platform(job_cfg: dict[str, Any], platform_filter: str) -> bool:
+    selected = str(platform_filter or "all").strip()
+    return selected == "all" or str(job_cfg.get("platform", "")).strip() == selected
+
+
+def _platform_filter_error(platform_filter: str) -> ValueError:
+    return ValueError(f"No jobs found for platform {platform_filter!r}")
+
+
+def convert_combined(
+    config: dict[str, Any], platform_filter: str = "all"
+) -> dict[str, Any]:
     """Single matrix with all jobs (backward-compatible default)."""
     include: list[dict[str, Any]] = []
     jobs = config.get("jobs", {})
     images = config.get("images", {})
 
     for job_id, job_cfg in jobs.items():
+        if not _matches_platform(job_cfg, platform_filter):
+            continue
+
         platform = str(job_cfg.get("platform", "")).strip()
         image_cfg = images.get(platform, {})
         include.append(_entry_from_flat_job(job_id, job_cfg, image_cfg))
 
     if not include:
+        if str(platform_filter or "all").strip() != "all":
+            raise _platform_filter_error(platform_filter)
         raise ValueError("No jobs found in normalized config['jobs']")
     return {"include": include}
 
 
-def convert_by_job_type(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def convert_by_job_type(
+    config: dict[str, Any], platform_filter: str = "all"
+) -> dict[str, dict[str, Any]]:
     """Matrices keyed by sanitized job `type` (e.g. unittest, smoketest)."""
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     jobs = config.get("jobs", {})
     images = config.get("images", {})
 
     for job_id, job_cfg in jobs.items():
+        if not _matches_platform(job_cfg, platform_filter):
+            continue
+
         platform = str(job_cfg.get("platform", "")).strip()
         image_cfg = images.get(platform, {})
         jt = _job_type_from_cfg(job_cfg)
         grouped[jt].append(_entry_from_flat_job(job_id, job_cfg, image_cfg))
 
     if not grouped:
+        if str(platform_filter or "all").strip() != "all":
+            raise _platform_filter_error(platform_filter)
         raise ValueError("No jobs found in normalized config['jobs']")
     return {k: {"include": v} for k, v in sorted(grouped.items())}
 
@@ -159,6 +182,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print a JSON object mapping job type -> matrix (for local debugging)",
     )
+    parser.add_argument(
+        "--platform",
+        default="all",
+        help="Platform to include in generated matrices, or 'all' for every platform",
+    )
     return parser.parse_args()
 
 
@@ -166,21 +194,26 @@ def main() -> int:
     args = parse_args()
     config = load_config(args.config)
 
-    if args.write_github_outputs:
-        out = os.environ.get("GITHUB_OUTPUT")
-        if not out:
-            print("error: GITHUB_OUTPUT is not set", file=sys.stderr)
-            return 1
-        matrices = convert_by_job_type(config)
-        write_github_matrix_outputs(Path(out), matrices)
-        return 0
+    try:
+        if args.write_github_outputs:
+            out = os.environ.get("GITHUB_OUTPUT")
+            if not out:
+                print("error: GITHUB_OUTPUT is not set", file=sys.stderr)
+                return 1
+            matrices = convert_by_job_type(config, platform_filter=args.platform)
+            write_github_matrix_outputs(Path(out), matrices)
+            return 0
 
-    if args.dump_by_type:
-        matrices = convert_by_job_type(config)
-        print(json.dumps(matrices, ensure_ascii=True))
-        return 0
+        if args.dump_by_type:
+            matrices = convert_by_job_type(config, platform_filter=args.platform)
+            print(json.dumps(matrices, ensure_ascii=True))
+            return 0
 
-    matrix = convert_combined(config)
+        matrix = convert_combined(config, platform_filter=args.platform)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
     print(json.dumps(matrix, ensure_ascii=True))
     return 0
 
