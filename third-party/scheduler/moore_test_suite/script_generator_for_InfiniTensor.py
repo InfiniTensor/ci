@@ -127,7 +127,7 @@ def main():
                 if test_type == "Unit":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
                 else:
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e MTHREADS_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES -e CUDA_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES docker.infinitensor.com/docker/infiniTensor-aarch64-moore:$LATEST_TAG")
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e MTHREADS_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES -e MUSA_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES -e CUDA_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES docker.infinitensor.com/docker/infiniTensor-aarch64-moore:$LATEST_TAG")
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:

@@ -257,12 +257,22 @@ class ResourcePool:
 
         gpus = []
         attached = data.get("Attached GPUs", {})
+        gpu_entries = data.get("GPU")
 
-        for gpu_data in attached.values():
+        if isinstance(gpu_entries, list):
+            iterable = gpu_entries
+        elif isinstance(attached, dict):
+            iterable = attached.values()
+        else:
+            iterable = ()
+
+        for gpu_data in iterable:
             try:
-                index = int(gpu_data.get("Minor Number", len(gpus)))
+                index = int(
+                    gpu_data.get("Index", gpu_data.get("Minor Number", len(gpus)))
+                )
 
-                mem = gpu_data.get("Memory Usage", {})
+                mem = gpu_data.get("FB Memory Usage", gpu_data.get("Memory Usage", {}))
                 total_mb = extract_number(mem.get("Total", "0 MiB"))
                 used_mb = extract_number(mem.get("Used", "0 MiB"))
                 util_pct = extract_number(
@@ -454,6 +464,7 @@ class ResourcePool:
                 g
                 for g in gpus
                 if g.index not in self._allocated
+                and g.memory_used_mb < 100
                 and g.utilization_pct < self._utilization_threshold
             ]
 

@@ -265,6 +265,7 @@ def _make_platform_args(platform, gpu_style="none", job_suffix="gpu"):
 def test_docker_args_moore_mthreads_visible_devices():
     args = _make_platform_args("moore")
     assert "MTHREADS_VISIBLE_DEVICES=0" in args
+    assert "MUSA_VISIBLE_DEVICES=0" in args
     assert all("CUDA_VISIBLE_DEVICES" not in a for a in args)
 
 

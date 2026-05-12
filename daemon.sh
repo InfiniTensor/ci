@@ -4,8 +4,8 @@ set -m
 cleanup() {
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
     echo "Stopping CI test job..."
-    docker stop --timeout 60 "CI_test_job_${platform}_${test_type}_${CI_job_id}"
-    docker stop --time 60 "CI_test_job_${platform}_${test_type}_${CI_job_id}"
+    docker stop --time 60 "CI_test_job_${platform}_${test_type}_${CI_job_id}" 2>/dev/null || \
+        docker stop "CI_test_job_${platform}_${test_type}_${CI_job_id}" 2>/dev/null || true
     # docker kill --signal=SIGTERM CI_test_job_${CI_job_id}
     # docker kill -s TERM CI_test_job_${CI_job_id}
     # rm -rf $curr_dir
@@ -52,11 +52,17 @@ export https_proxy=http://localhost:9990
 export http_proxy=http://localhost:9990
 
 mkdir -p ~/.ssh
+if [ -d /CI_Host_SSH ]; then
+    cp -LR /CI_Host_SSH/. ~/.ssh/
+fi
+chmod 700 ~/.ssh
+find ~/.ssh -type f -name "id_*" -exec chmod 600 {} +
 cat > ~/.ssh/config <<EOF
 Host *
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
 EOF
+chmod 600 ~/.ssh/config
 
 if [ -d /CI_Source/ci/third-party/scheduler ]; then
     worktree="/CI_Workspace/ci_autotest_${6}_${CI_PLATFORM_SUITE}_${2}_$$"
@@ -108,7 +114,7 @@ docker_args_list=(
     -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks
     -v /data/shared/limingge/CI_Workspace:/CI_Workspace
     -v /data-aisoft/artifacts:/artifacts
-    -v "${HOME}/.ssh:/root/.ssh"
+    -v "${HOME}/.ssh:/CI_Host_SSH:ro"
     -v /var/run/docker.sock:/var/run/docker.sock
     "${source_mount_args[@]}"
     -e "CI_REF=${ci_ref}"

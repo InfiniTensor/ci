@@ -401,6 +401,60 @@ def test_detect_gpus_ascend_hbm_parsing(monkeypatch):
     assert gpus[0].memory_total_mb == 32768.0
 
 
+def test_detect_gpus_moore_gpu_list_json(monkeypatch):
+    moore_output = """
+{
+  "Attached GPUs": "8",
+  "GPU": [
+    {
+      "Index": "5",
+      "FB Memory Usage": {
+        "Total": "81920 MiB",
+        "Used": "16 MiB"
+      },
+      "Utilization": {
+        "Gpu": "0 %"
+      }
+    }
+  ]
+}
+"""
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = moore_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("moore")
+    gpus = pool.detect_gpus()
+    assert len(gpus) == 1
+    assert gpus[0].index == 5
+    assert gpus[0].memory_used_mb == 16.0
+    assert gpus[0].memory_total_mb == 81920.0
+    assert gpus[0].utilization_pct == 0.0
+
+
+def test_allocate_ignores_low_utilization_gpu_with_high_memory(monkeypatch):
+    pool = res.ResourcePool("moore")
+
+    monkeypatch.setattr(
+        pool,
+        "detect_gpus",
+        lambda: [
+            res.GpuInfo(1, 40791, 81920, 0),
+            res.GpuInfo(5, 16, 81920, 0),
+        ],
+    )
+
+    selected, ok = pool.allocate(1)
+    assert ok
+    assert selected == [5]
+
+
 def test_parse_memory_requirement_gb():
     assert res.parse_memory_requirement({"resources": {"memory": "32GB"}}) == 32 * 1024
 

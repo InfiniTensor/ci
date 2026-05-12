@@ -253,6 +253,8 @@ def build_docker_args(
 
         if device_env:
             args.extend(["-e", f"{device_env}={gpu_id}"])
+        if platform == "moore":
+            args.extend(["-e", f"MUSA_VISIBLE_DEVICES={gpu_id}"])
     elif gpu_style == GPU_STYLE_MLU and gpu_id and gpu_id != "all":
         device_env = PLATFORM_DEVICE_ENV.get(platform, "MLU_VISIBLE_DEVICES")
         args.extend(["-e", f"{device_env}={gpu_id}"])
