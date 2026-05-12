@@ -8,13 +8,8 @@ job_count=$4
 TEST_TYPE=$5
 ENGINE_TYPE=$6
 session_id=$7
-
-if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$8
-    version=$9
-else
-    version=$8
-fi
+TEST_PARAM=$8
+version=$9
 
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
@@ -680,7 +675,8 @@ else
     model="None"
     gpu_quantity=4
     gpu_model="A100"
-    
+
+    test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
     filename="${log_name_suffix}_${TEST_TYPE}Test.log"
 
     cd $curr_dir
@@ -699,7 +695,7 @@ else
     ip=${server_list[0]}
 
     ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${TEST_TYPE}/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
@@ -709,7 +705,7 @@ else
 
     if [ $err -ne 0 ]; then
         echo "${TEST_TYPE}Test failed with exit code $err. Last 200 lines of $filename:"
-        tail -n 200 "$curr_dir/logs/${TEST_TYPE}/$session_id/${filename}" || true
+        tail -n 200 "$curr_dir/logs/${test_type}/$session_id/${filename}" || true
     fi
     
     echo "${TEST_TYPE}Test 任务结束，服务器：${pid_map[$ssh_pid]} (PID=$ssh_pid)"
@@ -735,10 +731,10 @@ else
 
     # 发送测试报告
     # 获取模型启动命令，并做为参数传入
-    launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/${TEST_TYPE}/$session_id/${filename}"`
+    launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/${test_type}/$session_id/${filename}"`
 
     python3 ./get_info.py \
-        --file "$curr_dir/logs/${TEST_TYPE}/$session_id/${filename}" \
+        --file "$curr_dir/logs/${test_type}/$session_id/${filename}" \
         --email "limingge@xcoresigma.com" \
         --model "InfiniOps" \
         --gpu "A100" \
