@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-"""Convert .ci/config.yml into GitHub Actions matrix JSON (optionally split by job type)."""
-
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -12,6 +10,8 @@ import uuid
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+
+TEST_PARAM_PLACEHOLDER = "<TEST_PARAM>"
 
 THIS_FILE = Path(__file__).resolve()
 CI_DIR = THIS_FILE.parent
@@ -36,6 +36,87 @@ def _job_type_from_cfg(job_cfg: dict[str, Any]) -> str:
 
 def _normalize_build_args(build_args: dict[str, Any] | None) -> list[str]:
     return [f"{key}={value}" for key, value in (build_args or {}).items()]
+
+
+def _is_default_test_param(value: Any) -> bool:
+    if value is None:
+        return True
+    return str(value).strip().lower() == "default"
+
+
+def apply_test_param_to_run(run: str, param_value: Any) -> str:
+    """Replace ``<TEST_PARAM>`` in a run line; ``default`` removes the token only."""
+    s = str(run or "")
+    if TEST_PARAM_PLACEHOLDER not in s:
+        return s.strip()
+    if _is_default_test_param(param_value):
+        replaced = s.replace(TEST_PARAM_PLACEHOLDER, "")
+    else:
+        replaced = s.replace(TEST_PARAM_PLACEHOLDER, str(param_value).strip())
+    return replaced.strip()
+
+
+def expand_stages_with_test_param(
+    stages: list[dict[str, Any]], param_value: Any
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for i, st in enumerate(stages):
+        nd = copy.deepcopy(st)
+        nd["name"] = f"test_{i + 1}"
+        if "run" in nd:
+            nd["run"] = apply_test_param_to_run(nd.get("run", ""), param_value)
+        out.append(nd)
+    return out
+
+
+def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
+    """Split jobs whose ``env.TEST_PARAM`` is a list into one job per value (matrix + run.py)."""
+    jobs = config.get("jobs")
+    if not isinstance(jobs, dict) or not jobs:
+        return config
+
+    new_jobs: dict[str, Any] = {}
+    for job_id, job_cfg in jobs.items():
+        env = job_cfg.get("env") or {}
+        tp = env.get("TEST_PARAM")
+        if not isinstance(tp, list):
+            new_jobs[job_id] = job_cfg
+            continue
+
+        stages_template = job_cfg.get("stages") or []
+        if not stages_template:
+            fixed = copy.deepcopy(job_cfg)
+            ne = dict(fixed.get("env") or {})
+            ne.pop("TEST_PARAM", None)
+            fixed["env"] = ne
+            new_jobs[job_id] = fixed
+            continue
+
+        for idx, raw_param in enumerate(tp):
+            new_id = f"{job_id}__tp{idx}"
+            new_job = copy.deepcopy(job_cfg)
+            new_job["stages"] = expand_stages_with_test_param(stages_template, raw_param)
+
+            new_env = dict(new_job.get("env") or {})
+            new_env.pop("TEST_PARAM", None)
+            if _is_default_test_param(raw_param):
+                new_env["TEST_PARAM"] = ""
+            else:
+                new_env["TEST_PARAM"] = str(raw_param).strip()
+            new_job["env"] = new_env
+
+            base_short = str(new_job.get("short_name", "")).strip() or job_id
+            if _is_default_test_param(raw_param):
+                label = "default"
+            else:
+                pv = str(raw_param).strip()
+                label = pv[:60] + ("…" if len(pv) > 60 else "")
+            new_job["short_name"] = f"{base_short} ({label})"
+
+            new_jobs[new_id] = new_job
+
+    config["jobs"] = new_jobs
+    return config
 
 
 def _collect_test_command(job_cfg: dict[str, Any]) -> str:

@@ -93,7 +93,11 @@ def load_config(path):
     with open(path, encoding="utf-8") as f:
         raw = yaml.safe_load(f)
 
-    return normalize_config(raw)
+    cfg = normalize_config(raw)
+    # Local import avoids import cycle (config_to_matrix imports utils at module load).
+    from config_to_matrix import expand_test_param_jobs
+
+    return expand_test_param_jobs(cfg)
 
 
 def get_git_commit(ref="HEAD", short=True):
