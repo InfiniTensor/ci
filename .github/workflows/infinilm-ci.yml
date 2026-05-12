@@ -69,8 +69,8 @@ jobs:
       - name: Show generated job types
         run: |
           echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
-          echo "matrix_json_for_inferencetest=${{ steps.generate.outputs.matrix_json_for_inferencetest }}"
           echo "matrix_json_for_build=${{ steps.generate.outputs.matrix_json_for_build }}"
+          echo "matrix_json_for_inferencetest=${{ steps.generate.outputs.matrix_json_for_inferencetest }}"
           echo
           echo "matrix_json_for_benchtest=${{ steps.generate.outputs.matrix_json_for_benchtest }}"
           echo
