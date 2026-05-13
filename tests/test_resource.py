@@ -401,6 +401,37 @@ def test_detect_gpus_ascend_hbm_parsing(monkeypatch):
     assert gpus[0].memory_total_mb == 32768.0
 
 
+def test_detect_gpus_ascend_ignores_process_table(monkeypatch):
+    npu_output = (
+        "+---------------------------+---------------+-------------------------------+\n"
+        "| 0     910B4               | OK            | 86.5  41                      |\n"
+        "| 0                         | 0000:c1:00.0  | 0     0 / 0   32761 / 32768   |\n"
+        "| 1     910B4               | OK            | 80.1  41                      |\n"
+        "| 0                         | 0000:c2:00.0  | 0     0 / 0   2867 / 32768    |\n"
+        "+---------------------------+---------------+-------------------------------+\n"
+        "| NPU     Chip              | Process id    | Process name                  |\n"
+        "| 0       0                 | 183216        | python                        |\n"
+        "+===========================+===============+===============================+\n"
+    )
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = npu_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("ascend")
+    gpus = pool.detect_gpus()
+    assert [gpu.index for gpu in gpus] == [0, 1]
+
+    selected, ok = pool.allocate(1)
+    assert ok
+    assert selected == [1]
+
+
 def test_detect_gpus_moore_gpu_list_json(monkeypatch):
     moore_output = """
 {

@@ -372,6 +372,9 @@ class ResourcePool:
 
         while i < len(lines):
             line = lines[i]
+            if "Process id" in line and "Process name" in line:
+                break
+
             m1 = re.match(r"^\|\s+(\d+)\s+", line)
 
             if m1 and i + 1 < len(lines):
@@ -464,7 +467,7 @@ class ResourcePool:
                 g
                 for g in gpus
                 if g.index not in self._allocated
-                and g.memory_used_mb < 100
+                and self._is_gpu_memory_available(g)
                 and g.utilization_pct < self._utilization_threshold
             ]
 
@@ -478,6 +481,12 @@ class ResourcePool:
             selected = [g.index for g in available[:gpu_count]]
             self._allocated.update(selected)
             return (selected, True)
+
+    def _is_gpu_memory_available(self, gpu: GpuInfo) -> bool:
+        if self._platform == "ascend" and gpu.memory_total_mb > 0:
+            return (gpu.memory_total_mb - gpu.memory_used_mb) > 1024
+
+        return gpu.memory_used_mb < 100
 
     def release(self, gpu_ids):
         """Return GPUs to the free pool."""
