@@ -7,23 +7,16 @@ ARG NO_PROXY
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
+
 ARG PIP_INDEX_URL=https://pypi.org/simple
 
-ARG PRIVATE_SDK_URL
-RUN if [ -n "$PRIVATE_SDK_URL" ]; then \
-        curl -fSL "$PRIVATE_SDK_URL" -o /tmp/sdk.run && \
-        chmod +x /tmp/sdk.run && /tmp/sdk.run --quiet && \
-        rm /tmp/sdk.run; \
-    fi
-
-RUN python3 -m pip install --no-cache-dir \
+RUN pip install --no-cache-dir --progress off \
     scikit-build-core \
-    pybind11 \
     libclang \
     pytest \
     pytest-cov \
     pytest-xdist \
-    pyyaml
+    ruff
 
 ENV ASCEND_TOOLKIT_HOME=/usr/local/Ascend/ascend-toolkit/latest
 ENV LD_LIBRARY_PATH=${ASCEND_TOOLKIT_HOME}/lib64:${ASCEND_TOOLKIT_HOME}/lib64/plugin/opskernel:${ASCEND_TOOLKIT_HOME}/lib64/plugin/nnengine:${ASCEND_TOOLKIT_HOME}/opp/built-in/op_impl/ai_core/tbe/op_tiling/lib/linux/aarch64:${LD_LIBRARY_PATH}
