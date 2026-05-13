@@ -161,9 +161,7 @@ jobs:
           LOCAL: True
         run: |
           PYTHONPATH=.ci python3 - <<'PY'
-          import base64
           import os
-          import shlex
           import sys
           from pathlib import Path
 
@@ -172,6 +170,7 @@ jobs:
               build_docker_args,
               build_results_dir,
               resolve_image,
+              shell_join,
           )
           from utils import get_git_commit, load_config
 
@@ -228,9 +227,11 @@ jobs:
               env_opt("IMAGE_TAG") or job.get("image", "latest"),
           )
 
+          docker_args_file = Path(os.environ["RUNNER_TEMP"]) / "docker_args.txt"
+          docker_args_file.write_text(shell_join(docker_args), encoding="utf-8")
+
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
-              docker_args_b64 = base64.b64encode(shlex.join(docker_args).encode()).decode()
-              f.write(f"DOCKER_ARGS_B64={docker_args_b64}\n")
+              f.write(f"DOCKER_ARGS_FILE={docker_args_file}\n")
               f.write(f"RESULT_DIR={results_dir}\n")
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
@@ -242,7 +243,7 @@ jobs:
           ${{ matrix.job_env }}
         run: |
           set -e
-          DOCKER_ARGS="$(printf '%s' "${DOCKER_ARGS_B64}" | base64 -d)"
+          DOCKER_ARGS="$(cat "${DOCKER_ARGS_FILE}")"
           echo "==> running job: ${{ matrix.job_name }}"
 
           if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
@@ -267,7 +268,7 @@ jobs:
           ${{ matrix.job_env }}
         run: |
           set -e
-          DOCKER_ARGS="$(printf '%s' "${DOCKER_ARGS_B64}" | base64 -d)"
+          DOCKER_ARGS="$(cat "${DOCKER_ARGS_FILE}")"
           echo "==> running job: ${{ matrix.job_name }}"
           set -m
 

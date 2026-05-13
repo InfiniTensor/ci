@@ -28,6 +28,11 @@ from utils import get_git_commit, load_config
 _PYTEST_VALUE_FLAGS = {"-n", "-k", "-m", "-p", "--tb", "--junitxml", "--rootdir"}
 
 
+def shell_join(args):
+    """Return a shell-escaped command string on Python versions before shlex.join."""
+    return " ".join(shlex.quote(str(arg)) for arg in args)
+
+
 def _junit_xml_indicates_pass(results_dir):
     """Return True when pytest junit XML reports no failures or errors."""
     for junit in Path(results_dir).rglob("test-results.xml"):
@@ -86,7 +91,7 @@ def apply_test_override(run_cmd, test_path):
         if not ("/" in p or p.endswith(".py") or "::" in p):
             result.append(p)
 
-    return shlex.join(result)
+    return shell_join(result)
 
 
 def build_results_dir(base, platform, stages, commit):
@@ -479,7 +484,7 @@ def main():
         docker_run_args = build_docker_run_args(docker_args)
 
         if args.dry_run:
-            print(shlex.join(docker_run_args))
+            print(shell_join(docker_run_args))
             pool.release(allocated_ids)
             continue
 

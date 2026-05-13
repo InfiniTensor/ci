@@ -14,6 +14,11 @@ from utils import get_git_commit, load_config
 CI_DIR = Path(__file__).resolve().parent
 
 
+def shell_join(args):
+    """Return a shell-escaped command string on Python versions before shlex.join."""
+    return " ".join(shlex.quote(str(arg)) for arg in args)
+
+
 def has_dockerfile_changed(dockerfile_dir, base_ref="HEAD~1"):
     """Check if any file under `dockerfile_dir` changed since `base_ref`."""
     result = subprocess.run(
@@ -124,7 +129,7 @@ def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, log
 
         if dry_run:
             for cmd in tag_cmds:
-                print(f"[dry-run] {shlex.join(cmd)}")
+                print(f"[dry-run] {shell_join(cmd)}")
             return True
 
         print(f"==> tagging {platform}: {source_image} -> {commit_tag}", file=sys.stderr)
@@ -189,7 +194,7 @@ def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, log
     build_cmd.extend(["-t", commit_tag, "-t", latest_tag, dockerfile_dir])
 
     if dry_run:
-        print(f"[dry-run] {shlex.join(build_cmd)}")
+        print(f"[dry-run] {shell_join(build_cmd)}")
 
         if push:
             if not logged_in:
