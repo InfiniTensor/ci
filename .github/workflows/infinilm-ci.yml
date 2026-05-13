@@ -143,7 +143,6 @@ jobs:
           path: repo/.ci
           fetch-depth: 1
           sparse-checkout: |
-            images/${{ matrix.platform }}
             /ci_resource.py
             /daemon.sh
             /run.py
@@ -309,14 +308,18 @@ jobs:
           chmod a+x ./daemon.sh
 
           PLATFORM=${{ matrix.platform }}
-          CMD_PARAMS=$(echo "${TEST_PARAM// /,}")
+          NGPUS=${{ matrix.ngpus }}
+          if [ -z $NGPUS ]; then
+            NGPUS=1
+          fi
+
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Inference"
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
-          echo "${CMD_PARAMS}"
+          echo "${NGPUS}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -327,7 +330,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            "${CMD_PARAMS}" \
+            "${NGPUS}" \
             "${IMAGE_TAG}"
 
   run-benchtest:
@@ -355,7 +358,6 @@ jobs:
           path: repo/.ci
           fetch-depth: 1
           sparse-checkout: |
-            images/${{ matrix.platform }}
             /ci_resource.py
             /daemon.sh
             /run.py
@@ -521,14 +523,18 @@ jobs:
           chmod a+x ./daemon.sh
 
           PLATFORM=${{ matrix.platform }}
-          CMD_PARAMS=$(echo "${TEST_PARAM// /,}")
+          NGPUS=${{ matrix.ngpus }}
+          if [ -z $NGPUS ]; then
+            NGPUS=1
+          fi
+
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Bench"
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
-          echo "${CMD_PARAMS}"
+          echo "${NGPUS}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -539,7 +545,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            "${CMD_PARAMS}" \
+            "${NGPUS}" \
             "${IMAGE_TAG}"
 
   run-accuracytest:
@@ -567,7 +573,6 @@ jobs:
           path: repo/.ci
           fetch-depth: 1
           sparse-checkout: |
-            images/${{ matrix.platform }}
             /ci_resource.py
             /daemon.sh
             /run.py
@@ -733,14 +738,18 @@ jobs:
           chmod a+x ./daemon.sh
 
           PLATFORM=${{ matrix.platform }}
-          CMD_PARAMS=$(echo "${TEST_PARAM// /,}")
+          NGPUS=${{ matrix.ngpus }}
+          if [ -z $NGPUS ]; then
+            NGPUS=1
+          fi
+
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Accuracy"
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
-          echo "${CMD_PARAMS}"
+          echo "${NGPUS}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -751,7 +760,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            "${CMD_PARAMS}" \
+            "${NGPUS}" \
             "${IMAGE_TAG}"
 
   # run-benchtest:
@@ -987,112 +996,126 @@ jobs:
   #         path: /data-aisoft/artifacts/CI_${{ matrix.platform }}_test/${{ github.run_id }}_${{ matrix.id }}/*.xlsx
   #         retention-days: 7
 
-  # run-servicetest:
-  #   name: service
-  #   needs: prepare
-  #   if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'servicetest')
-  #   strategy:
-  #     fail-fast: false
-  #     max-parallel: ${{ inputs.max_parallel }}
-  #     matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_servicetest) }}
-  #   runs-on:
-  #     - self-hosted
-  #     - linux
-  #     - ${{ matrix.platform }}
-  #   timeout-minutes: ${{ matrix.timeout_minutes }}
-  #   steps:
-  #     - name: Checkout caller repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         path: repo
-  #         submodules: false
+  run-servicetest:
+    name: service
+    needs:
+      - prepare
+      - build-deploy-image
+    if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'servicetest')
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_servicetest) }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.platform }}
+      - InfiniLM
+    timeout-minutes: ${{ matrix.timeout_minutes }}
+    steps:
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+          fetch-depth: 1
+          sparse-checkout: |
+            /ci_resource.py
+            /daemon.sh
+            /run.py
+            /utils.py
+            /config_to_matrix.py
 
-  #     - name: Replace caller .ci with CI tools
-  #       run: rm -rf repo/.ci
+      - name: Short SHA for image tags
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
 
-  #     - name: Checkout CI tools
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: InfiniTensor/ci
-  #         ref: ${{ inputs.ci_ref }}
-  #         path: repo/.ci
+      - name: Install CI dependency
+        working-directory: repo
+        if: ${{ matrix.platform == 'cambricon' }}
+        run: python3 -m pip install pyyaml
 
-  #     - name: Show stage plan
-  #       env:
-  #         MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_servicetest }}
-  #         CURRENT_JOB: ${{ matrix.id }}
-  #       run: |
-  #         python3 - <<'PY'
-  #         import json
-  #         import os
+      - name: Show stage plan
+        env:
+          MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_servicetest }}
+          CURRENT_JOB: ${{ matrix.id }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
 
-  #         data = json.loads(os.environ["MATRIX_JSON"])
-  #         current = os.environ["CURRENT_JOB"]
-  #         entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
-  #         if not entry:
-  #             print(f"[warn] matrix entry not found for {current}")
-  #             raise SystemExit(0)
+          data = json.loads(os.environ["MATRIX_JSON"])
+          current = os.environ["CURRENT_JOB"]
+          entry = next((x for x in data.get("include", []) if x.get("id") == current), None)
+          if not entry:
+              print(f"[warn] matrix entry not found for {current}")
+              raise SystemExit(0)
 
-  #         test_cmd = entry.get("test_cmd", "")
-  #         text = "\n".join([
-  #             f"job: {entry.get('id')}",
-  #             f"platform: {entry.get('platform')}",
-  #             "stage order:",
-  #             "  1) setup",
-  #             f"  2) test -> {test_cmd}",
-  #         ])
-  #         print(text)
-  #         PY
+          test_cmd = entry.get("test_cmd", "")
+          text = "\n".join([
+              f"job: {entry.get('id')}",
+              f"platform: {entry.get('platform')}",
+              "stage order:",
+              "  1) setup",
+              f"  2) test -> {test_cmd}",
+          ])
+          print(text)
+          PY
 
-  #     - name: Trigger ${{ matrix.platform }} Service Test Task
-  #       working-directory: repo
-  #       env: ${{ matrix.job_env }}
-  #       run: |
-  #         set -e
-  #         echo "==> running job: ${{ matrix.job_name }}"
-  #         echo "Service Test Starting..."
-  #         echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
-  #         echo "Version = ${{ matrix.job_env.IMAGE }}"
-  #         set -m
+      - name: Trigger ${{ matrix.platform }} Service Test Task
+        working-directory: repo
+        env: ${{ matrix.job_env }}
+        run: |
+          set -e
+          echo "==> running job: ${{ matrix.job_name }}"
+          echo "Service Test Starting..."
+          echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
+          echo "Version = infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
+          set -m
 
-  #         src_dir=$(pwd)
-  #         echo "src_dir: ${src_dir}"
+          src_dir=$(pwd)
+          echo "src_dir: ${src_dir}"
 
-  #         cd /data-aisoft/artifacts
-  #         if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
-  #           mkdir -p "CI_${{ matrix.platform }}_test"
-  #         fi
-  #         cd CI_${{ matrix.platform }}_test
-  #         mkdir -p ${{ github.run_id }}_${{ matrix.id }}
-  #         cd ${{ github.run_id }}_${{ matrix.id }}
+          cd /data-aisoft/artifacts
+          if [ ! -d "CI_${{ matrix.platform }}_test" ]; then
+            mkdir -p "CI_${{ matrix.platform }}_test"
+          fi
+          cd CI_${{ matrix.platform }}_test
+          mkdir -p ${{ github.run_id }}_${{ matrix.id }}
+          cd ${{ github.run_id }}_${{ matrix.id }}
 
-  #         cp "${src_dir}/.ci/daemon.sh" .
-  #         chmod a+x ./daemon.sh
+          cp "${src_dir}/.ci/daemon.sh" .
+          chmod a+x ./daemon.sh
 
-  #         DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
-  #         VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
-  #         SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
-  #         PLATFORM=${{ matrix.platform }}
+          DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
+          VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
+          SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
+          PLATFORM=${{ matrix.platform }}
 
-  #         echo "************************************************************************"
-  #         echo "PLATFORM=${PLATFORM^}"
-  #         echo "Service"
-  #         echo "${{ matrix.job_env.ENGINE }}"
-  #         echo "${{ matrix.job_env.MODEL_LIST }}"
-  #         echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
-  #         echo "${{ github.run_id }}"
-  #         echo "Random"
-  #         echo "${{ matrix.job_env.IMAGE }}"
-  #         echo "************************************************************************"
+          eval "CMD_PARAMS=($(python3 -c "
+          import ast, shlex
+          s = '''${TEST_PARAM}'''
+          lst = ast.literal_eval(s)
+          print(' '.join(shlex.quote(x) for x in lst))
+          "))"
 
-  #         export CI_REF="${{ inputs.ci_ref }}"
-  #         export CI_SOURCE_DIR="${src_dir}"
-  #         exec ./daemon.sh \
-  #           "${PLATFORM^}" \
-  #           Service \
-  #           ${{ matrix.job_env.ENGINE }} \
-  #           "${{ matrix.job_env.MODEL_LIST }}" \
-  #           "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
-  #           ${{ github.run_id }} \
-  #           "Random" \
-  #           ${{ matrix.job_env.IMAGE }}
+          echo "************************************************************************"
+          echo "PLATFORM=${PLATFORM^}"
+          echo "Service"
+          echo "${{ matrix.job_env.ENGINE }}"
+          echo "${{ matrix.job_env.MODEL_LIST }}"
+          echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
+          echo "${{ github.run_id }}"
+          ehco "${CMD_PARAMS[@]}"
+          echo "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
+          echo "************************************************************************"
+
+          # exec ./daemon.sh \
+          #   "${PLATFORM^}" \
+          #   Service \
+          #   "${{ matrix.job_env.ENGINE }}" \
+          #   "${{ matrix.job_env.MODEL_LIST }}" \
+          #   "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
+          #   ${{ github.run_id }} \
+          #   "${CMD_PARAMS[*]}" \
+          #   "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"

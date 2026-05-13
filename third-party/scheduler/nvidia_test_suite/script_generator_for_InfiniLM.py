@@ -39,7 +39,7 @@ def extract_card_types(card_type_str):
 
 def main():
     if len(sys.argv) != 4:
-        print("Usage: python script_generator_for_InfiniTensor.py <test_type> <docker_args> <version>")
+        print("Usage: python script_generator_for_InfiniLM.py <test_type> <docker_args> <version>")
         sys.exit(1)
 
     test_type = sys.argv[1]
@@ -74,13 +74,13 @@ def main():
     log_path = ""
 
     if test_type == "Inference":
-        target_file = "InfiniTensor_job_executor_for_InferenceTest.sh"
+        target_file = "InfiniLM_job_executor_for_InferenceTest.sh"
     elif test_type == "Bench":
-        target_file = "InfiniTensor_job_executor_for_BenchTest.sh"
+        target_file = "InfiniLM_job_executor_for_BenchTest.sh"
     elif test_type == "Service":
-        target_file = "InfiniTensor_job_executor_for_ServiceTest.sh"
+        target_file = "InfiniLM_job_executor_for_ServiceTest.sh"
     elif test_type == "Accuracy":
-        target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
+        target_file = "InfiniLM_job_executor_for_AccuracyTest.sh"
 
     if test_type == "Service":
         model_list = ""
@@ -95,13 +95,13 @@ def main():
 
             args = str(args).splitlines()[0].strip()
 
-            match = re.search(r"-tp\s+(\d+)", args)
-            npu_quantity = match.group(1) if match else "0"
+            match = re.search(r"--tp\s+(\d+)", args)
+            npu_quantity = match.group(1) if match else "1"
 
             model_list += f"{name}:{npu_quantity}:{GPU} "
 
             result = re.sub(
-                r"^.*docker\.xcoresigma\.com(\:\d+)?/docker/infiniTensor-x86_64-nvidia\:\S+",
+                r"^.*docker\.xcoresigma\.com(\:\d+)?/docker/infiniLM-x86_64-nvidia\:\S+",
                 "",
                 args,
             )
@@ -126,7 +126,7 @@ def main():
         m = re.search(r"-v\s+(/[^:\s]+):/workspace", docker_args)
         log_path = m.group(1) if m else ""
 
-    template_file = "job_executor_template_for_InfiniTensor.sh"
+    template_file = "job_executor_template_for_InfiniLM.sh"
 
     try:
         with open(f"{curr_dir}/{template_file}", 'r', encoding='utf-8') as file:

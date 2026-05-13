@@ -75,14 +75,14 @@ if [ -z $VERSION ]; then
     # 先拿到所有 tag 并按字母升序
     TAGS=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
-        /api/docker/docker-local/v2/infiniTensor-x86_64-nvidia/tags/list \
+        /api/docker/docker-local/v2/infiniLM-x86_64-nvidia/tags/list \
     | jq -r '.tags[]' | sort)
 
     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
     for tag in $TAGS; do
     created=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
-        /api/storage/docker-local/infiniTensor-x86_64-nvidia/$tag \
+        /api/storage/docker-local/infiniLM-x86_64-nvidia/$tag \
         | jq -r '.created')
     echo "$tag $created"
     done > tag_dates.txt
@@ -95,21 +95,21 @@ else
 fi
 
 # DOCKER_IMAGE_URL=""
-# docker pull docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+# docker pull docker.xcoresigma.com:80/docker/infiniLM-x86_64-nvidia:$LATEST_TAG
 # if [ $? -ne 0 ]; then
-#     docker pull docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG
+#     docker pull docker.xcoresigma.com/docker/infiniLM-x86_64-nvidia:$LATEST_TAG
 #     if [ $? -ne 0 ]; then
 #         exit 1;
 #     fi
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
+#     DOCKER_IMAGE_URL="docker.xcoresigma.com/docker/infiniLM-x86_64-nvidia:$LATEST_TAG"
 # else
-#     DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniTensor-x86_64-nvidia:$LATEST_TAG"
+#     DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniLM-x86_64-nvidia:$LATEST_TAG"
 # fi
 
-ret=`docker ps -a | grep infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
+ret=`docker ps -a | grep infiniLM_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
-  docker rm infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+  docker stop infiniLM_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+  docker rm infiniLM_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -355,7 +355,7 @@ if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     fi
 fi
 
-EXEC_COMMAND="docker run --name=infiniTensor_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
+EXEC_COMMAND="docker run --name=infiniLM_nvidia_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
 EXEC_COMMAND+="-e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>

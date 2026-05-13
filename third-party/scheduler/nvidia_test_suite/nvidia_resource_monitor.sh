@@ -30,7 +30,7 @@ fi
 if [ -z $ENGINE_TYPE ]; then
     echo "Parameter PLATFORM required!"
     exit 1
-elif [ $ENGINE_TYPE != "InfiniTensor" ] && [ $ENGINE_TYPE != "vLLM" ]; then
+elif [ $ENGINE_TYPE != "InfiniLM" ] && [ $ENGINE_TYPE != "vLLM" ]; then
     echo "Inference Engine Type is wrong!"
     exit 1
 fi
@@ -44,11 +44,11 @@ echo "################################### Nvidia ###############################
 echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
 echo "#################################################################################"
 
-if [ $ENGINE_TYPE == "InfiniTensor" ]; then
+if [ $ENGINE_TYPE == "InfiniLM" ]; then
     if [ -z $version ]; then
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
     else
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
@@ -114,7 +114,6 @@ declare -A L20_server_list=(
 
 declare -A H800_server_list=(
     # ["H800-001"]="10.9.1.54"
-    # ["H800-002"]="10.9.1.62"
 )
 
 search_servers() {
@@ -480,31 +479,31 @@ search_servers() {
 
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_InfiniML_${TEST_TYPE}Test.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!A100_server_list[@]}"; do
     echo "$name => ${A100_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_InfiniML_${TEST_TYPE}Test.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H100_server_list[@]}"; do
     echo "$name => ${H100_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_InfiniML_${TEST_TYPE}Test.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!L20_server_list[@]}"; do
     echo "$name => ${L20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_InfiniML_${TEST_TYPE}Test.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H800_server_list[@]}"; do
     echo "$name => ${H800_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_InfiniML_${TEST_TYPE}Test.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
 
@@ -528,7 +527,7 @@ if [ $TEST_TYPE != "Service" ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
             inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
+            $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
@@ -564,6 +563,54 @@ for item in "${full_model_list[@]}"; do
     fi
 done
 
+for item in "${full_model_list[@]}"; do
+    model=`echo "$item" | awk -F : '{print $1}'`
+    found=0
+    # for option in 'DynamicSplitFuseV2' 'PrefillFirst'; do
+    for option in 'DynamicSplitFuseV2'; do
+        use_prefix_cache_flag=-1
+        for ((i=1; i<=${num_of_prefix_cache_options}; i=i+1)); do
+            swap_space=40
+            for ((j=1; j<=1; j=j+1)); do
+                # 模型已经测试过了，检查下一个
+                if [ $use_prefix_cache_flag -gt 0 ]; then
+                    if [ $swap_space -eq 0 ]; then
+                        if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache` ]; then
+                            continue
+                        fi
+                    else
+                        if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_use-prefix-cache_swap-space` ]; then
+                            swap_space=0
+                            continue
+                        fi
+                    fi
+                else
+                    if [ $swap_space -eq 0 ]; then
+                        if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}` ]; then
+                            continue
+                        fi
+                    else
+                        if [ ! -z `cat ${processed_models} | grep -w ${model}_${option}_swap-space` ]; then
+                            swap_space=0
+                            continue
+                        fi
+                    fi
+                fi
+                GPU_resource_demand+=(${item})
+                found=1
+                break
+            done
+            if [ $found -eq 1 ]; then
+                break
+            fi
+            use_prefix_cache_flag=$((-use_prefix_cache_flag))
+        done
+        if [ $found -eq 1 ]; then
+            break
+        fi
+    done
+done
+
 GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
 
 echo "Beginning testing of the model list: ${GPU_resource_demand[@]}"
@@ -590,30 +637,10 @@ while true; do
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
             echo
-            if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/infiniTensor_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Stability testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Performance testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Smoke" ]; then
-                $curr_dir/infiniTensor_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Smoke testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Accuracy" ]; then
-                $curr_dir/infiniTensor_nvidia_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Accuracy testing task|All tests have completed"`
-            else
-                echo "Test Type is Wrong!"
-                exit 1
-            fi
+            $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM[*]} ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+            last_pid=$!
+            pid_map[$last_pid]=$item
+            status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the Inference Service testing task|All tests have completed"`
 
             if [ "$status_msg" == "All tests have completed" ]; then
                 echo "Failed to set up the model runtime environment. Trying the next model..."
