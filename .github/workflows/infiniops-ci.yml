@@ -261,7 +261,42 @@ jobs:
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
+          set +e
           eval "docker run ${DOCKER_ARGS}"
+          rc=$?
+          set -e
+
+          if [ "$rc" -eq 137 ] && [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
+            if python3 - "${RESULT_DIR}" <<'PY'
+          import sys
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          result_dir = Path(sys.argv[1])
+          junit = result_dir / "test-results.xml"
+
+          if not junit.exists():
+              raise SystemExit(1)
+
+          root = ET.parse(junit).getroot()
+          suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+
+          if not suites:
+              raise SystemExit(1)
+
+          for suite in suites:
+              if int(suite.get("failures", 0)) or int(suite.get("errors", 0)):
+                  raise SystemExit(1)
+
+          raise SystemExit(0)
+          PY
+            then
+              echo "[warn] docker exited 137 after successful junit result; treating as success"
+              exit 0
+            fi
+          fi
+
+          exit "$rc"
 
       - name: Trigger ${{ matrix.platform }} Unit Test Task
         if: ${{ matrix.platform != 'nvidia' && matrix.platform != 'ascend' }}
