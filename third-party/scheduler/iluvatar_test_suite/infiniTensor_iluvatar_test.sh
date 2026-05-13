@@ -233,14 +233,16 @@ if [ $TEST_TYPE == "Unit" ]; then
 
     # 发送测试报告
     # 获取模型启动命令，并做为参数传入
-    launch_cmd=`sed -n '/docker run /,/exit \$failed'\''/p' "$curr_dir/logs/unit/$session_id/${filename}"`
+    launch_cmd=$(grep -m 1 'docker run ' "$curr_dir/logs/unit/$session_id/${filename}" | cut -c 1-2000)
 
-    python3 ./get_info.py \
+    if ! python3 ./get_info.py \
         --file "$curr_dir/logs/unit/$session_id/${filename}" \
         --email "limingge@xcoresigma.com" \
         --model "InfiniOps" \
         --gpu "V200" \
-        --cmd "${launch_cmd}"
+        --cmd "${launch_cmd}"; then
+        echo "Warning: failed to generate UnitTest report; preserving test exit code $err."
+    fi
 
     exit $err
 fi
