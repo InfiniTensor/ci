@@ -282,13 +282,13 @@ def test_docker_args_cambricon_mlu_visible_devices():
 def test_docker_args_ascend_visible_devices():
     args = _make_platform_args("ascend", job_suffix="npu")
     assert "ASCEND_VISIBLE_DEVICES=0" in args
-    assert "--device=/dev/davinci0" in args
+    assert "--device=/dev/davinci0:/dev/davinci0" in args
 
 
 def test_docker_args_ascend_selected_device():
     args = _make_platform_args("ascend", job_suffix="npu", gpu_id="3")
-    assert "ASCEND_VISIBLE_DEVICES=3" in args
-    assert "--device=/dev/davinci3" in args
+    assert "ASCEND_VISIBLE_DEVICES=0" in args
+    assert "--device=/dev/davinci3:/dev/davinci0" in args
 
 
 def test_docker_args_metax_cuda_visible_devices():

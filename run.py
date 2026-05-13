@@ -256,13 +256,18 @@ def build_docker_args(
         # For passthrough platforms, control visible devices via platform env.
         device_env = PLATFORM_DEVICE_ENV.get(platform)
 
-        if device_env:
-            args.extend(["-e", f"{device_env}={gpu_id}"])
         if platform == "ascend":
-            for device_id in gpu_id.split(","):
-                device_id = device_id.strip()
-                if device_id:
-                    args.append(f"--device=/dev/davinci{device_id}")
+            device_ids = [device_id.strip() for device_id in gpu_id.split(",")]
+            device_ids = [device_id for device_id in device_ids if device_id]
+            logical_ids = ",".join(str(i) for i in range(len(device_ids)))
+
+            if device_env and logical_ids:
+                args.extend(["-e", f"{device_env}={logical_ids}"])
+
+            for logical_id, device_id in enumerate(device_ids):
+                args.append(f"--device=/dev/davinci{device_id}:/dev/davinci{logical_id}")
+        elif device_env:
+            args.extend(["-e", f"{device_env}={gpu_id}"])
         if platform == "moore":
             args.extend(["-e", f"MUSA_VISIBLE_DEVICES={gpu_id}"])
     elif gpu_style == GPU_STYLE_MLU and gpu_id and gpu_id != "all":
