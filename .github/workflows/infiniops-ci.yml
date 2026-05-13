@@ -65,11 +65,9 @@ jobs:
         env:
           PLATFORM: ${{ inputs.platform }}
           JOB_TYPES_WITH_JOBS: ${{ steps.generate.outputs.job_types_with_jobs }}
-          MATRIX_JSON_FOR_UNITTEST: ${{ steps.generate.outputs.matrix_json_for_unittest }}
         run: |
           printf 'platform=%s\n' "${PLATFORM}"
           printf 'job_types_with_jobs=%s\n' "${JOB_TYPES_WITH_JOBS}"
-          printf 'matrix_json_for_unittest=%s\n' "${MATRIX_JSON_FOR_UNITTEST}"
 
   run-unittest:
     name: unit / ${{ matrix.platform }}
