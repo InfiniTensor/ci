@@ -68,7 +68,7 @@ def _entry_from_flat_job(
         "id": job_id,
         "platform": platform,
         "job_name": short_name,
-        "runner_label": platform,
+        "runner_label": str(job_cfg.get("runner_label") or platform).strip(),
         "dockerfile": dockerfile,
         "build_args": _normalize_build_args(image_cfg.get("build_args")),
         "docker_args": job_cfg.get("docker_args", []),

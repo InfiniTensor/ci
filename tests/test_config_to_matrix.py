@@ -21,6 +21,7 @@ def _multi_platform_config():
                 },
                 "ascend": {
                     "image": {"dockerfile": ".ci/images/ascend/"},
+                    "runner_label": "Ascend",
                     "jobs": {
                         "npu": {
                             "type": "unittest",
@@ -67,6 +68,12 @@ def test_convert_by_job_type_all_keeps_all_platforms():
         "ascend_npu",
         "metax_gpu",
     ]
+    ascend = next(
+        entry
+        for entry in matrices["unittest"]["include"]
+        if entry["id"] == "ascend_npu"
+    )
+    assert ascend["runner_label"] == "Ascend"
 
 
 def test_convert_by_job_type_accepts_platform_list():

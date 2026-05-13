@@ -8,6 +8,7 @@ def test_normalize_creates_flat_jobs():
             "nvidia": {
                 "image": {"dockerfile": ".ci/images/nvidia/"},
                 "setup": "pip install .",
+                "runner_label": "NVIDIA-A100",
                 "docker_args": ["--gpus", "all"],
                 "jobs": {
                     "gpu": {
@@ -27,6 +28,7 @@ def test_normalize_creates_flat_jobs():
     assert "nvidia_gpu" in config["jobs"]
     assert "nvidia_multi_gpu" in config["jobs"]
     assert config["jobs"]["nvidia_gpu"]["platform"] == "nvidia"
+    assert config["jobs"]["nvidia_gpu"]["runner_label"] == "NVIDIA-A100"
     assert config["jobs"]["nvidia_gpu"]["setup"] == "pip install ."
     assert config["jobs"]["nvidia_gpu"]["docker_args"] == ["--gpus", "all"]
     assert config["jobs"]["nvidia_gpu"]["resources"]["gpu_ids"] == "0"
