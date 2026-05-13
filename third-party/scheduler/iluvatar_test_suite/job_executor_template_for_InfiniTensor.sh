@@ -122,8 +122,35 @@ else
     TARGET_FREE_GPUS=$GPU_QUANITY
 fi
 
+run_ixsmi() {
+    if command -v ixsmi >/dev/null 2>&1; then
+        ixsmi "$@"
+        return
+    fi
+
+    local container_name
+    local candidates=()
+    [ -n "${IXSMI_CONTAINER:-}" ] && candidates+=("$IXSMI_CONTAINER")
+    candidates+=(zhuyue_test)
+    while IFS= read -r container_name; do
+        candidates+=("$container_name")
+    done < <(docker ps --format '{{.Names}}' 2>/dev/null || true)
+
+    for container_name in "${candidates[@]}"; do
+        [ -n "$container_name" ] || continue
+        docker inspect -f '{{.State.Running}}' "$container_name" 2>/dev/null | grep -qx true || continue
+        if docker exec "$container_name" /bin/bash -ic 'command -v ixsmi >/dev/null 2>&1 && ixsmi -L >/dev/null 2>&1'; then
+            docker exec "$container_name" /bin/bash -ic "ixsmi $*"
+            return
+        fi
+    done
+
+    echo "ixsmi is unavailable on host and no running Docker container exposes it" >&2
+    return 127
+}
+
 # 检查 ixsmi 命令是否存在
-if ! docker exec zhuyue_test /bin/bash -ic 'command -v ixsmi' &> /dev/null; then
+if ! run_ixsmi -L >/dev/null 2>&1; then
     echo "错误: ixsmi 未找到，请确保 Iluvatar V200 驱动已安装"
     exit 1
 fi
@@ -141,13 +168,13 @@ while true; do
     fi
 
     # 使用 ixsmi 获取 GPU 使用情况
-    GPU_INFO=($(docker exec zhuyue_test /bin/bash -ic 'ixsmi' | awk '/Processes:/,/\+/{ if ($1 ~ /^[|]/ && $2 ~ /^[0-9]+$/) print $2 }'))
+    GPU_INFO=($(run_ixsmi | awk '/Processes:/,/\+/{ if ($1 ~ /^[|]/ && $2 ~ /^[0-9]+$/) print $2 }'))
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
     # 检查使用中的 GPU 数量
     USE_COUNT=$(echo "${GPU_INFO[@]}" | wc -w)
     echo "当前使用中的 GPU 数量：$USE_COUNT, 索引: ${GPU_INFO[@]}"
-    TOTAL_COUNT=$(docker exec zhuyue_test /bin/bash -ic 'ixsmi -L' | wc -l)
+    TOTAL_COUNT=$(run_ixsmi -L | wc -l)
     FREE_COUNT=$(($TOTAL_COUNT-$USE_COUNT))
     FREE_GPU_INFO=($(seq 0 $(($TOTAL_COUNT-1)) | grep -vxFf <(printf "%s\\n" "${GPU_INFO[@]}")))
     # 如果找到足够的空闲 GPU, 则返回结果并退出
