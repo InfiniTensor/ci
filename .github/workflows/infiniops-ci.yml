@@ -161,10 +161,10 @@ jobs:
           LOCAL: True
         run: |
           PYTHONPATH=.ci python3 - <<'PY'
+          import base64
           import os
           import shlex
           import sys
-          import uuid
           from pathlib import Path
 
           from run import (
@@ -228,11 +228,9 @@ jobs:
               env_opt("IMAGE_TAG") or job.get("image", "latest"),
           )
 
-          delimiter = f"EOF_{uuid.uuid4().hex}"
           with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as f:
-              f.write(f"DOCKER_ARGS<<{delimiter}\n")
-              f.write(shlex.join(docker_args) + "\n")
-              f.write(f"{delimiter}\n")
+              docker_args_b64 = base64.b64encode(shlex.join(docker_args).encode()).decode()
+              f.write(f"DOCKER_ARGS_B64={docker_args_b64}\n")
               f.write(f"RESULT_DIR={results_dir}\n")
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
@@ -244,6 +242,7 @@ jobs:
           ${{ matrix.job_env }}
         run: |
           set -e
+          DOCKER_ARGS="$(printf '%s' "${DOCKER_ARGS_B64}" | base64 -d)"
           echo "==> running job: ${{ matrix.job_name }}"
 
           if [ -n "${RESULT_DIR:-}" ] && [ "${RESULT_DIR}" != "None" ]; then
@@ -268,6 +267,7 @@ jobs:
           ${{ matrix.job_env }}
         run: |
           set -e
+          DOCKER_ARGS="$(printf '%s' "${DOCKER_ARGS_B64}" | base64 -d)"
           echo "==> running job: ${{ matrix.job_name }}"
           set -m
 
