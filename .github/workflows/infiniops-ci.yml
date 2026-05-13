@@ -210,7 +210,7 @@ jobs:
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
           local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
-          gpu_id_override = env_opt("GPU_ID")
+          gpu_id_override = env_opt("GPU_ID") or ("all" if platform != "ascend" else None)
 
           raw_gpu_ids = str(job.get("resources", {}).get("gpu_ids", "auto")).strip()
           if not gpu_id_override and raw_gpu_ids == "auto":
