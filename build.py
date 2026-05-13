@@ -206,7 +206,10 @@ def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, log
         return True
 
     print(f"==> building {platform}: {commit_tag}", file=sys.stderr)
-    result = subprocess.run(build_cmd)
+    build_env = os.environ.copy()
+    build_env.setdefault("DOCKER_BUILDKIT", "1")
+    build_env.setdefault("BUILDKIT_PROGRESS", "plain")
+    result = subprocess.run(build_cmd, env=build_env)
 
     if result.returncode != 0:
         error = {
