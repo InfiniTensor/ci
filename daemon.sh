@@ -33,6 +33,7 @@ ci_ref=${CI_REF:-master}
 platform_suite=$(echo "$platform" | tr '[:upper:]' '[:lower:]')
 source_ci_dir=${CI_SOURCE_DIR:-}
 source_mount_args=()
+docker_cli_mount_args=()
 
 stop_ci_containers() {
     local names=()
@@ -55,10 +56,21 @@ if [ -n "$source_ci_dir" ] && [ -d "${source_ci_dir}/.ci" ]; then
     source_mount_args=(-v "${source_ci_dir}/.ci:/CI_Source/ci:ro")
 fi
 
+if [ -x /usr/bin/docker ]; then
+    docker_cli_mount_args=(-v /usr/bin/docker:/usr/bin/docker:ro)
+
+    if [ -e /usr/lib64/libltdl.so.7 ]; then
+        docker_cli_mount_args+=(-v /usr/lib64/libltdl.so.7:/usr/lib64/libltdl.so.7:ro)
+    fi
+fi
+
 echo "Using CI ref: ${ci_ref}"
 echo "Using scheduler suite: ${platform_suite}_test_suite"
 if [ ${#source_mount_args[@]} -gt 0 ]; then
     echo "Using CI source: ${source_ci_dir}/.ci"
+fi
+if [ ${#docker_cli_mount_args[@]} -gt 0 ]; then
+    echo "Using host Docker CLI"
 fi
 
 container_script='
@@ -121,6 +133,7 @@ fi
 
 docker_args_list=(
     --rm
+    --runtime runc
     --name="CI_test_job_${platform}_${test_type}_${CI_job_id}"
     --ipc=host
     --net=host
@@ -131,6 +144,7 @@ docker_args_list=(
     -v "${HOME}/.ssh:/CI_Host_SSH:ro"
     -v /var/run/docker.sock:/var/run/docker.sock
     "${source_mount_args[@]}"
+    "${docker_cli_mount_args[@]}"
     -e "CI_REF=${ci_ref}"
     -e "CI_PLATFORM_SUITE=${platform_suite}"
     -e HTTP_PROXY
