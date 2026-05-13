@@ -62,10 +62,14 @@ jobs:
         run: python .ci/config_to_matrix.py --config "${{ inputs.config_path }}" --platform "${{ inputs.platform }}" --write-github-outputs
 
       - name: Show generated job types
+        env:
+          PLATFORM: ${{ inputs.platform }}
+          JOB_TYPES_WITH_JOBS: ${{ steps.generate.outputs.job_types_with_jobs }}
+          MATRIX_JSON_FOR_UNITTEST: ${{ steps.generate.outputs.matrix_json_for_unittest }}
         run: |
-          echo "platform=${{ inputs.platform }}"
-          echo "job_types_with_jobs=${{ steps.generate.outputs.job_types_with_jobs }}"
-          echo "matrix_json_for_unittest=${{ steps.generate.outputs.matrix_json_for_unittest }}"
+          printf 'platform=%s\n' "${PLATFORM}"
+          printf 'job_types_with_jobs=%s\n' "${JOB_TYPES_WITH_JOBS}"
+          printf 'matrix_json_for_unittest=%s\n' "${MATRIX_JSON_FOR_UNITTEST}"
 
   run-unittest:
     name: unit / ${{ matrix.platform }}
