@@ -56,6 +56,34 @@ def apply_test_param_to_run(run: str, param_value: Any) -> str:
     return replaced.strip()
 
 
+def _job_param_combos(tp: Any, ngpus: Any, *, job_id: str = "") -> list[dict[str, Any]]:
+    """Pairwise expansion: index ``i`` uses ``tp[i]`` with ``ngpus[i]``.
+
+    If only one dimension is a list, the other (scalar) is broadcast to every index.
+    If both are lists, their lengths must match or a :exc:`ValueError` is raised.
+
+    Each entry is ``{"TEST_PARAM": t, "ngpus": g}``.
+    """
+    tp_is_list = isinstance(tp, list)
+    ngpus_is_list = isinstance(ngpus, list)
+    prefix = f"job {job_id!r}: " if job_id else ""
+
+    if tp_is_list and ngpus_is_list:
+        if len(tp) != len(ngpus):
+            raise ValueError(
+                f"{prefix}env.TEST_PARAM and resources.ngpus lists must have the same length "
+                f"({len(tp)} != {len(ngpus)})"
+            )
+        return [{"TEST_PARAM": t, "ngpus": g} for t, g in zip(tp, ngpus)]
+
+    if tp_is_list:
+        return [{"TEST_PARAM": t, "ngpus": ngpus} for t in tp]
+    if ngpus_is_list:
+        return [{"TEST_PARAM": tp, "ngpus": g} for g in ngpus]
+
+    raise AssertionError("_job_param_combos expects at least one list argument")
+
+
 def expand_stages_with_test_param(
     stages: list[dict[str, Any]], param_value: Any
 ) -> list[dict[str, Any]]:
@@ -70,7 +98,11 @@ def expand_stages_with_test_param(
 
 
 def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
-    """Split jobs whose ``env.TEST_PARAM`` is a list into one job per value (matrix + run.py)."""
+    """Split jobs whose ``env.TEST_PARAM`` and/or ``resources.ngpus`` is a list.
+
+    When both are lists, entries are paired by index (same length required).
+    A scalar side is broadcast across the list dimension.
+    """
     jobs = config.get("jobs")
     if not isinstance(jobs, dict) or not jobs:
         return config
@@ -79,38 +111,49 @@ def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
     for job_id, job_cfg in jobs.items():
         env = job_cfg.get("env") or {}
         tp = env.get("TEST_PARAM")
-        if not isinstance(tp, list):
+        resources = job_cfg.get("resources") or {}
+        ngpus = resources.get("ngpus")
+        if not isinstance(tp, list) and not isinstance(ngpus, list):
             new_jobs[job_id] = job_cfg
             continue
+
+        param_combos = _job_param_combos(tp, ngpus, job_id=job_id)
 
         stages_template = job_cfg.get("stages") or []
         if not stages_template:
             fixed = copy.deepcopy(job_cfg)
-            ne = dict(fixed.get("env") or {})
-            ne.pop("TEST_PARAM", None)
-            fixed["env"] = ne
+            if isinstance(tp, list):
+                ne = dict(fixed.get("env") or {})
+                ne.pop("TEST_PARAM", None)
+                fixed["env"] = ne
+            if isinstance(ngpus, list):
+                nr = dict(fixed.get("resources") or {})
+                nr.pop("ngpus", None)
+                fixed["resources"] = nr
             new_jobs[job_id] = fixed
             continue
 
-        for idx, raw_param in enumerate(tp):
+        for idx, combo in enumerate(param_combos):
+            raw_tp = combo["TEST_PARAM"]
+            raw_ngpus = combo["ngpus"]
             new_id = f"{job_id}__{idx}"
             new_job = copy.deepcopy(job_cfg)
-            new_job["stages"] = expand_stages_with_test_param(stages_template, raw_param)
+            new_job["stages"] = expand_stages_with_test_param(stages_template, raw_tp)
 
             new_env = dict(new_job.get("env") or {})
             new_env.pop("TEST_PARAM", None)
-            if _is_default_test_param(raw_param):
+            if _is_default_test_param(raw_tp):
                 new_env["TEST_PARAM"] = "default"
             else:
-                new_env["TEST_PARAM"] = str(raw_param).strip()
+                new_env["TEST_PARAM"] = str(raw_tp).strip()
             new_job["env"] = new_env
 
+            new_resources = dict(new_job.get("resources") or {})
+            new_resources.pop("ngpus", None)
+            new_resources["ngpus"] = raw_ngpus
+            new_job["resources"] = new_resources
+
             base_short = str(new_job.get("short_name", "")).strip() or job_id
-            if _is_default_test_param(raw_param):
-                label = "default"
-            else:
-                pv = str(raw_param).strip()
-                label = pv[:60] + ("…" if len(pv) > 60 else "")
             new_job["short_name"] = f"{base_short}__{idx}"
 
             new_jobs[new_id] = new_job
