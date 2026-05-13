@@ -135,16 +135,14 @@ search_servers() {
                 TARGET_FREE_GPUS=$NPU_QUANTITY
             fi
             echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
-            # 使用 mx-smi 获取 GPU 使用情况
-            GPU_INFO=(\$(mx-smi | awk '/Process:/,/\+/{ if (\$1 ~ /^[|]/ && \$2 ~ /^[0-9]+\$/) print \$2 }'))
-            # 去重
-            GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
-            # 检查使用中的 GPU 数量
-            USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
-            echo \"GPUs currently in use: \$USE_COUNT, indices: \${GPU_INFO[@]}\"
             TOTAL_COUNT=\$(mx-smi -L | grep GPU | wc -l)
-            FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
-            FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
+            # MetaX mx-smi may report all C550 cards as rows in the process table.
+            # Treat the summary table's GPU-State=Available as the source of truth.
+            FREE_GPU_INFO=(\$(mx-smi | awk '/^[|][[:space:]]*[0-9]+[[:space:]]+MetaX[[:space:]]+C550[[:space:]]*[|]/ { gpu=\$2; next } gpu != \"\" && /[|][[:space:]]*Available[[:space:]]*[|]/ { print gpu; gpu=\"\" }'))
+            FREE_COUNT=\${#FREE_GPU_INFO[@]}
+            GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${FREE_GPU_INFO[@]}\")))
+            USE_COUNT=\${#GPU_INFO[@]}
+            echo \"GPUs currently in use: \$USE_COUNT, indices: \${GPU_INFO[@]}\"
             echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${FREE_GPU_INFO[@]}\"
             # 如果找到足够的空闲 GPU, 则返回结果并退出
             if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
