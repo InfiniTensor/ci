@@ -9,48 +9,6 @@ ARG https_proxy
 ARG no_proxy
 ARG PIP_INDEX_URL=https://pypi.org/simple
 
-RUN missing=0; \
-    for tool in git cmake ninja curl gcc g++ clang; do \
-        if ! command -v "$tool" >/dev/null 2>&1; then missing=1; fi; \
-    done; \
-    if [ "$missing" = "0" ]; then \
-        echo "Required system tools are already present"; \
-    elif command -v apt-get >/dev/null 2>&1; then \
-        export DEBIAN_FRONTEND=noninteractive; \
-        apt-get update && \
-        apt-get install -y --no-install-recommends \
-            git \
-            cmake \
-            ninja-build \
-            coreutils \
-            curl \
-            libclang-dev && \
-        rm -rf /var/lib/apt/lists/*; \
-    elif command -v dnf >/dev/null 2>&1; then \
-        dnf install -y \
-            git \
-            cmake \
-            ninja-build \
-            coreutils \
-            curl \
-            gcc \
-            gcc-c++ \
-            clang-devel && \
-        dnf clean all; \
-    elif command -v yum >/dev/null 2>&1; then \
-        yum install -y \
-            git \
-            cmake \
-            ninja-build \
-            coreutils \
-            curl \
-            clang-devel && \
-        yum clean all; \
-    else \
-        echo "No supported package manager found" >&2; \
-        exit 1; \
-    fi
-
 ARG PRIVATE_SDK_URL
 RUN if [ -n "$PRIVATE_SDK_URL" ]; then \
         curl -fSL "$PRIVATE_SDK_URL" -o /tmp/sdk.run && \
