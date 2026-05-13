@@ -136,9 +136,23 @@ search_servers() {
             fi
             echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
             TOTAL_COUNT=\$(mx-smi -L | grep GPU | wc -l)
+            MAX_IDLE_GPU_MEMORY_MIB=\${MAX_IDLE_GPU_MEMORY_MIB:-10000}
             # MetaX mx-smi may report all C550 cards as rows in the process table.
-            # Treat the summary table's GPU-State=Available as the source of truth.
-            FREE_GPU_INFO=(\$(mx-smi | awk '/^[|][[:space:]]*[0-9]+[[:space:]]+MetaX[[:space:]]+C550[[:space:]]*[|]/ { gpu=\$2; next } gpu != \"\" && /[|][[:space:]]*Available[[:space:]]*[|]/ { print gpu; gpu=\"\" }'))
+            # Start from GPU-State=Available, then reject cards with real process memory.
+            MX_SMI_OUTPUT=\$(mx-smi)
+            AVAILABLE_GPU_INFO=(\$(printf \"%s\\n\" \"\$MX_SMI_OUTPUT\" | awk '/^[|][[:space:]]*[0-9]+[[:space:]]+MetaX[[:space:]]+C550[[:space:]]*[|]/ { gpu=\$2; next } gpu != \"\" && /[|][[:space:]]*Available[[:space:]]*[|]/ { print gpu; gpu=\"\" }'))
+            declare -A GPU_MEMORY_USED
+            while read -r GPU_ID GPU_MEMORY; do
+                [ -n \"\$GPU_ID\" ] || continue
+                GPU_MEMORY_USED[\$GPU_ID]=\$((\${GPU_MEMORY_USED[\$GPU_ID]:-0} + GPU_MEMORY))
+            done < <(printf \"%s\\n\" \"\$MX_SMI_OUTPUT\" | awk '/^[|][[:space:]]*[0-9]+[[:space:]]+[0-9]+[[:space:]]+/ { print \$2, \$(NF-1) }')
+            FREE_GPU_INFO=()
+            for GPU_ID in \"\${AVAILABLE_GPU_INFO[@]}\"; do
+                GPU_MEMORY=\${GPU_MEMORY_USED[\$GPU_ID]:-0}
+                if [ \"\$GPU_MEMORY\" -lt \"\$MAX_IDLE_GPU_MEMORY_MIB\" ]; then
+                    FREE_GPU_INFO+=(\"\$GPU_ID\")
+                fi
+            done
             FREE_COUNT=\${#FREE_GPU_INFO[@]}
             GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${FREE_GPU_INFO[@]}\")))
             USE_COUNT=\${#GPU_INFO[@]}
