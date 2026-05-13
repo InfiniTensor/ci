@@ -11,14 +11,14 @@ import run
 
 
 def test_resolve_image_with_registry():
-    cfg = {"registry": {"url": "localhost:5000", "project": "infiniops"}}
+    cfg = {"registry": {"url": "localhost:5000", "project": "infinilm"}}
     img = run.resolve_image(cfg, "nvidia", "latest")
-    assert img == "localhost:5000/infiniops/nvidia:latest"
+    assert img == "localhost:5000/infinilm/nvidia:latest"
 
 
 def test_resolve_image_without_registry(minimal_config):
     img = run.resolve_image(minimal_config, "nvidia", "abc1234")
-    assert img == "infiniops-ci/nvidia:abc1234"
+    assert img == "infinilm-ci/nvidia:abc1234"
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +80,7 @@ def test_docker_args_correct_image(minimal_config):
         "/workspace",
         None,
     )
-    assert "infiniops-ci/nvidia:latest" in args
+    assert "infinilm-ci/nvidia:latest" in args
 
 
 def test_docker_args_image_tag_override(minimal_config):
@@ -93,7 +93,7 @@ def test_docker_args_image_tag_override(minimal_config):
         "/workspace",
         "abc1234",
     )
-    assert "infiniops-ci/nvidia:abc1234" in args
+    assert "infinilm-ci/nvidia:abc1234" in args
 
 
 # ---------------------------------------------------------------------------

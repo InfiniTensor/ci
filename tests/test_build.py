@@ -7,13 +7,13 @@ import build
 
 
 def test_build_image_tag_with_registry():
-    tag = build.build_image_tag("localhost:5000", "infiniops", "nvidia", "latest")
-    assert tag == "localhost:5000/infiniops/nvidia:latest"
+    tag = build.build_image_tag("localhost:5000", "infinilm", "nvidia", "latest")
+    assert tag == "localhost:5000/infinilm/nvidia:latest"
 
 
 def test_build_image_tag_without_registry():
-    tag = build.build_image_tag("", "infiniops", "nvidia", "abc1234")
-    assert tag == "infiniops-ci/nvidia:abc1234"
+    tag = build.build_image_tag("", "infinilm", "nvidia", "abc1234")
+    assert tag == "infinilm-ci/nvidia:abc1234"
 
 
 def test_build_image_tag_commit_hash():
@@ -116,7 +116,7 @@ def test_resolve_dockerfile_dir_tool_relative():
 
 
 def _registry_cfg():
-    return {"url": "localhost:5000", "project": "infiniops"}
+    return {"url": "localhost:5000", "project": "infinilm"}
 
 
 def test_build_image_dry_run_no_subprocess(mocker, monkeypatch, capsys):

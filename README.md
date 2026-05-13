@@ -13,7 +13,7 @@ helpers, GitHub Actions matrix converter, reusable workflow, and tests.
 ├── config_to_matrix.py
 ├── .github/
 │   └── workflows/
-│       └── infiniops-ci.yml
+│       └── infinilm-ci.yml
 ├── images/
 │   ├── nvidia/
 │   ├── iluvatar/
@@ -66,8 +66,8 @@ python .ci/build.py --platform all --dry-run
 ```
 
 Supported platforms are `nvidia`, `iluvatar`, `metax`, `moore`, `cambricon`,
-`ascend`, and `all`. Image tags default to `infiniops-ci/<platform>:<commit>`
-and `infiniops-ci/<platform>:latest` unless a registry is configured.
+`ascend`, and `all`. Image tags default to `infinilm-ci/<platform>:<commit>`
+and `infinilm-ci/<platform>:latest` unless a registry is configured.
 
 ## Local Runner
 
@@ -90,7 +90,7 @@ Caller repositories should keep a thin workflow:
 ```yaml
 jobs:
   ci:
-    uses: InfiniTensor/ci/.github/workflows/infiniops-ci.yml@codex/prune-unused-ci-artifacts
+    uses: InfiniTensor/ci/.github/workflows/infinilm-ci.yml@codex/prune-unused-ci-artifacts
     with:
       config_path: .github/ci_config.yml
       ci_ref: codex/prune-unused-ci-artifacts

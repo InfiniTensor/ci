@@ -97,6 +97,24 @@ def expand_stages_with_test_param(
     return out
 
 
+def _append_tp_suffix_from_ngpus(job_cfg: dict[str, Any]) -> None:
+    """If ``resources.ngpus`` is a concrete scalar, append `` --tp=<ngpus>`` to each stage ``run``."""
+    ngpus = (job_cfg.get("resources") or {}).get("ngpus")
+    if ngpus is None or isinstance(ngpus, list):
+        return
+    stages = job_cfg.get("stages")
+    if not isinstance(stages, list):
+        return
+    suffix = f" --tp={ngpus}"
+    for st in stages:
+        if "run" not in st:
+            continue
+        run = str(st.get("run", "")).rstrip()
+        if not run:
+            continue
+        st["run"] = run + suffix
+
+
 def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
     """Split jobs whose ``env.TEST_PARAM`` and/or ``resources.ngpus`` is a list.
 
@@ -149,14 +167,21 @@ def expand_test_param_jobs(config: dict[str, Any]) -> dict[str, Any]:
             new_job["env"] = new_env
 
             new_resources = dict(new_job.get("resources") or {})
-            new_resources.pop("ngpus", None)
-            new_resources["ngpus"] = raw_ngpus
+            # Only pin ``ngpus`` when it was list-expanded; otherwise leave the deep-copied
+            # scalar (or absent key) unchanged—avoid injecting ``ngpus: null`` when only
+            # ``TEST_PARAM`` was a list.
+            if isinstance(ngpus, list):
+                new_resources.pop("ngpus", None)
+                new_resources["ngpus"] = raw_ngpus
             new_job["resources"] = new_resources
 
             base_short = str(new_job.get("short_name", "")).strip() or job_id
             new_job["short_name"] = f"{base_short}__{idx}"
 
             new_jobs[new_id] = new_job
+
+    for job_cfg in new_jobs.values():
+        _append_tp_suffix_from_ngpus(job_cfg)
 
     config["jobs"] = new_jobs
     return config

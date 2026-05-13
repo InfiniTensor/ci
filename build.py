@@ -102,7 +102,7 @@ def resolve_dockerfile_dir(dockerfile_dir):
 def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, logged_in):
     """Build a single platform image. Returns True on success."""
     registry_url = registry_cfg.get("url", "")
-    project = registry_cfg.get("project", "infiniops")
+    project = registry_cfg.get("project", "infinilm")
     dockerfile_dir = resolve_dockerfile_dir(platform_cfg["dockerfile"])
     commit_tag = build_image_tag(registry_url, project, platform, commit)
     latest_tag = build_image_tag(registry_url, project, platform, "latest")
