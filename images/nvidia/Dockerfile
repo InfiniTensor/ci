@@ -11,8 +11,14 @@ ARG https_proxy
 ARG no_proxy
 
 ARG APT_MIRROR
-RUN if [ -n "$APT_MIRROR" ]; then \
-        sed -i "s|http://[^/]*/ubuntu|${APT_MIRROR}|g" /etc/apt/sources.list; \
+ARG SKIP_APT
+RUN if [ "$SKIP_APT" = "1" ]; then \
+        echo "Skipping apt package installation"; \
+    else \
+    if [ -n "$APT_MIRROR" ]; then \
+        sed -i "s|http://[^[:space:]]*/ubuntu|${APT_MIRROR}|g" \
+            /etc/apt/sources.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true; \
     fi && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -21,13 +27,15 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         ninja-build \
         coreutils \
         libclang-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*; \
+    fi
 
 
 ARG PIP_INDEX_URL
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
+RUN pip install --no-cache-dir \
     ${PIP_INDEX_URL:+--index-url "$PIP_INDEX_URL"} \
+    cmake \
+    ninja \
     scikit-build-core \
     pybind11 \
     libclang \
