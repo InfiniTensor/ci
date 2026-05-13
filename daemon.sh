@@ -48,8 +48,6 @@ fi
 container_script='
 set -euo pipefail
 
-export https_proxy=http://localhost:9990
-export http_proxy=http://localhost:9990
 
 mkdir -p ~/.ssh
 if [ -d /CI_Host_SSH ]; then
@@ -119,6 +117,12 @@ docker_args_list=(
     "${source_mount_args[@]}"
     -e "CI_REF=${ci_ref}"
     -e "CI_PLATFORM_SUITE=${platform_suite}"
+    -e HTTP_PROXY
+    -e HTTPS_PROXY
+    -e http_proxy
+    -e https_proxy
+    -e NO_PROXY
+    -e no_proxy
     --entrypoint /bin/bash
     auto-test:latest
     -lc

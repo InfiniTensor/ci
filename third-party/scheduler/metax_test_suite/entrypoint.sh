@@ -24,7 +24,6 @@ else
     version=$7
 fi
 
-export https_proxy=http://localhost:9990 http_proxy=http://localhost:9990
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
