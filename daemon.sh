@@ -4,8 +4,7 @@ set -m
 cleanup() {
     trap - SIGINT SIGTERM SIGHUP SIGPIPE
     echo "Stopping CI test job..."
-    docker stop --time 60 "CI_test_job_${platform}_${test_type}_${CI_job_id}" 2>/dev/null || \
-        docker stop "CI_test_job_${platform}_${test_type}_${CI_job_id}" 2>/dev/null || true
+    stop_ci_containers
     # docker kill --signal=SIGTERM CI_test_job_${CI_job_id}
     # docker kill -s TERM CI_test_job_${CI_job_id}
     # rm -rf $curr_dir
@@ -34,6 +33,23 @@ ci_ref=${CI_REF:-master}
 platform_suite=$(echo "$platform" | tr '[:upper:]' '[:lower:]')
 source_ci_dir=${CI_SOURCE_DIR:-}
 source_mount_args=()
+
+stop_ci_containers() {
+    local names=()
+    local name
+
+    while IFS= read -r name; do
+        names+=("$name")
+    done < <(
+        docker ps -a --format '{{.Names}}' | grep -E \
+            "^(CI_test_job_${platform}_${test_type}_${CI_job_id}|infiniTensor_${platform_suite}_${test_type}Test_${CI_job_id}(_|$))" || true
+    )
+
+    for name in "${names[@]}"; do
+        docker stop --time 60 "$name" 2>/dev/null || docker stop "$name" 2>/dev/null || true
+        docker rm -f "$name" 2>/dev/null || true
+    done
+}
 
 if [ -n "$source_ci_dir" ] && [ -d "${source_ci_dir}/.ci" ]; then
     source_mount_args=(-v "${source_ci_dir}/.ci:/CI_Source/ci:ro")
@@ -154,6 +170,8 @@ done
 
 wait $CHILD_PID
 EXIT_CODE=$?
+
+stop_ci_containers
 
 # rm -rf $curr_dir
 
