@@ -157,7 +157,7 @@ jobs:
           BRANCH: None
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
-          GPU_ID: all
+          GPU_ID: None
           RESULT_DIR: None
           TEST: None
           LOCAL: True
@@ -174,6 +174,7 @@ jobs:
               resolve_image,
               shell_join,
           )
+          from ci_resource import ResourcePool, parse_gpu_requirement, parse_memory_requirement
           from utils import get_git_commit, load_config
 
           def env_opt(key):
@@ -209,6 +210,26 @@ jobs:
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
           local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
+          gpu_id_override = env_opt("GPU_ID")
+
+          raw_gpu_ids = str(job.get("resources", {}).get("gpu_ids", "auto")).strip()
+          if not gpu_id_override and raw_gpu_ids == "auto":
+              pool = ResourcePool(platform)
+              gpu_count = parse_gpu_requirement(job)
+              memory_mb = parse_memory_requirement(job)
+              allocated_ids, ok = pool.allocate(gpu_count, memory_mb)
+
+              if not ok:
+                  detected = pool.detect_gpus()
+                  print(
+                      f"error: cannot allocate {gpu_count} GPU(s) for {job_key}; "
+                      f"detected={detected}",
+                      file=sys.stderr,
+                  )
+                  sys.exit(1)
+
+              if allocated_ids:
+                  gpu_id_override = ",".join(str(g) for g in allocated_ids)
 
           docker_args = build_docker_args(
               config,
@@ -218,7 +239,7 @@ jobs:
               stages,
               "/workspace",
               env_opt("IMAGE_TAG"),
-              gpu_id_override=os.environ.get("GPU_ID") or None,
+              gpu_id_override=gpu_id_override,
               results_dir=results_dir,
               local_path=local_path,
           )

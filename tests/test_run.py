@@ -246,7 +246,7 @@ def _make_platform_config(platform, gpu_style="none", job_suffix="gpu"):
     return normalize_config(raw)
 
 
-def _make_platform_args(platform, gpu_style="none", job_suffix="gpu"):
+def _make_platform_args(platform, gpu_style="none", job_suffix="gpu", gpu_id="0"):
     config = _make_platform_config(platform, gpu_style, job_suffix)
     job_name = f"{platform}_{job_suffix}"
 
@@ -258,7 +258,7 @@ def _make_platform_args(platform, gpu_style="none", job_suffix="gpu"):
         config["jobs"][job_name]["stages"],
         "/workspace",
         None,
-        gpu_id_override="0",
+        gpu_id_override=gpu_id,
     )
 
 
@@ -282,6 +282,13 @@ def test_docker_args_cambricon_mlu_visible_devices():
 def test_docker_args_ascend_visible_devices():
     args = _make_platform_args("ascend", job_suffix="npu")
     assert "ASCEND_VISIBLE_DEVICES=0" in args
+    assert "--device=/dev/davinci0" in args
+
+
+def test_docker_args_ascend_selected_device():
+    args = _make_platform_args("ascend", job_suffix="npu", gpu_id="3")
+    assert "ASCEND_VISIBLE_DEVICES=3" in args
+    assert "--device=/dev/davinci3" in args
 
 
 def test_docker_args_metax_cuda_visible_devices():
