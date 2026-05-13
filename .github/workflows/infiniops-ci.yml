@@ -236,8 +236,8 @@ jobs:
               f.write(f"IMAGE_TAG={image_ref}\n")
           PY
 
-      - name: Run nvidia Unit Test directly
-        if: ${{ matrix.platform == 'nvidia' }}
+      - name: Run local Unit Test directly
+        if: ${{ matrix.platform == 'nvidia' || matrix.platform == 'ascend' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
@@ -251,7 +251,7 @@ jobs:
           fi
 
           echo "**************************************************************************************"
-          echo "Nvidia"
+          echo "${{ matrix.platform }}"
           echo "Unit"
           echo "InfiniTensor"
           echo "${DOCKER_ARGS}"
@@ -262,7 +262,7 @@ jobs:
           eval "docker run ${DOCKER_ARGS}"
 
       - name: Trigger ${{ matrix.platform }} Unit Test Task
-        if: ${{ matrix.platform != 'nvidia' }}
+        if: ${{ matrix.platform != 'nvidia' && matrix.platform != 'ascend' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
