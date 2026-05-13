@@ -103,11 +103,68 @@ def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, log
     """Build a single platform image. Returns True on success."""
     registry_url = registry_cfg.get("url", "")
     project = registry_cfg.get("project", "infiniops")
-    dockerfile_dir = resolve_dockerfile_dir(platform_cfg["dockerfile"])
     commit_tag = build_image_tag(registry_url, project, platform, commit)
     latest_tag = build_image_tag(registry_url, project, platform, "latest")
-
     build_args_cfg = platform_cfg.get("build_args", {})
+
+    if platform_cfg.get("skip_build"):
+        source_image = platform_cfg.get("source_image") or build_args_cfg.get("BASE_IMAGE")
+
+        if not source_image:
+            print(
+                f"error: skip_build for {platform} requires source_image or build_args.BASE_IMAGE",
+                file=sys.stderr,
+            )
+            return False
+
+        tag_cmds = [
+            ["docker", "tag", source_image, commit_tag],
+            ["docker", "tag", source_image, latest_tag],
+        ]
+
+        if dry_run:
+            for cmd in tag_cmds:
+                print(f"[dry-run] {shlex.join(cmd)}")
+            return True
+
+        print(f"==> tagging {platform}: {source_image} -> {commit_tag}", file=sys.stderr)
+
+        inspect_result = subprocess.run(
+            ["docker", "image", "inspect", source_image],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        if inspect_result.returncode != 0:
+            pull_result = subprocess.run(["docker", "pull", source_image])
+
+            if pull_result.returncode != 0:
+                error = {
+                    "stage": "pull",
+                    "platform": platform,
+                    "source": source_image,
+                    "exit_code": pull_result.returncode,
+                }
+                print(json.dumps(error), file=sys.stderr)
+                return False
+
+        for cmd in tag_cmds:
+            result = subprocess.run(cmd)
+
+            if result.returncode != 0:
+                error = {
+                    "stage": "tag",
+                    "platform": platform,
+                    "source": source_image,
+                    "tag": commit_tag,
+                    "exit_code": result.returncode,
+                }
+                print(json.dumps(error), file=sys.stderr)
+                return False
+
+        return True
+
+    dockerfile_dir = resolve_dockerfile_dir(platform_cfg["dockerfile"])
     build_cmd = ["docker", "build", "--network", "host"]
 
     for key, value in build_args_cfg.items():

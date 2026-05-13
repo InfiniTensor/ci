@@ -152,6 +152,34 @@ def test_build_image_dry_run_output_contains_image_tag(mocker, monkeypatch, caps
     assert "abc1234" in captured.out
 
 
+def test_build_image_skip_build_tags_source_image(mocker, monkeypatch):
+    monkeypatch.delenv("HTTP_PROXY", raising=False)
+    run_mock = mocker.patch(
+        "subprocess.run",
+        return_value=mocker.Mock(returncode=0),
+    )
+    cfg = {
+        "skip_build": True,
+        "build_args": {"BASE_IMAGE": "base:latest"},
+    }
+    result = build.build_image(
+        "ascend",
+        cfg,
+        _registry_cfg(),
+        "abc1234",
+        push=False,
+        dry_run=False,
+        logged_in=True,
+    )
+    assert result is True
+    calls = [call.args[0] for call in run_mock.call_args_list]
+    assert calls == [
+        ["docker", "image", "inspect", "base:latest"],
+        ["docker", "tag", "base:latest", "localhost:5000/infiniops/ascend:abc1234"],
+        ["docker", "tag", "base:latest", "localhost:5000/infiniops/ascend:latest"],
+    ]
+
+
 def test_build_image_proxy_in_build_args(mocker, monkeypatch):
     monkeypatch.setenv("HTTP_PROXY", "http://proxy.test:3128")
     run_mock = mocker.patch(
