@@ -182,6 +182,10 @@ for name in "${!npu_server_list[@]}"; do
 done
 
 if [ $TEST_TYPE == "Unit" ]; then
+    resource_wait_timeout=${CI_RESOURCE_WAIT_TIMEOUT_SECONDS:-300}
+    resource_wait_start=$(date +%s)
+    err=10
+
     while true; do
         model="None"
         GPU_QUANTITY=1
@@ -198,6 +202,11 @@ if [ $TEST_TYPE == "Unit" ]; then
             err=$?          # 保存结束子进程的退出状态
             if [ $err -ne 0 ]; then
                 if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                    elapsed=$(($(date +%s)-resource_wait_start))
+                    if [ "$elapsed" -ge "$resource_wait_timeout" ]; then
+                        echo "Resources remained unavailable for ${resource_wait_timeout}s; failing Unit CI."
+                        break
+                    fi
                     echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
                     sleep 10
                     continue
@@ -207,6 +216,12 @@ if [ $TEST_TYPE == "Unit" ]; then
             fi
             break
         else
+            elapsed=$(($(date +%s)-resource_wait_start))
+            if [ "$elapsed" -ge "$resource_wait_timeout" ]; then
+                echo "No sufficient idle GPUs were available within ${resource_wait_timeout}s; failing Unit CI."
+                err=10
+                break
+            fi
             echo "No sufficient idle GPUs are available, try it later..."
             echo
             # 等待一段时间后重新扫描（例如 10 秒）
