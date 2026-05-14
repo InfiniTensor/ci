@@ -101,6 +101,39 @@ The reusable workflow checks out the caller repository, replaces any caller
 `.ci` placeholder with the selected `InfiniTensor/ci` ref, converts the caller
 config to matrices, and runs unit/smoke/performance jobs.
 
+## CI v2 Shadow Agent
+
+The v2 shadow workflow uses a local, file-backed agent on each self-hosted
+hardware runner. GitHub Actions remains the control plane: it builds the image,
+submits a platform job through the local CLI, waits for completion, and uploads
+the collected artifacts.
+
+Minimal runner setup:
+
+```bash
+sudo install -d -o ci -g ci /var/lib/ci-agent
+sudo install -d -o ci -g ci /opt/infinitensor-ci
+sudo cp -a .ci/. /opt/infinitensor-ci/
+sudo cp .ci/systemd/ci-agent.service /etc/systemd/system/ci-agent.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now ci-agent
+```
+
+The GitHub job calls these local commands:
+
+```bash
+python3 .ci/ci_agent.py submit ...
+python3 .ci/ci_agent.py wait <task-id>
+python3 .ci/ci_agent.py collect <task-id> --output-dir <path>
+python3 .ci/ci_agent.py cancel <task-id>
+```
+
+Task state is stored under `/var/lib/ci-agent` by default. The agent uses JSON
+task files, atomic writes, and per-platform lock files. If resources are busy,
+the task waits up to `resources.queue_timeout` seconds before it is marked as
+`resource_timeout`. A job passes only when the command exits with code 0 and the
+configured JUnit XML exists with no failures or errors.
+
 ## Validation
 
 Run these from `.ci/` after changes:

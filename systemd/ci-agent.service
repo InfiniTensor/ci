@@ -1,0 +1,17 @@
+[Unit]
+Description=InfiniTensor local CI agent
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ci
+Group=ci
+WorkingDirectory=/opt/infinitensor-ci
+Environment=CI_AGENT_STATE_DIR=/var/lib/ci-agent
+ExecStart=/usr/bin/python3 /opt/infinitensor-ci/ci_agent.py --state-dir /var/lib/ci-agent daemon --poll-interval 5
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -52,7 +52,15 @@ def normalize_config(raw):
         # Platform-level defaults inherited by jobs
         defaults = {}
 
-        for key in ("image_tag", "runner_label", "docker_args", "volumes", "setup", "env"):
+        for key in (
+            "image_tag",
+            "runner_label",
+            "execution_mode",
+            "docker_args",
+            "volumes",
+            "setup",
+            "env",
+        ):
             if key in pcfg:
                 defaults[key] = pcfg[key]
 
@@ -66,7 +74,14 @@ def normalize_config(raw):
             }
 
             # Apply platform defaults
-            for key in ("runner_label", "docker_args", "volumes", "setup", "env"):
+            for key in (
+                "runner_label",
+                "execution_mode",
+                "docker_args",
+                "volumes",
+                "setup",
+                "env",
+            ):
                 if key in defaults:
                     flat[key] = defaults[key]
 

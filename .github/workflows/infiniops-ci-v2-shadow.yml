@@ -1,0 +1,190 @@
+name: InfiniOps CI v2 Shadow
+
+on:
+  workflow_call:
+    inputs:
+      config_path:
+        description: "Path to the caller repository CI config"
+        required: false
+        type: string
+        default: ".github/ci_config.yml"
+      ci_ref:
+        description: "Commit SHA of InfiniTensor/ci to use for CI tooling"
+        required: true
+        type: string
+      platform:
+        description: "Platform to run, or 'all' for every configured agent_local platform"
+        required: false
+        type: string
+        default: "all"
+      max_parallel:
+        description: "Maximum parallel shadow jobs"
+        required: false
+        type: number
+        default: 10
+
+jobs:
+  prepare:
+    name: Generate CI v2 shadow matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix_json_for_unittest: ${{ steps.generate.outputs.matrix_json_for_unittest }}
+      job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+
+      - name: Replace caller .ci with CI tools
+        run: rm -rf repo/.ci
+
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install converter dependency
+        run: python -m pip install pyyaml
+
+      - name: Convert config to CI v2 shadow matrix JSON
+        id: generate
+        working-directory: repo
+        run: >
+          python .ci/config_to_matrix.py
+          --config "${{ inputs.config_path }}"
+          --platform "${{ inputs.platform }}"
+          --execution-mode agent_local
+          --require-runner-label
+          --write-github-outputs
+
+  run-unittest-shadow:
+    name: ci-v2-shadow / ${{ matrix.platform }}
+    needs: prepare
+    if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix_json_for_unittest) }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.runner_label }}
+    timeout-minutes: ${{ matrix.shadow_timeout_minutes }}
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+
+      - name: Replace caller .ci with CI tools
+        run: rm -rf repo/.ci
+
+      - name: Checkout CI tools
+        uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+
+      - name: Short SHA for image tags
+        working-directory: repo
+        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+
+      - name: Build image
+        working-directory: repo
+        run: |
+          python3 .ci/build.py \
+            --config "${{ inputs.config_path }}" \
+            --platform "${{ matrix.platform }}" \
+            --commit "${SHORT_SHA}" \
+            --force
+
+      - name: Submit CI v2 shadow task
+        id: submit
+        working-directory: repo
+        env:
+          TASK_ID: ${{ github.run_id }}-${{ matrix.id }}
+          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          RESULT_DIR: ${{ github.workspace }}/repo/ci-v2-results/${{ github.run_id }}-${{ matrix.id }}
+          CONFIG_PATH: ${{ inputs.config_path }}
+          JOB_ID: ${{ matrix.id }}
+          QUEUE_TIMEOUT: ${{ matrix.queue_timeout }}
+          NGPU: ${{ matrix.ngpus }}
+          MEMORY: ${{ matrix.memory }}
+          JUNIT_PATH: ${{ matrix.junit_path }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${RESULT_DIR}"
+          command="PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py --config '${CONFIG_PATH}' --job '${JOB_ID}' --local --image-tag '${SHORT_SHA}' --results-dir '${RESULT_DIR}'"
+          task_id="$(python3 .ci/ci_agent.py submit \
+            --id "${TASK_ID}" \
+            --platform "${{ matrix.platform }}" \
+            --job "${JOB_ID}" \
+            --workdir "${PWD}" \
+            --command "${command}" \
+            --result-dir "${RESULT_DIR}" \
+            --junit-path "${JUNIT_PATH}" \
+            --queue-timeout "${QUEUE_TIMEOUT}" \
+            --ngpus "${NGPU:-0}" \
+            --memory "${MEMORY}")"
+          echo "task_id=${task_id}" >> "${GITHUB_OUTPUT}"
+
+      - name: Wait for CI v2 shadow task
+        id: wait
+        continue-on-error: true
+        working-directory: repo
+        env:
+          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          TASK_ID: ${{ steps.submit.outputs.task_id }}
+        run: |
+          set -euo pipefail
+          trap 'python3 .ci/ci_agent.py cancel "${TASK_ID}"' INT TERM
+          python3 .ci/ci_agent.py wait "${TASK_ID}" --poll-interval 5
+
+      - name: Collect CI v2 shadow artifacts
+        if: always()
+        working-directory: repo
+        env:
+          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          TASK_ID: ${{ steps.submit.outputs.task_id }}
+          OUT_DIR: ci-v2-artifacts/${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          python3 .ci/ci_agent.py collect "${TASK_ID}" --output-dir "${OUT_DIR}"
+          python3 - "${OUT_DIR}/task.json" <<'PY'
+          import json
+          import os
+          import sys
+
+          task = json.load(open(sys.argv[1], encoding="utf-8"))
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as f:
+                  f.write(f"### CI v2 shadow: {task.get('platform')} / {task.get('job')}\n\n")
+                  f.write(f"- task: `{task.get('id')}`\n")
+                  f.write(f"- status: `{task.get('status')}`\n")
+                  f.write(f"- exit_code: `{task.get('exit_code', '')}`\n")
+                  result = task.get("result") or {}
+                  if result.get("reason"):
+                      f.write(f"- reason: `{result.get('reason')}`\n")
+                  if result.get("junit"):
+                      f.write(f"- junit: `{result.get('junit')}`\n")
+          PY
+
+      - name: Upload CI v2 shadow artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-v2-shadow-${{ matrix.id }}
+          path: repo/ci-v2-artifacts/${{ matrix.id }}

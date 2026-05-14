@@ -11,10 +11,16 @@ def _multi_platform_config():
             "platforms": {
                 "nvidia": {
                     "image": {"dockerfile": ".ci/images/nvidia/"},
+                    "runner_label": "nvidia",
+                    "execution_mode": "agent_local",
                     "jobs": {
                         "gpu": {
                             "type": "unittest",
-                            "resources": {"timeout": 3600},
+                            "resources": {
+                                "timeout": 3600,
+                                "queue_timeout": 1800,
+                                "junit_path": "test-results.xml",
+                            },
                             "stages": [{"name": "test", "run": "pytest nvidia"}],
                         }
                     },
@@ -22,20 +28,31 @@ def _multi_platform_config():
                 "ascend": {
                     "image": {"dockerfile": ".ci/images/ascend/"},
                     "runner_label": "Ascend",
+                    "execution_mode": "agent_local",
                     "jobs": {
                         "npu": {
                             "type": "unittest",
-                            "resources": {"timeout": 3600},
+                            "resources": {
+                                "timeout": 3600,
+                                "queue_timeout": 1800,
+                                "junit_path": "test-results.xml",
+                            },
                             "stages": [{"name": "test", "run": "pytest ascend"}],
                         }
                     },
                 },
                 "metax": {
                     "image": {"dockerfile": ".ci/images/metax/"},
+                    "runner_label": "metax",
+                    "execution_mode": "agent_local",
                     "jobs": {
                         "gpu": {
                             "type": "unittest",
-                            "resources": {"timeout": 1800},
+                            "resources": {
+                                "timeout": 1800,
+                                "queue_timeout": 1800,
+                                "junit_path": "test-results.xml",
+                            },
                             "stages": [{"name": "test", "run": "pytest metax"}],
                         }
                     },
@@ -74,6 +91,35 @@ def test_convert_by_job_type_all_keeps_all_platforms():
         if entry["id"] == "ascend_npu"
     )
     assert ascend["runner_label"] == "Ascend"
+    assert ascend["execution_mode"] == "agent_local"
+    assert ascend["queue_timeout"] == 1800
+    assert ascend["queue_timeout_minutes"] == 30
+    assert ascend["shadow_timeout_minutes"] == 120
+    assert ascend["junit_path"] == "test-results.xml"
+
+
+def test_timeout_minutes_round_up():
+    config = normalize_config(
+        {
+            "platforms": {
+                "nvidia": {
+                    "image": {"dockerfile": ".ci/images/nvidia/"},
+                    "jobs": {
+                        "gpu": {
+                            "resources": {"timeout": 61, "queue_timeout": 61},
+                            "stages": [{"name": "test", "run": "pytest"}],
+                        }
+                    },
+                }
+            }
+        }
+    )
+
+    matrices = config_to_matrix.convert_by_job_type(config)
+    entry = matrices["unittest"]["include"][0]
+
+    assert entry["timeout_minutes"] == 2
+    assert entry["queue_timeout_minutes"] == 2
 
 
 def test_convert_by_job_type_accepts_platform_list():
@@ -130,3 +176,70 @@ def test_main_prints_clean_error_for_unknown_platform(tmp_path, monkeypatch, cap
 
     captured = capsys.readouterr()
     assert captured.err == "error: No jobs found for platform 'unknown'\n"
+
+
+def test_shadow_matrix_requires_explicit_runner_label():
+    config = normalize_config(
+        {
+            "platforms": {
+                "nvidia": {
+                    "image": {"dockerfile": ".ci/images/nvidia/"},
+                    "execution_mode": "agent_local",
+                    "jobs": {
+                        "gpu": {
+                            "resources": {"timeout": 3600},
+                            "stages": [{"name": "test", "run": "pytest"}],
+                        }
+                    },
+                }
+            }
+        }
+    )
+
+    with pytest.raises(ValueError, match="missing explicit runner_label"):
+        config_to_matrix.convert_by_job_type(
+            config,
+            platform_filter="all",
+            require_runner_label=True,
+            execution_mode="agent_local",
+        )
+
+
+def test_shadow_matrix_filters_to_agent_local_jobs():
+    config = normalize_config(
+        {
+            "platforms": {
+                "nvidia": {
+                    "image": {"dockerfile": ".ci/images/nvidia/"},
+                    "runner_label": "nvidia",
+                    "execution_mode": "agent_local",
+                    "jobs": {
+                        "gpu": {
+                            "resources": {"timeout": 3600},
+                            "stages": [{"name": "test", "run": "pytest"}],
+                        }
+                    },
+                },
+                "legacy": {
+                    "image": {"dockerfile": ".ci/images/legacy/"},
+                    "runner_label": "legacy",
+                    "execution_mode": "scheduler",
+                    "jobs": {
+                        "gpu": {
+                            "resources": {"timeout": 3600},
+                            "stages": [{"name": "test", "run": "pytest"}],
+                        }
+                    },
+                },
+            }
+        }
+    )
+
+    matrices = config_to_matrix.convert_by_job_type(
+        config,
+        platform_filter="all",
+        require_runner_label=True,
+        execution_mode="agent_local",
+    )
+
+    assert _matrix_ids(matrices["unittest"]) == ["nvidia_gpu"]

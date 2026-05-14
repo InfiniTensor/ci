@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -62,13 +63,17 @@ def _entry_from_flat_job(
     dockerfile = f"{dockerfile_dir}/Dockerfile" if dockerfile_dir else ""
 
     timeout_seconds = int(resources.get("timeout", 3600))
-    timeout_minutes = max(1, timeout_seconds // 60)
+    timeout_minutes = max(1, math.ceil(timeout_seconds / 60))
+    queue_timeout = int(resources.get("queue_timeout", 1800))
+    queue_timeout_minutes = max(1, math.ceil(queue_timeout / 60))
 
     return {
         "id": job_id,
         "platform": platform,
         "job_name": short_name,
         "runner_label": str(job_cfg.get("runner_label") or platform).strip(),
+        "runner_label_explicit": bool(str(job_cfg.get("runner_label", "")).strip()),
+        "execution_mode": str(job_cfg.get("execution_mode", "")).strip(),
         "dockerfile": dockerfile,
         "build_args": _normalize_build_args(image_cfg.get("build_args")),
         "docker_args": job_cfg.get("docker_args", []),
@@ -81,6 +86,10 @@ def _entry_from_flat_job(
         "gpu_ids": str(resources.get("gpu_ids", "")).strip(),
         "ngpus": resources.get("ngpus", ""),
         "gpu_style": _normalize_gpu_style(resources.get("gpu_style")),
+        "queue_timeout": queue_timeout,
+        "queue_timeout_minutes": queue_timeout_minutes,
+        "shadow_timeout_minutes": timeout_minutes + queue_timeout_minutes + 30,
+        "junit_path": str(resources.get("junit_path", "")).strip(),
         "job_env": job_cfg.get("env", {}),
         "job_type": _job_type_from_cfg(job_cfg),
     }
@@ -98,12 +107,21 @@ def _matches_platform(job_cfg: dict[str, Any], platform_filter: str) -> bool:
     return selected is None or str(job_cfg.get("platform", "")).strip() in selected
 
 
+def _matches_execution_mode(job_cfg: dict[str, Any], execution_mode: str | None) -> bool:
+    if not execution_mode:
+        return True
+    return str(job_cfg.get("execution_mode", "")).strip() == execution_mode
+
+
 def _platform_filter_error(platform_filter: str) -> ValueError:
     return ValueError(f"No jobs found for platform {platform_filter!r}")
 
 
 def convert_combined(
-    config: dict[str, Any], platform_filter: str = "all"
+    config: dict[str, Any],
+    platform_filter: str = "all",
+    require_runner_label: bool = False,
+    execution_mode: str | None = None,
 ) -> dict[str, Any]:
     """Single matrix with all jobs (backward-compatible default)."""
     include: list[dict[str, Any]] = []
@@ -113,8 +131,12 @@ def convert_combined(
     for job_id, job_cfg in jobs.items():
         if not _matches_platform(job_cfg, platform_filter):
             continue
+        if not _matches_execution_mode(job_cfg, execution_mode):
+            continue
 
         platform = str(job_cfg.get("platform", "")).strip()
+        if require_runner_label and not str(job_cfg.get("runner_label", "")).strip():
+            raise ValueError(f"job {job_id!r} missing explicit runner_label")
         image_cfg = images.get(platform, {})
         include.append(_entry_from_flat_job(job_id, job_cfg, image_cfg))
 
@@ -126,7 +148,10 @@ def convert_combined(
 
 
 def convert_by_job_type(
-    config: dict[str, Any], platform_filter: str = "all"
+    config: dict[str, Any],
+    platform_filter: str = "all",
+    require_runner_label: bool = False,
+    execution_mode: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Matrices keyed by sanitized job `type` (e.g. unittest, smoketest)."""
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -136,8 +161,12 @@ def convert_by_job_type(
     for job_id, job_cfg in jobs.items():
         if not _matches_platform(job_cfg, platform_filter):
             continue
+        if not _matches_execution_mode(job_cfg, execution_mode):
+            continue
 
         platform = str(job_cfg.get("platform", "")).strip()
+        if require_runner_label and not str(job_cfg.get("runner_label", "")).strip():
+            raise ValueError(f"job {job_id!r} missing explicit runner_label")
         image_cfg = images.get(platform, {})
         jt = _job_type_from_cfg(job_cfg)
         grouped[jt].append(_entry_from_flat_job(job_id, job_cfg, image_cfg))
@@ -194,6 +223,16 @@ def parse_args() -> argparse.Namespace:
         default="all",
         help="Platform to include in generated matrices, or 'all' for every platform",
     )
+    parser.add_argument(
+        "--require-runner-label",
+        action="store_true",
+        help="Fail if an included job does not explicitly set runner_label",
+    )
+    parser.add_argument(
+        "--execution-mode",
+        default="",
+        help="Only include jobs with this execution_mode",
+    )
     return parser.parse_args()
 
 
@@ -207,16 +246,31 @@ def main() -> int:
             if not out:
                 print("error: GITHUB_OUTPUT is not set", file=sys.stderr)
                 return 1
-            matrices = convert_by_job_type(config, platform_filter=args.platform)
+            matrices = convert_by_job_type(
+                config,
+                platform_filter=args.platform,
+                require_runner_label=args.require_runner_label,
+                execution_mode=args.execution_mode or None,
+            )
             write_github_matrix_outputs(Path(out), matrices)
             return 0
 
         if args.dump_by_type:
-            matrices = convert_by_job_type(config, platform_filter=args.platform)
+            matrices = convert_by_job_type(
+                config,
+                platform_filter=args.platform,
+                require_runner_label=args.require_runner_label,
+                execution_mode=args.execution_mode or None,
+            )
             print(json.dumps(matrices, ensure_ascii=True))
             return 0
 
-        matrix = convert_combined(config, platform_filter=args.platform)
+        matrix = convert_combined(
+            config,
+            platform_filter=args.platform,
+            require_runner_label=args.require_runner_label,
+            execution_mode=args.execution_mode or None,
+        )
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
