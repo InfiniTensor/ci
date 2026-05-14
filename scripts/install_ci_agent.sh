@@ -12,7 +12,7 @@ Environment overrides:
   CI_AGENT_SOURCE_DIR    Source .ci directory. Defaults to this script's parent .ci directory.
   CI_AGENT_INSTALL_DIR   Install directory. Defaults to /opt/infinitensor-ci.
   CI_AGENT_STATE_DIR     State directory. Defaults to /var/lib/ci-agent.
-  CI_AGENT_USER          systemd service user. Defaults to ci-agent.
+  CI_AGENT_USER          systemd service user. Defaults to CI_AGENT_RUNNER_USER.
   CI_AGENT_GROUP         Shared agent group. Defaults to ci-agent.
   CI_AGENT_RUNNER_USER   GitHub runner user to grant state-dir access. Defaults to SUDO_USER.
   CI_AGENT_POLL_INTERVAL Agent daemon poll interval in seconds. Defaults to 5.
@@ -34,9 +34,9 @@ DEFAULT_SOURCE_DIR="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 SOURCE_DIR="${CI_AGENT_SOURCE_DIR:-${DEFAULT_SOURCE_DIR}}"
 INSTALL_DIR="${CI_AGENT_INSTALL_DIR:-/opt/infinitensor-ci}"
 STATE_DIR="${CI_AGENT_STATE_DIR:-/var/lib/ci-agent}"
-AGENT_USER="${CI_AGENT_USER:-ci-agent}"
 AGENT_GROUP="${CI_AGENT_GROUP:-ci-agent}"
 RUNNER_USER="${CI_AGENT_RUNNER_USER:-${SUDO_USER:-}}"
+AGENT_USER="${CI_AGENT_USER:-${RUNNER_USER:-ci-agent}}"
 POLL_INTERVAL="${CI_AGENT_POLL_INTERVAL:-5}"
 SERVICE_FILE="/etc/systemd/system/ci-agent.service"
 

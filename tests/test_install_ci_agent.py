@@ -16,3 +16,4 @@ def test_install_ci_agent_script_installs_systemd_service():
     assert "systemctl enable --now ci-agent" in text
     assert "CI_AGENT_STATE_DIR" in text
     assert "CI_AGENT_RUNNER_USER" in text
+    assert 'AGENT_USER="${CI_AGENT_USER:-${RUNNER_USER:-ci-agent}}"' in text

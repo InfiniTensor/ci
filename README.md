@@ -115,10 +115,10 @@ sudo .ci/scripts/install_ci_agent.sh
 ```
 
 By default the installer copies `.ci` to `/opt/infinitensor-ci`, creates the
-`ci-agent` system user/group, initializes `/var/lib/ci-agent`, grants the
-current sudo user access to the state directory, and enables the `ci-agent`
-systemd service. Set `CI_AGENT_RUNNER_USER` when the GitHub runner runs as a
-different user.
+`ci-agent` group, runs the daemon as `CI_AGENT_RUNNER_USER` (or the current sudo
+user), initializes `/var/lib/ci-agent`, grants the runner user access to the
+state directory, and enables the `ci-agent` systemd service. Set
+`CI_AGENT_RUNNER_USER` when the GitHub runner runs as a different user.
 
 The GitHub job calls these local commands:
 
