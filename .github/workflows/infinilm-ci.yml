@@ -1088,16 +1088,17 @@ jobs:
           chmod a+x ./daemon.sh
 
           DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
+          DOCKER_ARGS="${DOCKER_ARGS//<WORKSPACE>/${{ github.run_id }}_${{ matrix.id }}}"
           VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
           SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
           PLATFORM=${{ matrix.platform }}
 
-          eval "CMD_PARAMS=($(python3 -c "
-          import ast, shlex
-          s = '''${TEST_PARAM}'''
-          lst = ast.literal_eval(s)
-          print(' '.join(shlex.quote(x) for x in lst))
-          "))"
+          # eval "CMD_PARAMS=($(python3 -c "
+          # import ast, shlex
+          # s = '''${TEST_PARAM}'''
+          # lst = ast.literal_eval(s)
+          # print(' '.join(shlex.quote(x) for x in lst))
+          # "))"
 
           echo "************************************************************************"
           echo "PLATFORM=${PLATFORM^}"
@@ -1106,7 +1107,7 @@ jobs:
           echo "${{ matrix.job_env.MODEL_LIST }}"
           echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
           echo "${{ github.run_id }}"
-          ehco "${CMD_PARAMS[@]}"
+          ehco "${TEST_PARAMS}"
           echo "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
           echo "************************************************************************"
 
@@ -1117,5 +1118,5 @@ jobs:
           #   "${{ matrix.job_env.MODEL_LIST }}" \
           #   "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
           #   ${{ github.run_id }} \
-          #   "${CMD_PARAMS[*]}" \
+          #   "${TEST_PARAMS}" \
           #   "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
