@@ -595,7 +595,7 @@ else
             if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
                 echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
                 echo
-                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
                 status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the Inference Service testing task|All tests have completed"`

@@ -13,6 +13,7 @@ version=$9
 
 curr_dir=$(pwd)
 log_name_suffix=${TASK_START_TIME}
+OPTIONS=${TEST_PARAM// /_}
 LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
@@ -104,7 +105,7 @@ cleanup_all_resources() {
         source $curr_dir/npu_lock_manager_for_ci.sh
         for ip in ${server_list[@]}; do
             SERVER_NAME=$(echo ${local_ip_map[$ip]} | sed 's/\./_/g')
-            release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${job_count}" "${session_id}"
+            release_npu_locks_batch "$SERVER_NAME" "0 1 2 3 4 5 6 7" "${TEST_TYPE}Test_${model}_${OPTIONS}_${job_count}" "${session_id}"
         done
         echo "NPU 锁释放完成"
         # 获取文件锁（阻塞）
@@ -113,7 +114,7 @@ cleanup_all_resources() {
             echo "无法获取锁，退出..."
         fi
         for ip in ${server_list[@]}; do
-            job_id="${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}"
+            job_id="${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}"
             # 删除Server端配置信息
             # sed -i "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"
             new_config=`sed "/${local_ip_map[$ip]}:${job_id}:/d" "${LOCK_DIR}/server_config.txt"`
@@ -127,7 +128,7 @@ cleanup_all_resources() {
     # 3. 清理远程 Docker 容器
     for ip in ${server_list[@]}; do
         ssh -q -o ConnectionAttempts=3 zkjh@$ip "
-            name=${engine_type}_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+            name=${engine_type}_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
             if [ ! -z \"\$\(docker ps -a | grep \$name\)\" ]; then
                 docker stop \$name
                 docker rm \$name
@@ -216,11 +217,11 @@ if [ $TEST_TYPE == "Service" ]; then
         gpu_quantity=`echo "$item" | awk -F : '{print $2}'`
         gpu_model=`echo "$item" | awk -F : '{print $3}'`
 
-        if [ ! -z `cat ${processed_models} | grep -w ${model}:${gpu_quantity}:${gpu_model}_${TEST_PARAM// /_}` ]; then
+        if [ ! -z `cat ${processed_models} | grep -w ${model}:${gpu_quantity}:${gpu_model}_${OPTIONS}` ]; then
             continue
         fi
 
-        filename="${log_name_suffix}_${model}_${TEST_PARAM// /_}.log"
+        filename="${log_name_suffix}_${model}_${OPTIONS}.log"
         echo "开始测试模型: $model, 启动选项: ${TEST_PARAM}"
 
         cd $curr_dir
@@ -287,11 +288,11 @@ if [ $TEST_TYPE == "Service" ]; then
                     # 启动失败，清理工作
                     for ip in ${server_list[@]}; do
                         if [ $ENGINE_TYPE == "InfiniLM" ]; then
-                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
                         elif [ $ENGINE_TYPE == "vLLM" ]; then
-                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
                         fi
                     done
                     
@@ -319,18 +320,18 @@ if [ $TEST_TYPE == "Service" ]; then
                 exit 1
             fi
             # 读取Server端配置信息
-            job_id="${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}"
+            job_id="${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}"
             server_port=`cat "${LOCK_DIR}/server_config.txt" | grep "${local_ip_map[$local_master_ip]}:${job_id}:" | awk -F ':' '{print $3}' | awk '{print $1}' | tail -n 1`
             # 锁会自动在脚本退出或文件描述符关闭时释放
             exec 200>&-  # 关闭文件描述符
         else
             echo "无法找到远端推理引擎服务端口号文件！中止此模型测试任务！"
             if [ $ENGINE_TYPE == "InfiniLM" ]; then
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
             elif [ $ENGINE_TYPE == "vLLM" ]; then
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
             fi
             continue
         fi
@@ -487,11 +488,11 @@ if [ $TEST_TYPE == "Service" ]; then
         # 测试完成，清理工作
         for ip in ${server_list[@]}; do
             if [ $ENGINE_TYPE == "InfiniLM" ]; then
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
             elif [ $ENGINE_TYPE == "vLLM" ]; then
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
-                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${TEST_PARAM// /_}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+                ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm vllm_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
             fi
         done
         
@@ -523,7 +524,7 @@ if [ $TEST_TYPE == "Service" ]; then
                 elif [ $gpu_model == "H800" ]; then
                     server_name=${H800_server_list[$local_master_ip]}
                 fi
-                python3 $curr_dir/WriteReportToExcel.py "$TEST_PARAM" "${model}#${gpu_model}" "$session_id" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
+                python3 $curr_dir/WriteReportToExcel.py "${TEST_PARAM}" "${model}#${gpu_model}" "$session_id" "$gpu_model" "$server_name" "$exec_cmd" "$test_cmd" "$curr_dir/logs/performance/$session_id/$filename"
                 CI_report_folder="/artifacts/CI_nvidia_test/${session_id}_nvidia_gpu_performancetest"
                 cp "$curr_dir/report_${log_name_suffix}/$session_id/${model}#${gpu_model}.xlsx" $CI_report_folder
 
@@ -544,7 +545,7 @@ if [ $TEST_TYPE == "Service" ]; then
         fi
         
         # 记录测试进度
-        echo "${model}:${gpu_quantity}:${gpu_model}_${TEST_PARAM// /_}" >> ${processed_models}
+        echo "${model}:${gpu_quantity}:${gpu_model}_${OPTIONS}" >> ${processed_models}
     done
 else
     echo "*************开始执行 ${TEST_TYPE}Test 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
