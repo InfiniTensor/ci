@@ -12,6 +12,7 @@ def test_shadow_workflow_uses_agent_cli():
     assert "CI v2 Shadow" in text
     assert "agent_unavailable" in text
     assert "systemctl is-active --quiet ci-agent" in text
+    assert "started transient ci-agent daemon" in text
     assert "ci_agent.py submit" in text
     assert "ci_agent.py wait" in text
     assert "ci_agent.py collect" in text

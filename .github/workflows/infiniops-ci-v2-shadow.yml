@@ -130,7 +130,16 @@ jobs:
           elif pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
             available=true
           else
-            reason="daemon_not_running"
+            daemon_log="${RUNNER_TEMP:-/tmp}/ci-agent-${GITHUB_RUN_ID}-${{ matrix.id }}.log"
+            nohup python3 .ci/ci_agent.py --state-dir "${CI_AGENT_STATE_DIR}" daemon --poll-interval 5 >"${daemon_log}" 2>&1 &
+            sleep 2
+            if pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
+              available=true
+              echo "started transient ci-agent daemon, log: ${daemon_log}"
+            else
+              reason="daemon_not_running"
+              cat "${daemon_log}" || true
+            fi
           fi
 
           echo "available=${available}" >> "${GITHUB_OUTPUT}"

@@ -187,6 +187,8 @@ def run_task(state_dir: Path, task: dict[str, Any], poll_interval: float = 1.0) 
         if task.get("status") in {"canceled", "canceling"}:
             _mark_task(state_dir, task, "canceled", finished_at=utc_now())
             return
+        if task.get("status") != "queued":
+            return
 
         if not wait_for_resources(task, deadline, poll_interval):
             _mark_task(

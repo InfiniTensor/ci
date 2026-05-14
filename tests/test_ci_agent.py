@@ -144,6 +144,29 @@ def test_daemon_once_runs_queued_task(tmp_path, monkeypatch):
     assert task["exit_code"] == 0
 
 
+def test_run_task_ignores_non_queued_task(tmp_path, monkeypatch):
+    monkeypatch.setattr(ci_agent, "wait_for_resources", lambda *args, **kwargs: True)
+    task_id = ci_agent.submit_task(
+        tmp_path,
+        {
+            "id": "already-running",
+            "platform": "nvidia",
+            "command": "false",
+            "workdir": str(tmp_path),
+            "result_dir": str(tmp_path / "results"),
+        },
+    )
+    task = ci_agent.load_task(tmp_path, task_id)
+    task["status"] = "running"
+    ci_agent.save_task(tmp_path, task)
+
+    ci_agent.run_task(tmp_path, task, poll_interval=0.01)
+
+    task = ci_agent.load_task(tmp_path, task_id)
+    assert task["status"] == "running"
+    assert "exit_code" not in task
+
+
 def test_wait_task_returns_false_for_failed_terminal_state(tmp_path):
     task_id = ci_agent.submit_task(
         tmp_path,
