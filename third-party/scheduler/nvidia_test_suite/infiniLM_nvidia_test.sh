@@ -8,7 +8,7 @@ job_count=$4
 TEST_TYPE=$5
 ENGINE_TYPE=$6
 session_id=$7
-TEST_PARAM=$8
+TEST_PARAM="$8"
 version=$9
 
 curr_dir=$(pwd)

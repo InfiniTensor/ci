@@ -15,7 +15,7 @@ ENGINE_TYPE=$2
 MODEL_LIST=$3
 DOCKER_ARGS="$4"
 SESSION_ID=$5
-TEST_PARAM=$6
+TEST_PARAM="$6"
 version=$7
 curr_dir=$(pwd)
 
