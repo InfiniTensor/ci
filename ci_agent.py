@@ -119,7 +119,12 @@ def evaluate_result(
 
     junit = Path(junit_path)
     if not junit.is_absolute():
-        junit = Path(result_dir) / junit
+        result_root = Path(result_dir)
+        junit = result_root / junit
+        if not junit.exists():
+            matches = sorted(result_root.rglob(junit_path))
+            if len(matches) == 1:
+                junit = matches[0]
 
     if not junit.exists():
         result.update({"status": "failed", "reason": "missing_junit"})

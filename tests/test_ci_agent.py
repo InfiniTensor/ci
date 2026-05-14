@@ -69,6 +69,21 @@ def test_exit_code_and_clean_junit_pass(tmp_path):
     assert result["junit"]["tests"] == 2
 
 
+def test_nested_junit_path_passes_when_declared(tmp_path):
+    result_dir = tmp_path / "results"
+    nested = result_dir / "nvidia_test_abc"
+    nested.mkdir(parents=True)
+    (nested / "test-results.xml").write_text(
+        '<testsuite tests="2" failures="0" errors="0"></testsuite>',
+        encoding="utf-8",
+    )
+
+    result = ci_agent.evaluate_result(0, result_dir, "test-results.xml")
+
+    assert result["status"] == "passed"
+    assert result["reason"] == "junit_passed"
+
+
 def test_collect_task_writes_metadata_and_log(tmp_path):
     task_id = ci_agent.submit_task(
         tmp_path,
