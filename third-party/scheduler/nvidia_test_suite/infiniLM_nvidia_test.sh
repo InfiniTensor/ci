@@ -549,9 +549,13 @@ if [ $TEST_TYPE == "Service" ]; then
 else
     echo "*************开始执行 ${TEST_TYPE}Test 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
     model="None"
-    gpu_quantity=${TEST_PARAM}
     gpu_model="A100"
-
+    if [ $TEST_TYPE == "Inference" ]; then
+        gpu_quantity=${TEST_PARAM}
+    else
+        gpu_quantity=1
+    fi
+    
     test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
     filename="${log_name_suffix}_${TEST_TYPE}Test.log"
 
@@ -571,7 +575,7 @@ else
     ip=${server_list[0]}
 
     ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${TEST_PARAM}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
