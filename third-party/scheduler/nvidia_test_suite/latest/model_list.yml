@@ -1,5 +1,5 @@
 models:
 - model_name: 9g_8b_thinking_llama
   card_type: A100
-  default_params: python InfiniLM/python/infinilm/server/inference_server.py --device nvidia --model=/data-aisoft/mechdancer/models/9g_8b_thinking_llama/ --max-new-tokens=100 --max-batch-size=32 --temperature=1.0 --top-p=0.8 --top-k=1 --tp=1 --port=8000
+  default_params: python InfiniLM/python/infinilm/server/inference_server.py --device nvidia --model=/data-aisoft/mechdancer/models/9g_8b_thinking_llama/ --max-new-tokens=100 --max-batch-size=32 --temperature=1.0 --top-p=0.8 --top-k=1 --tp=1 --port=$PORT
   note: ''
