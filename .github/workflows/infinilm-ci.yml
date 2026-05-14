@@ -1088,7 +1088,7 @@ jobs:
           chmod a+x ./daemon.sh
 
           DOCKER_ARGS="${{ join(matrix.docker_args, ' ') }}"
-          DOCKER_ARGS="${DOCKER_ARGS//<WORKSPACE>/${{ github.run_id }}_${{ matrix.id }}}"
+          DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           VOLUME_ARGS=$(printf " -v %s" ${{ join(matrix.volumes, ' ') }})
           SHM_SIZE="--shm-size=${{ matrix.shm_size }}"
           PLATFORM=${{ matrix.platform }}
