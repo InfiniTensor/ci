@@ -263,12 +263,16 @@ if [ $TEST_TYPE == "Service" ]; then
             ((seq_num++))
         done
 
+        echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
         success=0
         # 等待所有服务器任务启动完成
         remaining=${#server_list[@]}
         while (( remaining > 0 )); do
             wait -n -p done_pid
             err=$?
+
+            echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
             
             if [ -v pid_map[$done_pid] ]; then
                 echo "任务启动结束，服务器：${pid_map[$done_pid]} (PID=$done_pid)"
@@ -306,6 +310,8 @@ if [ $TEST_TYPE == "Service" ]; then
                 echo "PID=${done_pid}不在pid_map中, 致命错误!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
             fi
         done
+
+        echo "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
 
         # 任务启动失败
         if [ $success -eq 1 ]; then
