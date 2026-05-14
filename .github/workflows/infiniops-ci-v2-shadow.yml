@@ -130,7 +130,7 @@ jobs:
             local candidate="$1"
             mkdir -p "${candidate}/tasks" "${candidate}/logs" "${candidate}/locks" 2>/dev/null || return 1
             [ -w "${candidate}" ] && [ -w "${candidate}/tasks" ] && [ -w "${candidate}/logs" ] && [ -w "${candidate}/locks" ] || return 1
-            local probe="${candidate}/locks/.write-test-${GITHUB_RUN_ID}-${{ matrix.id }}"
+            local probe="${candidate}/locks/${{ matrix.platform }}.lock"
             touch "${probe}" 2>/dev/null || return 1
             rm -f "${probe}"
           }

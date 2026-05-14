@@ -14,6 +14,7 @@ def test_shadow_workflow_uses_agent_cli():
     assert "systemctl is-active --quiet ci-agent" in text
     assert "using transient ci-agent state dir" in text
     assert "started transient ci-agent daemon with state dir" in text
+    assert 'local probe="${candidate}/locks/${{ matrix.platform }}.lock"' in text
     assert "ci_agent.py submit" in text
     assert "ci_agent.py wait" in text
     assert "ci_agent.py collect" in text
