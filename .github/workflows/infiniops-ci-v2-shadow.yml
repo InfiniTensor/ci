@@ -149,14 +149,12 @@ jobs:
         id: agent
         working-directory: repo
         env:
-          CI_AGENT_STATE_DIR: /var/lib/ci-agent
           OUT_DIR: ci-v2-artifacts/${{ matrix.id }}
         run: |
           set -euo pipefail
           available=false
           reason=""
-          requested_state_dir="${CI_AGENT_STATE_DIR}"
-          state_dir="${requested_state_dir}"
+          state_dir="${RUNNER_TEMP:-/tmp}/ci-agent-state-${GITHUB_RUN_ID}-${{ matrix.id }}"
 
           state_dir_usable() {
             local candidate="$1"
@@ -167,21 +165,11 @@ jobs:
           }
 
           if ! state_dir_usable "${state_dir}"; then
-            fallback_state_dir="${RUNNER_TEMP:-/tmp}/ci-agent-state-${GITHUB_RUN_ID}-${{ matrix.id }}"
-            if state_dir_usable "${fallback_state_dir}"; then
-              state_dir="${fallback_state_dir}"
-              echo "using transient ci-agent state dir: ${state_dir}"
-            else
-              reason="state_dir_unwritable"
-            fi
+            reason="state_dir_unwritable"
           fi
 
           if [ -n "${reason}" ]; then
             available=false
-          elif [ "${state_dir}" = "${requested_state_dir}" ] && command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet ci-agent; then
-            available=true
-          elif [ "${state_dir}" = "${requested_state_dir}" ] && pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
-            available=true
           else
             daemon_log="${RUNNER_TEMP:-/tmp}/ci-agent-${GITHUB_RUN_ID}-${{ matrix.id }}.log"
             nohup python3 .ci/ci_agent.py --state-dir "${state_dir}" daemon --poll-interval 5 >"${daemon_log}" 2>&1 &
@@ -304,6 +292,7 @@ jobs:
 
       - name: Upload CI v2 shadow artifacts
         if: always()
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: ci-v2-shadow-${{ matrix.id }}

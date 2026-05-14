@@ -13,8 +13,6 @@ def test_shadow_workflow_uses_agent_cli():
     assert "actions/checkout" not in text
     assert "git checkout --force FETCH_HEAD" in text
     assert "agent_unavailable" in text
-    assert "systemctl is-active --quiet ci-agent" in text
-    assert "using transient ci-agent state dir" in text
     assert "started transient ci-agent daemon with state dir" in text
     assert 'local probe="${candidate}/locks/${{ matrix.platform }}.lock"' in text
     assert "ci_agent.py submit" in text
@@ -22,6 +20,7 @@ def test_shadow_workflow_uses_agent_cli():
     assert "ci_agent.py collect" in text
     assert "ci_agent.py cancel" in text
     assert "Fail failed CI v2 shadow task" in text
+    assert "continue-on-error: true" in text
 
 
 def test_shadow_workflow_requires_explicit_runner_labels():
