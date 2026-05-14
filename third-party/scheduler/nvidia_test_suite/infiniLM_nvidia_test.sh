@@ -339,9 +339,8 @@ if [ $TEST_TYPE == "Service" ]; then
         echo "Starting the model ${TEST_TYPE} testing task..."
 
         if [ $TEST_TYPE == "Service" ]; then
-            engine_type=$(echo "${ENGINE_TYPE}" | tr '[:upper:]' '[:lower:]')
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
-                    docker exec ${engine_type}_nvidia_Service_${session_id}_${job_count} /bin/bash -c \"
+                    docker exec ${ENGINE_TYPE,}_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count} /bin/bash -c \"
                         export https_proxy=http://localhost:9992 http_proxy=http://localhost:9992
                         python scripts/test_perf.py --verbose
                     \"

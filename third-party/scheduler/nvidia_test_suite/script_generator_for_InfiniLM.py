@@ -97,17 +97,9 @@ def main():
 
             match = re.search(r"--tp\s+(\d+)", args)
             npu_quantity = match.group(1) if match else "1"
-
             model_list += f"{name}:{npu_quantity}:{GPU} "
 
-            result = re.sub(
-                r"^.*docker\.xcoresigma\.com(\:\d+)?/docker/infiniLM-x86_64-nvidia\:\S+",
-                "",
-                args,
-            )
-            result = re.sub(r"--port\s+\d+", "--port $PORT", result)
-            result = re.sub(r"--schedule-policy\s+\S+", "--schedule-policy $SCHEDULE_POLICY", result)
-            result = re.sub(r"--master-port\s+\d+", "--master-port $MASTER_PORT", result)
+            result = re.sub(r"--port\s+\d+", "--port $PORT", args)
             
             card_types = extract_card_types(GPU)
             for card_type in card_types:
