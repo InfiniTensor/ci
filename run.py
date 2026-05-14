@@ -121,15 +121,6 @@ def build_runner_script():
     return r"""
 set -e
 cd /workspace
-mkdir -p /workspace/results
-if [ -n "$LOCAL_SRC" ]; then
-  cp -r "$LOCAL_SRC" /tmp/src
-  cd /tmp/src
-else
-  git clone "$REPO_URL" repo
-  cd repo
-  git checkout "$BRANCH"
-fi
 set +e
 rc=0
 for i in $(seq 1 "$NUM_STAGES"); do
