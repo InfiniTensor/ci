@@ -156,6 +156,7 @@ while true; do
         echo "尝试锁定其中 $TARGET_FREE_GPUS 张 GPU"
 
         # 尝试原子性地获取所有GPU的锁
+        cleanup_stale_npu_locks_for_list "$SERVER_NAME" "${FREE_GPU_INFO[*]}"
         if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
             LOCKED_NPUS="${ACUQIRED_LOCKS[@]}"
