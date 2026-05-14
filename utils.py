@@ -20,7 +20,7 @@ def normalize_config(raw):
         platforms:
           nvidia:
             image: {dockerfile: ..., build_args: ...}
-            setup: pip install .[dev]
+            setup: pip install '.[dev]'
             jobs:
               gpu: {resources: ..., stages: ...}
 

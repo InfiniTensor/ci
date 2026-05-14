@@ -228,7 +228,7 @@ def _make_platform_config(platform, gpu_style="none", job_suffix="gpu"):
         "platforms": {
             platform: {
                 "image": {"dockerfile": f".ci/images/{platform}/"},
-                "setup": "pip install .[dev]",
+                "setup": "pip install '.[dev]'",
                 "jobs": {
                     job_suffix: {
                         "resources": {

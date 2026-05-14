@@ -174,7 +174,7 @@ def build_docker_args(
     image_tag = image_tag_override or job.get("image", "latest")
     image = resolve_image(config, platform, image_tag)
     resources = job.get("resources", {})
-    setup_raw = job.get("setup", "pip install .[dev]")
+    setup_raw = job.get("setup", "pip install '.[dev]'")
 
     if isinstance(setup_raw, list):
         setup_cmd = "\n".join(setup_raw)

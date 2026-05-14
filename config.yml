@@ -22,7 +22,7 @@ platforms:
     volumes:
       - /data:/data
       - /data-aisoft:/data-aisoft
-    setup: pip install .[dev] --no-build-isolation
+    setup: pip install '.[dev]' --no-build-isolation
     jobs:
       gpu_inferencetest:
         type: inferencetest

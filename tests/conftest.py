@@ -23,7 +23,7 @@ def minimal_config():
                     "dockerfile": ".ci/images/nvidia/",
                     "build_args": {"BASE_IMAGE": "nvcr.io/nvidia/pytorch:24.10-py3"},
                 },
-                "setup": "pip install .[dev]",
+                "setup": "pip install '.[dev]'",
                 "jobs": {
                     "gpu": {
                         "resources": {
