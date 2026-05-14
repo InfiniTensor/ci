@@ -123,19 +123,42 @@ jobs:
           set -euo pipefail
           available=false
           reason=""
-          if [ ! -d "${CI_AGENT_STATE_DIR}" ] || [ ! -w "${CI_AGENT_STATE_DIR}" ]; then
-            reason="state_dir_unwritable"
-          elif command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet ci-agent; then
+          requested_state_dir="${CI_AGENT_STATE_DIR}"
+          state_dir="${requested_state_dir}"
+
+          state_dir_usable() {
+            local candidate="$1"
+            mkdir -p "${candidate}/tasks" "${candidate}/logs" "${candidate}/locks" 2>/dev/null || return 1
+            [ -w "${candidate}" ] && [ -w "${candidate}/tasks" ] && [ -w "${candidate}/logs" ] && [ -w "${candidate}/locks" ] || return 1
+            local probe="${candidate}/locks/.write-test-${GITHUB_RUN_ID}-${{ matrix.id }}"
+            touch "${probe}" 2>/dev/null || return 1
+            rm -f "${probe}"
+          }
+
+          if ! state_dir_usable "${state_dir}"; then
+            fallback_state_dir="${RUNNER_TEMP:-/tmp}/ci-agent-state-${GITHUB_RUN_ID}-${{ matrix.id }}"
+            if state_dir_usable "${fallback_state_dir}"; then
+              state_dir="${fallback_state_dir}"
+              echo "using transient ci-agent state dir: ${state_dir}"
+            else
+              reason="state_dir_unwritable"
+            fi
+          fi
+
+          if [ -n "${reason}" ]; then
+            available=false
+          elif [ "${state_dir}" = "${requested_state_dir}" ] && command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet ci-agent; then
             available=true
-          elif pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
+          elif [ "${state_dir}" = "${requested_state_dir}" ] && pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
             available=true
           else
             daemon_log="${RUNNER_TEMP:-/tmp}/ci-agent-${GITHUB_RUN_ID}-${{ matrix.id }}.log"
-            nohup python3 .ci/ci_agent.py --state-dir "${CI_AGENT_STATE_DIR}" daemon --poll-interval 5 >"${daemon_log}" 2>&1 &
+            nohup python3 .ci/ci_agent.py --state-dir "${state_dir}" daemon --poll-interval 5 >"${daemon_log}" 2>&1 &
+            daemon_pid="$!"
             sleep 2
-            if pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
+            if kill -0 "${daemon_pid}" 2>/dev/null; then
               available=true
-              echo "started transient ci-agent daemon, log: ${daemon_log}"
+              echo "started transient ci-agent daemon with state dir ${state_dir}, log: ${daemon_log}"
             else
               reason="daemon_not_running"
               cat "${daemon_log}" || true
@@ -143,6 +166,7 @@ jobs:
           fi
 
           echo "available=${available}" >> "${GITHUB_OUTPUT}"
+          echo "state_dir=${state_dir}" >> "${GITHUB_OUTPUT}"
           if [ "${available}" = "true" ]; then
             exit 0
           fi
@@ -179,7 +203,7 @@ jobs:
         working-directory: repo
         env:
           TASK_ID: ${{ github.run_id }}-${{ matrix.id }}
-          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          CI_AGENT_STATE_DIR: ${{ steps.agent.outputs.state_dir }}
           RESULT_DIR: ${{ github.workspace }}/repo/ci-v2-results/${{ github.run_id }}-${{ matrix.id }}
           CONFIG_PATH: ${{ inputs.config_path }}
           JOB_ID: ${{ matrix.id }}
@@ -210,7 +234,7 @@ jobs:
         continue-on-error: true
         working-directory: repo
         env:
-          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          CI_AGENT_STATE_DIR: ${{ steps.agent.outputs.state_dir }}
           TASK_ID: ${{ steps.submit.outputs.task_id }}
         run: |
           set -euo pipefail
@@ -221,7 +245,7 @@ jobs:
         if: always() && steps.agent.outputs.available == 'true'
         working-directory: repo
         env:
-          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          CI_AGENT_STATE_DIR: ${{ steps.agent.outputs.state_dir }}
           TASK_ID: ${{ steps.submit.outputs.task_id }}
           OUT_DIR: ci-v2-artifacts/${{ matrix.id }}
         run: |
