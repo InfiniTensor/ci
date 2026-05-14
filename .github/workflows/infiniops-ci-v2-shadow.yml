@@ -110,8 +110,60 @@ jobs:
             --commit "${SHORT_SHA}" \
             --force
 
+      - name: Check local CI agent
+        id: agent
+        working-directory: repo
+        env:
+          CI_AGENT_STATE_DIR: /var/lib/ci-agent
+          OUT_DIR: ci-v2-artifacts/${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          available=false
+          reason=""
+          if [ ! -d "${CI_AGENT_STATE_DIR}" ] || [ ! -w "${CI_AGENT_STATE_DIR}" ]; then
+            reason="state_dir_unwritable"
+          elif command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet ci-agent; then
+            available=true
+          elif pgrep -f "ci_agent.py.*daemon" >/dev/null 2>&1; then
+            available=true
+          else
+            reason="daemon_not_running"
+          fi
+
+          echo "available=${available}" >> "${GITHUB_OUTPUT}"
+          if [ "${available}" = "true" ]; then
+            exit 0
+          fi
+
+          mkdir -p "${OUT_DIR}"
+          python3 - "${OUT_DIR}/task.json" "${reason}" <<'PY'
+          import json
+          import os
+          import sys
+
+          path, reason = sys.argv[1], sys.argv[2]
+          task = {
+              "id": os.environ.get("GITHUB_RUN_ID", ""),
+              "platform": "${{ matrix.platform }}",
+              "job": "${{ matrix.id }}",
+              "status": "agent_unavailable",
+              "reason": reason,
+          }
+          with open(path, "w", encoding="utf-8") as f:
+              json.dump(task, f, indent=2, sort_keys=True)
+              f.write("\n")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as f:
+                  f.write(f"### CI v2 shadow: {task['platform']} / {task['job']}\n\n")
+                  f.write("- status: `agent_unavailable`\n")
+                  f.write(f"- reason: `{reason}`\n")
+          PY
+
       - name: Submit CI v2 shadow task
         id: submit
+        if: steps.agent.outputs.available == 'true'
         working-directory: repo
         env:
           TASK_ID: ${{ github.run_id }}-${{ matrix.id }}
@@ -142,6 +194,7 @@ jobs:
 
       - name: Wait for CI v2 shadow task
         id: wait
+        if: steps.agent.outputs.available == 'true'
         continue-on-error: true
         working-directory: repo
         env:
@@ -153,7 +206,7 @@ jobs:
           python3 .ci/ci_agent.py wait "${TASK_ID}" --poll-interval 5
 
       - name: Collect CI v2 shadow artifacts
-        if: always()
+        if: always() && steps.agent.outputs.available == 'true'
         working-directory: repo
         env:
           CI_AGENT_STATE_DIR: /var/lib/ci-agent
