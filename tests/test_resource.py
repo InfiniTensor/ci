@@ -486,6 +486,23 @@ def test_allocate_ignores_low_utilization_gpu_with_high_memory(monkeypatch):
     assert selected == [5]
 
 
+def test_allocate_accepts_metax_idle_driver_memory(monkeypatch):
+    pool = res.ResourcePool("metax")
+
+    monkeypatch.setattr(
+        pool,
+        "detect_gpus",
+        lambda: [
+            res.GpuInfo(0, 858, 65536, 0),
+            res.GpuInfo(1, 4096, 65536, 0),
+        ],
+    )
+
+    selected, ok = pool.allocate(1)
+    assert ok
+    assert selected == [0]
+
+
 def test_parse_memory_requirement_gb():
     assert res.parse_memory_requirement({"resources": {"memory": "32GB"}}) == 32 * 1024
 

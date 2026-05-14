@@ -486,6 +486,9 @@ class ResourcePool:
         if self._platform == "ascend" and gpu.memory_total_mb > 0:
             return (gpu.memory_total_mb - gpu.memory_used_mb) > 1024
 
+        if self._platform == "metax":
+            return gpu.memory_used_mb < 2048
+
         return gpu.memory_used_mb < 100
 
     def release(self, gpu_ids):
