@@ -9,7 +9,7 @@ LOCK_FILE="server_config.lock"
 # 接收参数
 MODEL=$1
 GPU_QUANITY=$2
-OPTION="$3"
+OPTIONS="$3"
 SERVER_LIST=$4
 NODE_RANK=$5
 JOB_COUNT=$6
@@ -17,9 +17,13 @@ GPU_MODEL=$7
 SESSION_ID=$8
 VERSION=$9
 
+echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+echo "${OPTIONS}"
+echo "${OPTIONS// /_}"
+
 # 生成唯一的任务ID
-TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${JOB_COUNT}"
-JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${SESSION_ID}_${JOB_COUNT}"
+TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${JOB_COUNT}"
+JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${SESSION_ID}_${JOB_COUNT}"
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
@@ -107,10 +111,10 @@ fi
 #     DOCKER_IMAGE_URL="docker.xcoresigma.com:80/docker/infiniLM-x86_64-nvidia:$LATEST_TAG"
 # fi
 
-ret=`docker ps -a | grep infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${SESSION_ID}_${JOB_COUNT}`
+ret=`docker ps -a | grep infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${SESSION_ID}_${JOB_COUNT}
-  docker rm infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${SESSION_ID}_${JOB_COUNT}
+  docker stop infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${SESSION_ID}_${JOB_COUNT}
+  docker rm infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -356,7 +360,7 @@ if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     fi
 fi
 
-EXEC_COMMAND="docker run --name=infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTION// /_}_${SESSION_ID}_${JOB_COUNT} "
+EXEC_COMMAND="docker run --name=infiniLM_nvidia_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS// /_}_${SESSION_ID}_${JOB_COUNT} "
 EXEC_COMMAND+="-e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
