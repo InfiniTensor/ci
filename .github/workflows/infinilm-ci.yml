@@ -316,7 +316,7 @@ jobs:
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Inference"
-          echo "InfiniTensor"
+          echo "InfiniLM"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${NGPUS}"
@@ -326,7 +326,7 @@ jobs:
           exec ./daemon.sh \
             "${PLATFORM^}" \
             "Inference" \
-            "InfiniTensor" \
+            "InfiniLM" \
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
@@ -531,7 +531,7 @@ jobs:
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Bench"
-          echo "InfiniTensor"
+          echo "InfiniLM"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${NGPUS}"
@@ -541,7 +541,7 @@ jobs:
           exec ./daemon.sh \
             "${PLATFORM^}" \
             "Bench" \
-            "InfiniTensor" \
+            "InfiniLM" \
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
@@ -746,7 +746,7 @@ jobs:
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
           echo "Accuracy"
-          echo "InfiniTensor"
+          echo "InfiniLM"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${NGPUS}"
@@ -756,7 +756,7 @@ jobs:
           exec ./daemon.sh \
             "${PLATFORM^}" \
             "Accuracy" \
-            "InfiniTensor" \
+            "InfiniLM" \
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
