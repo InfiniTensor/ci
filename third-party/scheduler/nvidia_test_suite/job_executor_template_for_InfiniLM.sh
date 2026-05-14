@@ -9,7 +9,7 @@ LOCK_FILE="server_config.lock"
 # 接收参数
 MODEL=$1
 GPU_QUANITY=$2
-OPTION=$3
+OPTION="$3"
 SERVER_LIST=$4
 NODE_RANK=$5
 JOB_COUNT=$6
