@@ -36,20 +36,36 @@ jobs:
       job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
     steps:
       - name: Checkout caller repository
-        uses: actions/checkout@v4
-        with:
-          path: repo
-          submodules: false
-
-      - name: Replace caller .ci with CI tools
-        run: rm -rf repo/.ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf repo
+          mkdir -p repo
+          cd repo
+          git init
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          auth_header="$(printf "AUTHORIZATION: basic %s" "$(printf "x-access-token:%s" "${GH_TOKEN}" | base64 | tr -d "\n")")"
+          git -c "http.https://github.com/.extraheader=${auth_header}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "${GITHUB_REF}"
+          git checkout --force FETCH_HEAD
+          git config --local gc.auto 0
+          git config --global --add safe.directory "${PWD}"
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
-        with:
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf repo/.ci
+          mkdir -p repo/.ci
+          cd repo/.ci
+          git init
+          git remote add origin "https://github.com/InfiniTensor/ci.git"
+          auth_header="$(printf "AUTHORIZATION: basic %s" "$(printf "x-access-token:%s" "${GH_TOKEN}" | base64 | tr -d "\n")")"
+          git -c "http.https://github.com/.extraheader=${auth_header}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "${{ inputs.ci_ref }}"
+          git checkout --force FETCH_HEAD
+          git config --local gc.auto 0
+          git config --global --add safe.directory "${PWD}"
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -85,20 +101,36 @@ jobs:
     timeout-minutes: ${{ matrix.shadow_timeout_minutes }}
     steps:
       - name: Checkout caller repository
-        uses: actions/checkout@v4
-        with:
-          path: repo
-          submodules: false
-
-      - name: Replace caller .ci with CI tools
-        run: rm -rf repo/.ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf repo
+          mkdir -p repo
+          cd repo
+          git init
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          auth_header="$(printf "AUTHORIZATION: basic %s" "$(printf "x-access-token:%s" "${GH_TOKEN}" | base64 | tr -d "\n")")"
+          git -c "http.https://github.com/.extraheader=${auth_header}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "${GITHUB_REF}"
+          git checkout --force FETCH_HEAD
+          git config --local gc.auto 0
+          git config --global --add safe.directory "${PWD}"
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
-        with:
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf repo/.ci
+          mkdir -p repo/.ci
+          cd repo/.ci
+          git init
+          git remote add origin "https://github.com/InfiniTensor/ci.git"
+          auth_header="$(printf "AUTHORIZATION: basic %s" "$(printf "x-access-token:%s" "${GH_TOKEN}" | base64 | tr -d "\n")")"
+          git -c "http.https://github.com/.extraheader=${auth_header}" fetch --no-tags --prune --no-recurse-submodules --depth=1 origin "${{ inputs.ci_ref }}"
+          git checkout --force FETCH_HEAD
+          git config --local gc.auto 0
+          git config --global --add safe.directory "${PWD}"
 
       - name: Short SHA for image tags
         working-directory: repo
@@ -131,8 +163,7 @@ jobs:
             mkdir -p "${candidate}/tasks" "${candidate}/logs" "${candidate}/locks" 2>/dev/null || return 1
             [ -w "${candidate}" ] && [ -w "${candidate}/tasks" ] && [ -w "${candidate}/logs" ] && [ -w "${candidate}/locks" ] || return 1
             local probe="${candidate}/locks/${{ matrix.platform }}.lock"
-            touch "${probe}" 2>/dev/null || return 1
-            rm -f "${probe}"
+            : >> "${probe}" 2>/dev/null || return 1
           }
 
           if ! state_dir_usable "${state_dir}"; then

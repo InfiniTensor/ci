@@ -10,6 +10,8 @@ def test_shadow_workflow_uses_agent_cli():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "CI v2 Shadow" in text
+    assert "actions/checkout" not in text
+    assert "git checkout --force FETCH_HEAD" in text
     assert "agent_unavailable" in text
     assert "systemctl is-active --quiet ci-agent" in text
     assert "using transient ci-agent state dir" in text
