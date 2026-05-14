@@ -111,13 +111,14 @@ the collected artifacts.
 Minimal runner setup:
 
 ```bash
-sudo install -d -o ci -g ci /var/lib/ci-agent
-sudo install -d -o ci -g ci /opt/infinitensor-ci
-sudo cp -a .ci/. /opt/infinitensor-ci/
-sudo cp .ci/systemd/ci-agent.service /etc/systemd/system/ci-agent.service
-sudo systemctl daemon-reload
-sudo systemctl enable --now ci-agent
+sudo .ci/scripts/install_ci_agent.sh
 ```
+
+By default the installer copies `.ci` to `/opt/infinitensor-ci`, creates the
+`ci-agent` system user/group, initializes `/var/lib/ci-agent`, grants the
+current sudo user access to the state directory, and enables the `ci-agent`
+systemd service. Set `CI_AGENT_RUNNER_USER` when the GitHub runner runs as a
+different user.
 
 The GitHub job calls these local commands:
 
