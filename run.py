@@ -130,8 +130,6 @@ else
   cd repo
   git checkout "$BRANCH"
 fi
-echo "========== Setup =========="
-eval "$SETUP_CMD"
 set +e
 rc=0
 for i in $(seq 1 "$NUM_STAGES"); do
