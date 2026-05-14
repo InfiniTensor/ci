@@ -135,6 +135,15 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
@@ -351,6 +360,15 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
@@ -563,6 +581,15 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
@@ -1008,6 +1035,15 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          path: repo
+          submodules: false
+          fetch-depth: 1
+          sparse-checkout: |
+            .github
+
       - name: Checkout CI tools
         uses: actions/checkout@v4
         with:
