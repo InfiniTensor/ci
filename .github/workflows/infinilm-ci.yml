@@ -525,10 +525,6 @@ jobs:
 
           DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           PLATFORM=${{ matrix.platform }}
-          NGPUS=${{ matrix.ngpus }}
-          if [ -z $NGPUS ]; then
-            NGPUS=1
-          fi
 
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
@@ -536,7 +532,7 @@ jobs:
           echo "InfiniLM"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
-          echo "${NGPUS}"
+          echo "${TEST_PARAM}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -547,7 +543,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            "${NGPUS}" \
+            "${TEST_PARAM}" \
             "${IMAGE_TAG}"
 
   run-accuracytest:
@@ -741,10 +737,6 @@ jobs:
 
           DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           PLATFORM=${{ matrix.platform }}
-          NGPUS=${{ matrix.ngpus }}
-          if [ -z $NGPUS ]; then
-            NGPUS=1
-          fi
 
           echo "**************************************************************************************"
           echo "${PLATFORM^}"
@@ -752,7 +744,7 @@ jobs:
           echo "InfiniLM"
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
-          echo "${NGPUS}"
+          echo "${TEST_PARAM}"
           echo "${IMAGE_TAG}"
           echo "**************************************************************************************"
 
@@ -763,7 +755,7 @@ jobs:
             "None" \
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
-            "${NGPUS}" \
+            "${TEST_PARAM}" \
             "${IMAGE_TAG}"
 
   # run-benchtest:

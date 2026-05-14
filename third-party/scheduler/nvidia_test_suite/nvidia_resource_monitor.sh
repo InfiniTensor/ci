@@ -508,7 +508,12 @@ for name in "${!H800_server_list[@]}"; do
 done
 
 if [ $TEST_TYPE != "Service" ]; then
-    GPU_QUANTITY=${TEST_PARAM}
+    if [ $TEST_TYPE == "Inference" ]; then
+        GPU_QUANTITY=${TEST_PARAM}
+    else
+        GPU_QUANTITY=1
+    fi
+
     while true; do
         model="None"
         GPU_MODEL="A100"
@@ -517,8 +522,14 @@ if [ $TEST_TYPE != "Service" ]; then
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
-            inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
+            if [ $TEST_TYPE == "Inference" ]; then
+                inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
+            else
+                test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
+                log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $log_path 2>&1 &
+            fi
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
