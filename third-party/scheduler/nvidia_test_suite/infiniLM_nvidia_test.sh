@@ -252,14 +252,13 @@ if [ $TEST_TYPE == "Service" ]; then
 
             if [ $TEST_TYPE == "Smoke" ]; then
                 ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                # ssh 远程 exec 为单行命令串，需 printf %q 才能在远程 bash 中保持含空格等参数的 argv 边界
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip bash -lc "$(printf '%q ' "/home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" "$model" "$gpu_quantity" "$TEST_PARAM" "$server_list_str" "$seq_num" "$job_count" "$gpu_model" "$session_id" "$version")" > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                 ssh_pid=$!
                 pid_map[$ssh_pid]=$ip
                 SSH_PID_MAP[$ssh_pid]=$ip
             else
                 ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip bash -lc "$(printf '%q ' "/home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" "$model" "$gpu_quantity" "$TEST_PARAM" "$server_list_str" "$seq_num" "$job_count" "$gpu_model" "$session_id" "$version")" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version &
                 ssh_pid=$!
                 pid_map[$ssh_pid]=$ip
                 SSH_PID_MAP[$ssh_pid]=$ip
@@ -581,7 +580,7 @@ else
     ip=${server_list[0]}
 
     ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip bash -lc "$(printf '%q ' "/home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" "$model" "$gpu_quantity" "$TEST_PARAM" "$server_list_str" 0 0 "$gpu_model" "$session_id" "$version")" > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
