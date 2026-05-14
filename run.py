@@ -121,6 +121,7 @@ def build_runner_script():
     return r"""
 set -e
 cd /workspace
+pip install janus
 set +e
 rc=0
 for i in $(seq 1 "$NUM_STAGES"); do
