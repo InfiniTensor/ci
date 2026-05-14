@@ -307,6 +307,7 @@ jobs:
           cp "${src_dir}/.ci/daemon.sh" .
           chmod a+x ./daemon.sh
 
+          DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           PLATFORM=${{ matrix.platform }}
           NGPUS=${{ matrix.ngpus }}
           if [ -z $NGPUS ]; then
@@ -522,6 +523,7 @@ jobs:
           cp "${src_dir}/.ci/daemon.sh" .
           chmod a+x ./daemon.sh
 
+          DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           PLATFORM=${{ matrix.platform }}
           NGPUS=${{ matrix.ngpus }}
           if [ -z $NGPUS ]; then
@@ -737,6 +739,7 @@ jobs:
           cp "${src_dir}/.ci/daemon.sh" .
           chmod a+x ./daemon.sh
 
+          DOCKER_ARGS="${DOCKER_ARGS//__WORKSPACE__/${{ github.run_id }}_${{ matrix.id }}}"
           PLATFORM=${{ matrix.platform }}
           NGPUS=${{ matrix.ngpus }}
           if [ -z $NGPUS ]; then
