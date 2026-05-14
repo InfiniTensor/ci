@@ -1,5 +1,9 @@
 name: InfiniOps CI v2 Shadow
 
+permissions:
+  actions: read
+  contents: read
+
 on:
   workflow_call:
     inputs:
@@ -70,7 +74,6 @@ jobs:
     name: ci-v2-shadow / ${{ matrix.platform }}
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')
-    continue-on-error: true
     strategy:
       fail-fast: false
       max-parallel: ${{ inputs.max_parallel }}
@@ -241,3 +244,76 @@ jobs:
         with:
           name: ci-v2-shadow-${{ matrix.id }}
           path: repo/ci-v2-artifacts/${{ matrix.id }}
+
+      - name: Fail failed CI v2 shadow task
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.agent.outputs.available }}" != "true" ]; then
+            echo "CI v2 agent is unavailable on ${{ matrix.platform }}"
+            exit 1
+          fi
+          if [ "${{ steps.wait.outcome }}" != "success" ]; then
+            echo "CI v2 task failed on ${{ matrix.platform }}"
+            exit 1
+          fi
+
+  queue-watchdog:
+    name: Fail queued CI v2 jobs after 10 minutes
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail queued CI v2 jobs after 10 minutes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          QUEUE_TIMEOUT_SECONDS: 600
+        run: |
+          set -euo pipefail
+          sleep "${QUEUE_TIMEOUT_SECONDS}"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPOSITORY"]
+          run_id = os.environ["RUN_ID"]
+
+          jobs = []
+          url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
+          while url:
+              req = urllib.request.Request(url)
+              req.add_header("Accept", "application/vnd.github+json")
+              req.add_header("Authorization", f"Bearer {token}")
+              req.add_header("X-GitHub-Api-Version", "2022-11-28")
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  payload = json.load(resp)
+                  jobs.extend(payload.get("jobs", []))
+                  link = resp.headers.get("Link", "")
+
+              next_url = ""
+              for part in link.split(","):
+                  if 'rel="next"' in part:
+                      next_url = part[part.find("<") + 1 : part.find(">")]
+                      break
+              url = next_url
+
+          queued = [
+              job
+              for job in jobs
+              if job.get("status") == "queued"
+              and "ci-v2-shadow /" in job.get("name", "")
+              and "Generate CI v2 shadow matrix" not in job.get("name", "")
+          ]
+
+          if queued:
+              print("CI v2 jobs still queued after 10 minutes:", file=sys.stderr)
+              for job in queued:
+                  print(f"- {job.get('name')} {job.get('html_url')}", file=sys.stderr)
+              sys.exit(1)
+
+          print("No CI v2 platform jobs remained queued after 10 minutes.")
+          PY
