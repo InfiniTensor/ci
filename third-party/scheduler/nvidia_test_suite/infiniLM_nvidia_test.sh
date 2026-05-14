@@ -17,10 +17,6 @@ OPTIONS=${TEST_PARAM// /_}
 LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
-echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-echo "${TEST_PARAM}"
-echo "${OPTIONS}"
-
 declare -A A100_server_list=(
     ["172.22.163.40"]="A100-001"
 )
