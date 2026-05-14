@@ -539,8 +539,13 @@ if [ $TEST_TYPE != "Service" ]; then
                     sleep 10
                     continue
                 fi
-                echo "Inference test failed with exit code $err. Last 200 lines of $inference_log:"
-                tail -n 200 "$inference_log" || true
+                if [ $TEST_TYPE == "Inference" ]; then
+                    echo "Inference test failed with exit code $err. Last 200 lines of $inference_log:"
+                    tail -n 200 "$inference_log" || true
+                else
+                    echo "${TEST_TYPE} test failed with exit code $err. Last 200 lines of $log_path:"
+                    tail -n 200 "$log_path" || true
+                fi
             fi
             break
         else
