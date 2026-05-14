@@ -20,7 +20,7 @@ engine=$3
 model_list=$4
 docker_args="$5"
 CI_job_id=$6
-test_param=$7
+test_param="$7"
 version=$8
 
 curr_dir=$(pwd)
