@@ -170,6 +170,7 @@ search_servers() {
                 TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
                 LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
                 SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                cleanup_stale_npu_locks_for_list \${SERVER_NAME} \"\${GPU_INFO[*]}\"
                 check_npu_locks_batch \${SERVER_NAME} \"\${GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
                 if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
                     SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"

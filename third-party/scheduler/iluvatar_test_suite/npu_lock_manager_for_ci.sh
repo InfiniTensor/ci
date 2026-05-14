@@ -144,6 +144,41 @@ release_npu_locks_batch() {
     done
 }
 
+# Remove lock directories left by cancelled CI jobs for GPUs already reported idle.
+cleanup_stale_npu_locks_for_list() {
+    local server=$1
+    local npu_list=$2
+    local lock_dir
+    local lock_session_id
+
+    if ! command -v docker >/dev/null 2>&1; then
+        return 0
+    fi
+
+    for npu_id in $npu_list; do
+        lock_dir=$(get_lock_file "$server" "$npu_id")
+        [ -d "$lock_dir" ] || continue
+
+        if [ ! -f "${lock_dir}/info" ]; then
+            echo "Removing stale NPU lock without info: ${lock_dir}" >&2
+            rm -rf "$lock_dir"
+            continue
+        fi
+
+        lock_session_id=$(grep "^session_id=" "${lock_dir}/info" 2>/dev/null | cut -d= -f2)
+        if [ -z "$lock_session_id" ]; then
+            echo "Removing stale NPU lock without session_id: ${lock_dir}" >&2
+            rm -rf "$lock_dir"
+            continue
+        fi
+
+        if ! docker ps --format "{{.Names}}" | grep -Eq "(^|_)${lock_session_id}(_|$)"; then
+            echo "Removing stale NPU lock: ${lock_dir} (session ${lock_session_id})" >&2
+            rm -rf "$lock_dir"
+        fi
+    done
+}
+
 # 检查NPU锁状态
 # 参数: $1=服务器名或IP, $2=NPU索引, $3=任务ID $4=SessionID
 # 返回: 0=锁空闲, 1=锁被占用
@@ -342,4 +377,3 @@ main() {
 if [ "${BASH_SOURCE[0]}" = "${0}" ]; then
     main "$@"
 fi
-

@@ -7,13 +7,13 @@ WORKFLOW = Path(".github/workflows/infiniops-ci.yml")
 def test_nvidia_unit_runs_directly_without_scheduler():
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "Run nvidia Unit Test directly" in text
-    assert "${{ matrix.platform == 'nvidia' }}" in text
+    assert "Run local Unit Test directly" in text
+    assert "${{ matrix.platform == 'nvidia' || matrix.platform == 'ascend' }}" in text
     assert "eval \"docker run ${DOCKER_ARGS}\"" in text
 
 
-def test_scheduler_unit_step_skips_nvidia():
+def test_scheduler_unit_step_skips_local_unit_platforms():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "Trigger ${{ matrix.platform }} Unit Test Task" in text
-    assert "${{ matrix.platform != 'nvidia' }}" in text
+    assert "${{ matrix.platform != 'nvidia' && matrix.platform != 'ascend' }}" in text
