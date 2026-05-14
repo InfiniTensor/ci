@@ -95,7 +95,7 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-# DOCKER_IMAGE_URL=""
+DOCKER_IMAGE_URL=$LATEST_TAG
 # docker pull docker.xcoresigma.com:80/docker/infiniLM-x86_64-nvidia:$LATEST_TAG
 # if [ $? -ne 0 ]; then
 #     docker pull docker.xcoresigma.com/docker/infiniLM-x86_64-nvidia:$LATEST_TAG
@@ -294,7 +294,7 @@ done
 echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
 LOG_PATH="<<<LOG_PATH>>>"
-LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
+LOG_NAME="server_log_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}_$(date +'%Y%m%d_%H%M%S').log"
 
 if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`

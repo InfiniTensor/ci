@@ -121,9 +121,9 @@ def main():
                 src_code += "\"\n"
                 src_code += "    EXEC_COMMAND+=\" "
                 src_code += result
-                src_code += " > $LOG_NAME 2>&1 &\"\n"
+                src_code += " > $LOG_NAME 2>&1 &\"\"\n"
         src_code += "fi\n"
-        m = re.search(r"-v\s+(/[^:\s]+):/workspace", docker_args)
+        m = re.search(r"-v\s+(/[^:\s]+):/artifacts", docker_args)
         log_path = m.group(1) if m else ""
 
     template_file = "job_executor_template_for_InfiniLM.sh"
@@ -152,7 +152,7 @@ def main():
                 lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
                 if test_type == "Service":
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL")
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL bash -c \"pip install uvicorn janus fastapi &&")
                 else:
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
