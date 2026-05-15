@@ -113,7 +113,7 @@ def main():
                 src_code += "\"\n"
                 src_code += "    EXEC_COMMAND+=\" "
                 src_code += result
-                src_code += " > /artifacts/$LOG_NAME 2>&1\\\" &\"\n"
+                src_code += " > /artifacts/$LOG_NAME 2>&1 &\"\n"
         src_code += "fi\n"
         m = re.search(r"-v\s+(/[^:\s]+):/artifacts", docker_args)
         log_path = m.group(1) if m else ""
