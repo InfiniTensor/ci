@@ -26,6 +26,7 @@ RUN if [ -n "$APT_MIRROR" ]; then \
 ARG PIP_INDEX_URL
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
+    ${PIP_INDEX_URL:+--index-url "$PIP_INDEX_URL"} \
     transformers \
     pyyaml \
     uvicorn \
