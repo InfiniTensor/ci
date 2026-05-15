@@ -341,7 +341,6 @@ if [ $TEST_TYPE == "Service" ]; then
         if [ $TEST_TYPE == "Service" ]; then
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
                     docker exec ${ENGINE_TYPE,}_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count} /bin/bash -c \"
-                        export https_proxy=http://localhost:9992 http_proxy=http://localhost:9992
                         python InfiniLM/scripts/test_perf.py --port ${server_port} --verbose
                     \"
                 " > "$curr_dir/logs/service/$session_id/$filename"
