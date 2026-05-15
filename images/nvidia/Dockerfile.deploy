@@ -28,7 +28,10 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
     ${PIP_INDEX_URL:+--index-url "$PIP_INDEX_URL"} \
     transformers \
-    pyyaml
+    pyyaml \
+    uvicorn \
+    janus \
+    fastapi
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash

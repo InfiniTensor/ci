@@ -144,7 +144,7 @@ def main():
                 lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
                 if test_type == "Service":
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL bash -c \"pip install uvicorn janus fastapi &&")
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES $DOCKER_IMAGE_URL python InfiniLM/python/infinilm/server/inference_server.py")
                 else:
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
