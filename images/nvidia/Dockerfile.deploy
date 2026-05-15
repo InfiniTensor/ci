@@ -30,7 +30,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pyyaml \
     uvicorn \
     janus \
-    fastapi
+    fastapi \
+    openai
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
