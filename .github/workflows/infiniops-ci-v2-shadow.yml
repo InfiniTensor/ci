@@ -112,10 +112,10 @@ jobs:
           token = os.environ.get("RUNNER_STATUS_TOKEN", "").strip()
           if not token:
               print(
-                  "Configure secret CI_RUNNER_STATUS_TOKEN with permission to list repository self-hosted runners.",
-                  file=sys.stderr,
+                  "CI_RUNNER_STATUS_TOKEN is not configured; skipping preflight runner availability check."
               )
-              sys.exit(1)
+              print("Queued-job watchdog remains enabled as a fallback.")
+              sys.exit(0)
           repo = os.environ["REPOSITORY"]
           matrix = json.loads(matrix_text)
           expected = {}
@@ -148,10 +148,12 @@ jobs:
               if exc.code == 403:
                   print("Runner availability preflight cannot list self-hosted runners.", file=sys.stderr)
                   print(
-                      "Secret CI_RUNNER_STATUS_TOKEN exists but cannot list repository self-hosted runners.",
+                      "Secret CI_RUNNER_STATUS_TOKEN exists but cannot list repository self-hosted runners; "
+                      "skipping preflight runner availability check.",
                       file=sys.stderr,
                   )
-                  sys.exit(1)
+                  print("Queued-job watchdog remains enabled as a fallback.")
+                  sys.exit(0)
               raise
 
           def has_online_runner(label):
