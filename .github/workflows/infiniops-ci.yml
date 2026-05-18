@@ -214,7 +214,7 @@ jobs:
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
           local_path = Path.cwd().resolve() if env_opt("LOCAL") else None
-          uses_local_runner = platform in {"nvidia", "ascend"}
+          uses_local_runner = platform in {"nvidia", "iluvatar", "ascend"}
           gpu_id_override = env_opt("GPU_ID")
           if not gpu_id_override and not uses_local_runner:
               gpu_id_override = "all"
@@ -267,7 +267,7 @@ jobs:
           PY
 
       - name: Run local Unit Test directly
-        if: ${{ matrix.platform == 'nvidia' || matrix.platform == 'ascend' }}
+        if: ${{ matrix.platform == 'nvidia' || matrix.platform == 'iluvatar' || matrix.platform == 'ascend' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
@@ -327,7 +327,7 @@ jobs:
           exit "$rc"
 
       - name: Trigger ${{ matrix.platform }} Unit Test Task
-        if: ${{ matrix.platform != 'nvidia' && matrix.platform != 'ascend' }}
+        if: ${{ matrix.platform != 'nvidia' && matrix.platform != 'iluvatar' && matrix.platform != 'ascend' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
