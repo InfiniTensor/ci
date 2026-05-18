@@ -277,6 +277,7 @@ jobs:
           image_ref = resolve_image(
               config,
               job.get("platform", platform),
+              env_opt("BRANCH"),
               env_opt("IMAGE_TAG") or job.get("image", "latest"),
           )
 
@@ -429,7 +430,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: None
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -502,6 +503,7 @@ jobs:
           image_ref = resolve_image(
               config,
               job.get("platform", platform),
+              env_opt("BRANCH"),
               env_opt("IMAGE_TAG") or job.get("image", "latest"),
           )
 
@@ -651,7 +653,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: None
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -724,6 +726,7 @@ jobs:
           image_ref = resolve_image(
               config,
               job.get("platform", platform),
+              env_opt("BRANCH"),
               env_opt("IMAGE_TAG") or job.get("image", "latest"),
           )
 
