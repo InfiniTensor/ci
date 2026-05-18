@@ -559,7 +559,11 @@ if [ $TEST_TYPE != "Service" ]; then
         cat $inference_log
     else
         echo "${TEST_TYPE} test is successful, logs:"
-        cat $log_path
+        if [ $TEST_TYPE == "Accuracy" ]; then
+            tail -n 200 "$log_path"
+        else
+            cat "$log_path"
+        fi
     fi
 
     exit $err
@@ -672,35 +676,36 @@ else
 
         if [[ ${#temp_list[@]} -eq 0 ]]; then
             echo "All tests completed!"
-            tail -n 200 "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
+            cat "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
 
-            if [ $TEST_TYPE == "Accuracy" ]; then
-                python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Nvidia --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
-            elif [ $TEST_TYPE == "Smoke" ]; then
-                if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
-                    latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
-                else
-                    latest_tag="unknown"
-                fi
+            # if [ $TEST_TYPE == "Accuracy" ]; then
+            #     python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Nvidia --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
+            # elif [ $TEST_TYPE == "Smoke" ]; then
+            #     if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
+            #         latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
+            #     else
+            #         latest_tag="unknown"
+            #     fi
                 
-                python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
+            #     python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
 
-                # last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
-                # if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
-                #     last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
-                # else
-                #     last_version="unknown"
-                # fi
+            #     last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
+            #     if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
+            #         last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
+            #     else
+            #         last_version="unknown"
+            #     fi
                 
-                # if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
-                #     console_output_flag=1
-                #     if [ $console_output_flag -eq 1 ]; then
-                #         python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
-                #     else
-                #         python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
-                #     fi
-                # fi
-            fi
+            #     if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
+            #         console_output_flag=1
+            #         if [ $console_output_flag -eq 1 ]; then
+            #             python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
+            #         else
+            #             python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            #         fi
+            #     fi
+            # fi
+            
             break
         else
             GPU_resource_demand=("${temp_list[@]}")
