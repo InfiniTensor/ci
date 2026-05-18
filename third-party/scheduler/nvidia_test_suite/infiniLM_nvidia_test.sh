@@ -344,6 +344,8 @@ if [ $TEST_TYPE == "Service" ]; then
                         python InfiniLM/scripts/test_perf.py --port ${server_port} --verbose
                     \"
                 " > "$curr_dir/logs/service/$session_id/$filename"
+
+            cat "$curr_dir/logs/service/$session_id/$filename"
         elif [ $TEST_TYPE == "Smoke" ]; then
             # 获取模型启动命令，并做为参数传入
             exec_cmd=""

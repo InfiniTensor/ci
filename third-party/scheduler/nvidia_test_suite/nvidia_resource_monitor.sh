@@ -554,6 +554,14 @@ if [ $TEST_TYPE != "Service" ]; then
 
     echo "All tests completed!"
 
+    if [ $TEST_TYPE == "Inference" ]; then
+        echo "Inference test is successful, logs:"
+        cat $inference_log
+    else
+        echo "${TEST_TYPE} test is successful, logs:"
+        cat $log_path
+    fi
+
     exit $err
 else
     GPU_resource_demand=()
@@ -664,6 +672,8 @@ else
 
         if [[ ${#temp_list[@]} -eq 0 ]]; then
             echo "All tests completed!"
+            cat $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log
+
             if [ $TEST_TYPE == "Accuracy" ]; then
                 python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Nvidia --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
             elif [ $TEST_TYPE == "Smoke" ]; then
