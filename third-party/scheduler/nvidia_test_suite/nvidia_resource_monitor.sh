@@ -672,7 +672,7 @@ else
 
         if [[ ${#temp_list[@]} -eq 0 ]]; then
             echo "All tests completed!"
-            cat "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
+            tail -n 200 "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
 
             if [ $TEST_TYPE == "Accuracy" ]; then
                 python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Nvidia --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
