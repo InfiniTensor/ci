@@ -321,52 +321,101 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
+          MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_unittest }}
           QUEUE_TIMEOUT_SECONDS: 600
+          POLL_INTERVAL_SECONDS: 15
         run: |
           set -euo pipefail
-          sleep "${QUEUE_TIMEOUT_SECONDS}"
           python3 - <<'PY'
           import json
           import os
           import sys
+          import time
           import urllib.request
+          import urllib.error
 
           token = os.environ["GH_TOKEN"]
           repo = os.environ["REPOSITORY"]
           run_id = os.environ["RUN_ID"]
+          matrix = json.loads(os.environ["MATRIX_JSON"])
+          expected_platforms = sorted(
+              {str(entry.get("platform", "")).strip() for entry in matrix.get("include", [])}
+              - {""}
+          )
+          timeout_seconds = int(os.environ["QUEUE_TIMEOUT_SECONDS"])
+          poll_interval = int(os.environ["POLL_INTERVAL_SECONDS"])
+          deadline = time.monotonic() + timeout_seconds
 
-          jobs = []
-          url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
-          while url:
-              req = urllib.request.Request(url)
-              req.add_header("Accept", "application/vnd.github+json")
-              req.add_header("Authorization", f"Bearer {token}")
-              req.add_header("X-GitHub-Api-Version", "2022-11-28")
-              with urllib.request.urlopen(req, timeout=30) as resp:
-                  payload = json.load(resp)
-                  jobs.extend(payload.get("jobs", []))
-                  link = resp.headers.get("Link", "")
+          def fetch_jobs():
+              jobs = []
+              url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
+              while url:
+                  req = urllib.request.Request(url)
+                  req.add_header("Accept", "application/vnd.github+json")
+                  req.add_header("Authorization", f"Bearer {token}")
+                  req.add_header("X-GitHub-Api-Version", "2022-11-28")
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      payload = json.load(resp)
+                      jobs.extend(payload.get("jobs", []))
+                      link = resp.headers.get("Link", "")
 
-              next_url = ""
-              for part in link.split(","):
-                  if 'rel="next"' in part:
-                      next_url = part[part.find("<") + 1 : part.find(">")]
-                      break
-              url = next_url
+                  next_url = ""
+                  for part in link.split(","):
+                      if 'rel="next"' in part:
+                          next_url = part[part.find("<") + 1 : part.find(">")]
+                          break
+                  url = next_url
+              return jobs
 
-          queued = [
-              job
-              for job in jobs
-              if job.get("status") == "queued"
-              and "ci-v2-shadow /" in job.get("name", "")
-              and "Generate CI v2 shadow matrix" not in job.get("name", "")
-          ]
+          def platform_jobs_by_platform(jobs):
+              result = {}
+              for job in jobs:
+                  name = job.get("name", "")
+                  if "ci-v2-shadow /" not in name:
+                      continue
+                  if "Generate CI v2 shadow matrix" in name:
+                      continue
+                  for platform in expected_platforms:
+                      if name.endswith(f"ci-v2-shadow / {platform}"):
+                          result[platform] = job
+              return result
 
-          if queued:
-              print("CI v2 jobs still queued after 10 minutes:", file=sys.stderr)
-              for job in queued:
-                  print(f"- {job.get('name')} {job.get('html_url')}", file=sys.stderr)
-              sys.exit(1)
+          while True:
+              try:
+                  platform_jobs = platform_jobs_by_platform(fetch_jobs())
+              except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                  if time.monotonic() >= deadline:
+                      print("Failed to confirm CI v2 queued jobs before timeout.", file=sys.stderr)
+                      print(f"Last GitHub API error: {exc}", file=sys.stderr)
+                      sys.exit(1)
+                  time.sleep(poll_interval)
+                  continue
 
-          print("No CI v2 platform jobs remained queued after 10 minutes.")
+              missing = [p for p in expected_platforms if p not in platform_jobs]
+              queued = [
+                  job
+                  for job in platform_jobs.values()
+                  if job.get("status") == "queued"
+              ]
+
+              if len(platform_jobs) == len(expected_platforms) and all(
+                  job.get("status") == "completed" for job in platform_jobs.values()
+              ):
+                  print("All expected CI v2 platform jobs completed.")
+                  sys.exit(0)
+
+              if time.monotonic() >= deadline:
+                  if queued:
+                      print("CI v2 jobs still queued after 10 minutes:", file=sys.stderr)
+                      for job in queued:
+                          print(f"- {job.get('name')} {job.get('html_url')}", file=sys.stderr)
+                      sys.exit(1)
+
+                  if missing:
+                      print("CI v2 platform jobs were not created before timeout:", file=sys.stderr)
+                      for platform in missing:
+                          print(f"- {platform}", file=sys.stderr)
+                      sys.exit(1)
+
+              time.sleep(poll_interval)
           PY

@@ -41,7 +41,11 @@ def test_shadow_workflow_fails_queued_jobs_after_ten_minutes():
 
     step = watchdog["steps"][0]
     assert step["env"]["QUEUE_TIMEOUT_SECONDS"] == 600
+    assert step["env"]["POLL_INTERVAL_SECONDS"] == 15
+    assert step["env"]["MATRIX_JSON"] == "${{ needs.prepare.outputs.matrix_json_for_unittest }}"
+    assert 'sleep "${QUEUE_TIMEOUT_SECONDS}"' not in step["run"]
     assert 'job.get("status") == "queued"' in step["run"]
+    assert "All expected CI v2 platform jobs completed." in step["run"]
 
 
 def test_shadow_matrix_job_is_strict_except_wait_step_for_artifact_collection():
