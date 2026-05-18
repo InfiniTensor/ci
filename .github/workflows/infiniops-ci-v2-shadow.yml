@@ -342,9 +342,15 @@ jobs:
               {str(entry.get("platform", "")).strip() for entry in matrix.get("include", [])}
               - {""}
           )
+          runner_labels = {
+              str(entry.get("platform", "")).strip(): str(entry.get("runner_label", "")).strip()
+              for entry in matrix.get("include", [])
+              if str(entry.get("platform", "")).strip()
+          }
           timeout_seconds = int(os.environ["QUEUE_TIMEOUT_SECONDS"])
           poll_interval = int(os.environ["POLL_INTERVAL_SECONDS"])
           deadline = time.monotonic() + timeout_seconds
+          runners_api_warning_printed = False
 
           def fetch_jobs():
               jobs = []
@@ -367,6 +373,27 @@ jobs:
                   url = next_url
               return jobs
 
+          def fetch_runners():
+              runners = []
+              url = f"https://api.github.com/repos/{repo}/actions/runners?per_page=100"
+              while url:
+                  req = urllib.request.Request(url)
+                  req.add_header("Accept", "application/vnd.github+json")
+                  req.add_header("Authorization", f"Bearer {token}")
+                  req.add_header("X-GitHub-Api-Version", "2022-11-28")
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      payload = json.load(resp)
+                      runners.extend(payload.get("runners", []))
+                      link = resp.headers.get("Link", "")
+
+                  next_url = ""
+                  for part in link.split(","):
+                      if 'rel="next"' in part:
+                          next_url = part[part.find("<") + 1 : part.find(">")]
+                          break
+                  url = next_url
+              return runners
+
           def platform_jobs_by_platform(jobs):
               result = {}
               for job in jobs:
@@ -378,6 +405,19 @@ jobs:
                   for platform in expected_platforms:
                       if name.endswith(f"ci-v2-shadow / {platform}"):
                           result[platform] = job
+              return result
+
+          def runner_has_label(runner, label):
+              return any(item.get("name") == label for item in runner.get("labels", []))
+
+          def online_runners_by_platform(runners):
+              result = {}
+              for platform, label in runner_labels.items():
+                  result[platform] = [
+                      runner
+                      for runner in runners
+                      if runner.get("status") == "online" and runner_has_label(runner, label)
+                  ]
               return result
 
           while True:
@@ -397,6 +437,37 @@ jobs:
                   for job in platform_jobs.values()
                   if job.get("status") == "queued"
               ]
+
+              if queued:
+                  try:
+                      online_runners = online_runners_by_platform(fetch_runners())
+                      offline = [
+                          platform
+                          for platform, job in platform_jobs.items()
+                          if job.get("status") == "queued" and not online_runners.get(platform)
+                      ]
+                      if offline:
+                          print("CI v2 queued jobs have no online self-hosted runner:", file=sys.stderr)
+                          for platform in offline:
+                              label = runner_labels.get(platform, platform)
+                              job = platform_jobs[platform]
+                              print(
+                                  f"- platform={platform} runner_label={label} job={job.get('html_url')}",
+                                  file=sys.stderr,
+                              )
+                          sys.exit(1)
+                  except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                      if not runners_api_warning_printed:
+                          print(
+                              "Could not inspect self-hosted runner availability; "
+                              "falling back to queued timeout.",
+                              file=sys.stderr,
+                          )
+                          runners_api_warning_printed = True
+                      if time.monotonic() >= deadline:
+                          print("Failed to confirm CI v2 runner availability before timeout.", file=sys.stderr)
+                          print(f"Last GitHub API error: {exc}", file=sys.stderr)
+                          sys.exit(1)
 
               if len(platform_jobs) == len(expected_platforms) and all(
                   job.get("status") == "completed" for job in platform_jobs.values()

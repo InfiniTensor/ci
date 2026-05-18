@@ -45,6 +45,9 @@ def test_shadow_workflow_fails_queued_jobs_after_ten_minutes():
     assert step["env"]["MATRIX_JSON"] == "${{ needs.prepare.outputs.matrix_json_for_unittest }}"
     assert 'sleep "${QUEUE_TIMEOUT_SECONDS}"' not in step["run"]
     assert 'job.get("status") == "queued"' in step["run"]
+    assert "/actions/runners?per_page=100" in step["run"]
+    assert "CI v2 queued jobs have no online self-hosted runner:" in step["run"]
+    assert "falling back to queued timeout" in step["run"]
     assert "All expected CI v2 platform jobs completed." in step["run"]
 
 
