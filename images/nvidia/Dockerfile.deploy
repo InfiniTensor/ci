@@ -49,7 +49,7 @@ ARG InfiniCore_BRANCH
 RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
-RUN git switch InfiniCore_BRANCH
+RUN git switch ${InfiniCore_BRANCH}
 
 WORKDIR /workspace/InfiniCore/third_party
 
@@ -77,6 +77,6 @@ RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e .
 
 WORKDIR /root
 
-COPY .ci/images/nvidia/.infinici .infinici/
+COPY .ci/images/nvidia/.bashrc ./
 
 WORKDIR /workspace
