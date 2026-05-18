@@ -66,19 +66,15 @@ mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/bench/$SESSION_ID $c
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
 if [ $TEST_TYPE == "Inference" ]; then
-    rm -rf $curr_dir/logs/inference/$SESSION_ID/*.log $curr_dir/logs/inference/$SESSION_ID/*.log_* $curr_dir/logs/inference/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/inference/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 elif [ $TEST_TYPE == "Bench" ]; then
-    rm -rf $curr_dir/logs/bench/$SESSION_ID/*.log $curr_dir/logs/bench/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/bench/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 elif [ $TEST_TYPE == "Service" ]; then
-    rm -rf $curr_dir/logs/service/$SESSION_ID/*.log $curr_dir/logs/service/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/service/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 elif [ $TEST_TYPE == "Accuracy" ]; then
-    rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 fi
