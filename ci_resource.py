@@ -483,7 +483,7 @@ class ResourcePool:
             return (selected, True)
 
     def _is_gpu_memory_available(self, gpu: GpuInfo) -> bool:
-        if self._platform == "ascend" and gpu.memory_total_mb > 0:
+        if self._platform in {"ascend", "iluvatar"} and gpu.memory_total_mb > 0:
             return (gpu.memory_total_mb - gpu.memory_used_mb) > 1024
 
         if self._platform == "metax":
