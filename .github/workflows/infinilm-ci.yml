@@ -204,7 +204,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: None
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -1103,7 +1103,7 @@ jobs:
           echo "==> running job: ${{ matrix.job_name }}"
           echo "Service Test Starting..."
           echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
-          echo "Version = infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
+          echo "Version = infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"
           set -m
 
           src_dir=$(pwd)
@@ -1142,7 +1142,7 @@ jobs:
           echo "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}"
           echo "${{ github.run_id }}"
           echo "${TEST_PARAM}"
-          echo "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
+          echo "infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"
           echo "************************************************************************"
 
           exec ./daemon.sh \
@@ -1153,4 +1153,4 @@ jobs:
             "${DOCKER_ARGS} ${VOLUME_ARGS} ${SHM_SIZE}" \
             ${{ github.run_id }} \
             "${TEST_PARAM}" \
-            "infinilm-ci/${{ matrix.platform }}:${SHORT_SHA}"
+            "infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"

@@ -100,7 +100,7 @@ def build_results_dir(base, platform, stages, commit):
     return Path(base) / dirname
 
 
-def resolve_image(config, platform, image_tag):
+def resolve_image(config, platform, branch, image_tag):
     """Resolve an image reference to a full image name.
 
     Accepts `stable`, `latest`, or a commit hash as `image_tag`. When config
@@ -112,9 +112,9 @@ def resolve_image(config, platform, image_tag):
     project = registry.get("project", "infinilm")
 
     if not registry_url:
-        return f"{project}-ci/{platform}:{image_tag}"
+        return f"{project}-ci/{platform}:{branch}-{image_tag}"
 
-    return f"{registry_url}/{project}/{platform}:{image_tag}"
+    return f"{registry_url}/{project}/{platform}:{branch}-{image_tag}"
 
 
 def build_runner_script():
@@ -162,7 +162,7 @@ def build_docker_args(
     job = config["jobs"][job_name]
     platform = job.get("platform", "nvidia")
     image_tag = image_tag_override or job.get("image", "latest")
-    image = resolve_image(config, platform, image_tag)
+    image = resolve_image(config, platform, branch, image_tag)
     resources = job.get("resources", {})
     setup_raw = job.get("setup", "pip install '.[dev]'")
 
