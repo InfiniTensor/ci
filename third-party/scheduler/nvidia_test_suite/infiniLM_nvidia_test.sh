@@ -556,7 +556,7 @@ else
     fi
     
     test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
-    filename="${log_name_suffix}_${TEST_TYPE}Test.log"
+    filename="${log_name_suffix}_${TEST_TYPE}Test_${OPTIONS}.log"
 
     cd $curr_dir
 
@@ -585,6 +585,9 @@ else
     if [ $err -ne 0 ]; then
         echo "${TEST_TYPE}Test failed with exit code $err. Last 200 lines of $filename:"
         tail -n 200 "$curr_dir/logs/${test_type}/$session_id/${filename}" || true
+    else
+        echo "${TEST_TYPE}Test successful with exit code 0, full logs:"
+        cat "$curr_dir/logs/${test_type}/$session_id/${filename}"
     fi
     
     echo "${TEST_TYPE}Test 任务结束，服务器：${pid_map[$ssh_pid]} (PID=$ssh_pid)"

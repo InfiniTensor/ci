@@ -523,11 +523,11 @@ if [ $TEST_TYPE != "Service" ]; then
             echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
             if [ $TEST_TYPE == "Inference" ]; then
-                inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+                inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${GPU_QUANTITY}_${log_name_suffix}_0.log
                 $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
             else
                 test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
-                log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${log_name_suffix}_0.log
+                log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
                 $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $log_path 2>&1 &
             fi
             last_pid=$!
@@ -595,10 +595,10 @@ else
             if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
                 echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
                 echo
-                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
+                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log 2>&1 &
                 last_pid=$!
                 pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model ${TEST_TYPE} testing task|All tests have completed"`
+                status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model ${TEST_TYPE} testing task|All tests have completed"`
 
                 if [ "$status_msg" == "All tests have completed" ]; then
                     echo "Failed to set up the model runtime environment. Trying the next model..."
