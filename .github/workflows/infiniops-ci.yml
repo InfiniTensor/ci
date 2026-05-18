@@ -6,6 +6,10 @@ permissions:
 
 on:
   workflow_call:
+    secrets:
+      CI_RUNNER_STATUS_TOKEN:
+        description: "Token allowed to list self-hosted runners for preflight checks"
+        required: false
     inputs:
       config_path:
         description: "Path to the caller repository CI config"
@@ -67,7 +71,7 @@ jobs:
 
       - name: Preflight self-hosted runner availability
         env:
-          GH_TOKEN: ${{ github.token }}
+          RUNNER_STATUS_TOKEN: ${{ secrets.CI_RUNNER_STATUS_TOKEN }}
           REPOSITORY: ${{ github.repository }}
           MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}
         run: |
@@ -76,6 +80,7 @@ jobs:
           import json
           import os
           import sys
+          import urllib.error
           import urllib.request
 
           matrix_text = os.environ.get("MATRIX_JSON", "").strip()
@@ -83,7 +88,13 @@ jobs:
               print("No unittest matrix; skipping runner availability preflight.")
               sys.exit(0)
 
-          token = os.environ["GH_TOKEN"]
+          token = os.environ.get("RUNNER_STATUS_TOKEN", "").strip()
+          if not token:
+              print(
+                  "Configure secret CI_RUNNER_STATUS_TOKEN with permission to list repository self-hosted runners.",
+                  file=sys.stderr,
+              )
+              sys.exit(1)
           repo = os.environ["REPOSITORY"]
           matrix = json.loads(matrix_text)
           expected = {}
@@ -95,7 +106,8 @@ jobs:
 
           runners = []
           url = f"https://api.github.com/repos/{repo}/actions/runners?per_page=100"
-          while url:
+          try:
+            while url:
               req = urllib.request.Request(url)
               req.add_header("Accept", "application/vnd.github+json")
               req.add_header("Authorization", f"Bearer {token}")
@@ -111,6 +123,15 @@ jobs:
                       next_url = part[part.find("<") + 1 : part.find(">")]
                       break
               url = next_url
+          except urllib.error.HTTPError as exc:
+              if exc.code == 403:
+                  print("Runner availability preflight cannot list self-hosted runners.", file=sys.stderr)
+                  print(
+                      "Secret CI_RUNNER_STATUS_TOKEN exists but cannot list repository self-hosted runners.",
+                      file=sys.stderr,
+                  )
+                  sys.exit(1)
+              raise
 
           def has_online_runner(label):
               for runner in runners:

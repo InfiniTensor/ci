@@ -47,6 +47,8 @@ def test_prepare_preflights_runner_availability_before_matrix_jobs_start():
 
     assert "Preflight self-hosted runner availability" in text
     assert "MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}" in text
+    assert "CI_RUNNER_STATUS_TOKEN" in text
+    assert "Configure secret CI_RUNNER_STATUS_TOKEN" in text
     assert "/actions/runners?per_page=100" in text
     assert "No online self-hosted runner before starting CI jobs:" in text
     assert "job=run-unittest" in text
