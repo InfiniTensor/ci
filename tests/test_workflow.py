@@ -40,3 +40,13 @@ def test_workflow_fails_queued_jobs_after_ten_minutes():
     assert "CI queued jobs have no online self-hosted runner:" in text
     assert "CI jobs still queued after 10 minutes:" in text
     assert "All expected CI platform jobs completed." in text
+
+
+def test_prepare_preflights_runner_availability_before_matrix_jobs_start():
+    text = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Preflight self-hosted runner availability" in text
+    assert "MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}" in text
+    assert "/actions/runners?per_page=100" in text
+    assert "No online self-hosted runner before starting CI jobs:" in text
+    assert "job=run-unittest" in text

@@ -25,10 +25,24 @@ def test_shadow_workflow_uses_agent_cli():
 
 def test_shadow_workflow_requires_explicit_runner_labels():
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
-    convert_step = workflow["jobs"]["prepare"]["steps"][-1]
+    convert_step = next(
+        step
+        for step in workflow["jobs"]["prepare"]["steps"]
+        if step["name"] == "Convert config to CI v2 shadow matrix JSON"
+    )
 
     assert "--require-runner-label" in convert_step["run"]
     assert "--execution-mode agent_local" in convert_step["run"]
+
+
+def test_shadow_prepare_preflights_runner_availability_before_matrix_jobs_start():
+    text = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "Preflight self-hosted runner availability" in text
+    assert "MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}" in text
+    assert "/actions/runners?per_page=100" in text
+    assert "No online self-hosted runner before starting CI v2 jobs:" in text
+    assert "job=run-unittest-shadow" in text
 
 
 def test_shadow_workflow_fails_queued_jobs_after_ten_minutes():

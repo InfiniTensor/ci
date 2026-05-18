@@ -86,6 +86,74 @@ jobs:
           --require-runner-label
           --write-github-outputs
 
+      - name: Preflight self-hosted runner availability
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          matrix_text = os.environ.get("MATRIX_JSON", "").strip()
+          if not matrix_text:
+              print("No unittest matrix; skipping runner availability preflight.")
+              sys.exit(0)
+
+          token = os.environ["GH_TOKEN"]
+          repo = os.environ["REPOSITORY"]
+          matrix = json.loads(matrix_text)
+          expected = {}
+          for entry in matrix.get("include", []):
+              platform = str(entry.get("platform", "")).strip()
+              label = str(entry.get("runner_label", "")).strip()
+              if platform and label:
+                  expected[platform] = label
+
+          runners = []
+          url = f"https://api.github.com/repos/{repo}/actions/runners?per_page=100"
+          while url:
+              req = urllib.request.Request(url)
+              req.add_header("Accept", "application/vnd.github+json")
+              req.add_header("Authorization", f"Bearer {token}")
+              req.add_header("X-GitHub-Api-Version", "2022-11-28")
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  payload = json.load(resp)
+                  runners.extend(payload.get("runners", []))
+                  link = resp.headers.get("Link", "")
+
+              next_url = ""
+              for part in link.split(","):
+                  if 'rel="next"' in part:
+                      next_url = part[part.find("<") + 1 : part.find(">")]
+                      break
+              url = next_url
+
+          def has_online_runner(label):
+              for runner in runners:
+                  labels = [item.get("name") for item in runner.get("labels", [])]
+                  if runner.get("status") == "online" and label in labels:
+                      return True
+              return False
+
+          missing = [
+              (platform, label)
+              for platform, label in expected.items()
+              if not has_online_runner(label)
+          ]
+          if missing:
+              print("No online self-hosted runner before starting CI v2 jobs:", file=sys.stderr)
+              for platform, label in missing:
+                  print(f"- job=run-unittest-shadow platform={platform} runner_label={label}", file=sys.stderr)
+              sys.exit(1)
+
+          print("All required self-hosted runner labels have at least one online runner.")
+          PY
+
   run-unittest-shadow:
     name: ci-v2-shadow / ${{ matrix.platform }}
     needs: prepare
