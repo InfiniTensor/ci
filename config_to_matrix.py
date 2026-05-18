@@ -105,8 +105,7 @@ def _append_tp_suffix_from_ngpus(job_cfg: dict[str, Any]) -> None:
     stages = job_cfg.get("stages")
     if not isinstance(stages, list):
         return
-    # suffix = f" --tp={ngpus}"
-    suffix = f" {ngpus}"
+    suffix = f" --tp={ngpus}"
     for st in stages:
         if "run" not in st:
             continue
