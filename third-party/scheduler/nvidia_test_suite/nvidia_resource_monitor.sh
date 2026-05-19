@@ -475,31 +475,31 @@ search_servers() {
 
 for name in "${!H20_server_list[@]}"; do
     echo "$name => ${H20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H20_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!A100_server_list[@]}"; do
     echo "$name => ${A100_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${A100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H100_server_list[@]}"; do
     echo "$name => ${H100_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H100_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!L20_server_list[@]}"; do
     echo "$name => ${L20_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${L20_server_list[$name]}:/home/zkjh
 done
 
 for name in "${!H800_server_list[@]}"; do
     echo "$name => ${H800_server_list[$name]}"
-    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
+    scp "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
     scp "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${H800_server_list[$name]}:/home/zkjh
 done
 

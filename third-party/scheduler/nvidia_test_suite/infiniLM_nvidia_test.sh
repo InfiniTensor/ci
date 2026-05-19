@@ -163,7 +163,7 @@ handle_interrupt() {
         echo "  向远程服务器 $remote_ip 上的脚本进程发送 SIGINT..."
         # 通过 ssh 找到远程脚本进程并发送信号
         ssh -o ConnectionAttempts=3 -o ConnectTimeout=5 zkjh@$remote_ip "
-            pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
+            pids=\$(ps -ef --forest | grep '${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh' | grep -v grep | awk '{print \$2}' 2>/dev/null || true)
             if [ ! -z \"\$pids\" ]; then
                 for pid in \$pids; do
                     # 检查进程是否仍在运行
@@ -247,14 +247,14 @@ if [ $TEST_TYPE == "Service" ]; then
             fi
 
             if [ $TEST_TYPE == "Smoke" ]; then
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version > "$curr_dir/logs/smoke/$session_id/${filename}_${seq_num}" &
                 ssh_pid=$!
                 pid_map[$ssh_pid]=$ip
                 SSH_PID_MAP[$ssh_pid]=$ip
             else
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version &
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh
+                ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh $model $gpu_quantity "${OPTIONS}" $server_list_str $seq_num $job_count $gpu_model $session_id $version &
                 ssh_pid=$!
                 pid_map[$ssh_pid]=$ip
                 SSH_PID_MAP[$ssh_pid]=$ip
@@ -575,8 +575,8 @@ else
     declare -A pid_map
     ip=${server_list[0]}
 
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh $model $gpu_quantity "${OPTIONS}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh
+    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh $model $gpu_quantity "${OPTIONS}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip

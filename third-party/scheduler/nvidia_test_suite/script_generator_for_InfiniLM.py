@@ -74,13 +74,24 @@ def main():
     log_path = ""
 
     if test_type == "Inference":
-        target_file = "InfiniLM_job_executor_for_InferenceTest.sh"
+        m = re.search(r"--tp=(\d+)", docker_args)
+        tp_num = m.group(1) if m else ""
+        target_file = f"InfiniLM_job_executor_for_InferenceTest_{tp_num}.sh"
     elif test_type == "Bench":
-        target_file = "InfiniLM_job_executor_for_BenchTest.sh"
+        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
+        s = m.group(1) if m else "default"
+        test_param = s.replace(" ", "_")
+        target_file = f"InfiniLM_job_executor_for_BenchTest_{test_param}.sh"
     elif test_type == "Service":
-        target_file = "InfiniLM_job_executor_for_ServiceTest.sh"
+        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
+        s = m.group(1) if m else "default"
+        test_param = s.replace(" ", "_")
+        target_file = f"InfiniLM_job_executor_for_ServiceTest_{test_param}.sh"
     elif test_type == "Accuracy":
-        target_file = "InfiniLM_job_executor_for_AccuracyTest.sh"
+        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
+        s = m.group(1) if m else "default"
+        test_param = s.replace(" ", "_")
+        target_file = f"InfiniLM_job_executor_for_AccuracyTest_{test_param}.sh"
 
     if test_type == "Service":
         model_list = ""
