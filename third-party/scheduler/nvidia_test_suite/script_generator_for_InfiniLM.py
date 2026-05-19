@@ -79,18 +79,39 @@ def main():
         target_file = f"InfiniLM_job_executor_for_InferenceTest_{tp_num}.sh"
     elif test_type == "Bench":
         m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        s = m.group(1) if m else "default"
-        test_param = s.replace(" ", "_")
+        if m:
+            s = m.group(1)
+            test_param = s.replace(" ", "_")
+        else:
+            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
+            if m:
+                test_param = m.group(1)
+            else:
+                test_param = ""
         target_file = f"InfiniLM_job_executor_for_BenchTest_{test_param}.sh"
     elif test_type == "Service":
         m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        s = m.group(1) if m else "default"
-        test_param = s.replace(" ", "_")
+        if m:
+            s = m.group(1)
+            test_param = s.replace(" ", "_")
+        else:
+            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
+            if m:
+                test_param = m.group(1)
+            else:
+                test_param = ""
         target_file = f"InfiniLM_job_executor_for_ServiceTest_{test_param}.sh"
     elif test_type == "Accuracy":
         m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        s = m.group(1) if m else "default"
-        test_param = s.replace(" ", "_")
+        if m:
+            s = m.group(1)
+            test_param = s.replace(" ", "_")
+        else:
+            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
+            if m:
+                test_param = m.group(1)
+            else:
+                test_param = ""
         target_file = f"InfiniLM_job_executor_for_AccuracyTest_{test_param}.sh"
 
     if test_type == "Service":
