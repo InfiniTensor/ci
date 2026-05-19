@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 import run
+from utils import load_config
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +290,12 @@ def test_docker_args_ascend_selected_device():
     args = _make_platform_args("ascend", job_suffix="npu", gpu_id="3")
     assert "ASCEND_VISIBLE_DEVICES=0" in args
     assert "--device=/dev/davinci3:/dev/davinci0" in args
+
+
+def test_config_ascend_does_not_pin_davinci0():
+    config = load_config(Path("config.yml"))
+    docker_args = config["jobs"]["ascend_npu"].get("docker_args", [])
+    assert "--device=/dev/davinci0" not in docker_args
 
 
 def test_docker_args_metax_cuda_visible_devices():
