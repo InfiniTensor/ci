@@ -140,9 +140,6 @@ for i in $(seq 1 "$NUM_STAGES"); do
   fi
 done
 echo "========== Summary =========="
-if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
-  chown -R "$HOST_UID:$HOST_GID" /workspace/results 2>/dev/null || true
-fi
 exit $rc
 """
 
