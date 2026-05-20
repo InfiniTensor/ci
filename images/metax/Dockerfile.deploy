@@ -2,6 +2,7 @@ ARG BASE_IMAGE=cr.metax-tech.com/public-ai-release/maca/vllm-metax:0.10.2-maca.a
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PATH="/opt/conda/bin:${PATH}"
 
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
@@ -24,14 +25,14 @@ RUN if [ -n "$APT_MIRROR" ]; then \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
-    transformers \
-    pyyaml \
-    uvicorn \
-    janus \
-    fastapi \
-    openai
+RUN python -m pip install --no-cache-dir --upgrade pip && \
+    python -m pip install --no-cache-dir \
+        transformers \
+        pyyaml \
+        uvicorn \
+        janus \
+        fastapi \
+        openai
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
