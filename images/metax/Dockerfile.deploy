@@ -38,20 +38,18 @@ ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
-WORKDIR /root
-
-COPY .ci/images/metax/env-set.sh ./
-RUN source ./env-set.sh
-
-ENV PYTHONPATH=/workspace/InfiniLM/python:/workspace/InfiniCore/python:${PYTHONPATH:-}
-ENV TORCH_LIB="$(python -c '\''import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'\'' )"
-ENV LD_LIBRARY_PATH="$TORCH_LIB:/root/.infini/lib:/opt/conda/lib:${LD_LIBRARY_PATH:-}"
-# MetaX flash-attn pip extension (py310)
+# MetaX build/runtime environment (canonical; mirrors images/metax/env-set.sh for local source)
+ENV INFINI_ROOT=/root/.infini \
+    MACA_HOME=/opt/maca \
+    MACA_PATH=/opt/maca
+ENV PATH="${PATH}:${INFINI_ROOT}/bin"
+ENV TORCH_LIB=/opt/conda/lib/python3.10/site-packages/torch/lib
+ENV LD_LIBRARY_PATH="${INFINI_ROOT}/lib:${MACA_PATH}/lib:/opt/conda/lib:${TORCH_LIB}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 ENV FLASH_ATTN_2_CUDA_SO=/opt/conda/lib/python3.10/site-packages/flash_attn_2_cuda.cpython-310-x86_64-linux-gnu.so
-# Headers (Python.h + pybind11 + cu-bridge for ATen builds)
-ENV CPATH=/opt/conda/include/python3.10:/opt/conda/include:/opt/conda/lib/python3.10/site-packages/pybind11/include:/opt/maca/tools/cu-bridge/include:${CPATH:-}
-ENV C_INCLUDE_PATH=$CPATH
-ENV CPLUS_INCLUDE_PATH=$CPATH
+ENV CPATH=/opt/maca/tools/cu-bridge/include:/opt/maca/include/common:/opt/maca/include/mcblas:/opt/maca/include/mcsolver:/opt/maca/include/mcsparse:/opt/maca/include/mcr:/opt/maca/include:/opt/conda/include/python3.10:/opt/conda/include:/opt/conda/lib/python3.10/site-packages/pybind11/include:${CPATH:-}
+ENV C_INCLUDE_PATH=${CPATH}
+ENV CPLUS_INCLUDE_PATH=${CPATH}
+ENV PYTHONPATH=/workspace/InfiniLM/python:/workspace/InfiniCore/python:${PYTHONPATH:-}
 
 WORKDIR /workspace
 
