@@ -24,9 +24,9 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         tar \
     && rm -rf /var/lib/apt/lists/*
 
-ARG PIP_INDEX_URL
-RUN python -m pip install --no-cache-dir --upgrade pip && \
-    python -m pip install --no-cache-dir \
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+RUN python -m pip install --no-cache-dir --upgrade pip -i "${PIP_INDEX_URL}" && \
+    python -m pip install --no-cache-dir -i "${PIP_INDEX_URL}" \
         transformers \
         pyyaml \
         uvicorn \
