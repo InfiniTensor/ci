@@ -1,0 +1,87 @@
+ARG BASE_IMAGE=cr.metax-tech.com/public-ai-release/maca/vllm-metax:0.10.2-maca.ai3.2.1.7-torch2.6-py310-ubuntu22.04-amd64
+FROM ${BASE_IMAGE}
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+ARG all_proxy=socks5h://127.0.0.1:9992
+
+ARG APT_MIRROR
+RUN if [ -n "$APT_MIRROR" ]; then \
+        sed -i "s|http://[^/]*/ubuntu|${APT_MIRROR}|g" /etc/apt/sources.list; \
+    fi && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        git \
+        cmake \
+        ninja-build \
+        curl \
+        tar \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG PIP_INDEX_URL
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir \
+    transformers \
+    pyyaml \
+    uvicorn \
+    janus \
+    fastapi \
+    openai
+
+ENV XMAKE_ROOT=y
+RUN curl -fsSL https://xmake.io/shget.text | bash
+ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
+
+WORKDIR /root
+
+COPY .ci/images/metax/env-set.sh ./
+RUN source ./env-set.sh
+
+ENV PYTHONPATH=/workspace/InfiniLM/python:/workspace/InfiniCore/python:${PYTHONPATH:-}
+ENV TORCH_LIB="$(python -c '\''import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'\'' )"
+ENV LD_LIBRARY_PATH="$TORCH_LIB:/root/.infini/lib:/opt/conda/lib:${LD_LIBRARY_PATH:-}"
+# MetaX flash-attn pip extension (py310)
+ENV FLASH_ATTN_2_CUDA_SO=/opt/conda/lib/python3.10/site-packages/flash_attn_2_cuda.cpython-310-x86_64-linux-gnu.so
+# Headers (Python.h + pybind11 + cu-bridge for ATen builds)
+ENV CPATH=/opt/conda/include/python3.10:/opt/conda/include:/opt/conda/lib/python3.10/site-packages/pybind11/include:/opt/maca/tools/cu-bridge/include:${CPATH:-}
+ENV C_INCLUDE_PATH=$CPATH
+ENV CPLUS_INCLUDE_PATH=$CPATH
+
+WORKDIR /workspace
+
+ARG InfiniCore_BRANCH=main
+RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
+
+WORKDIR /workspace/InfiniCore
+
+RUN git switch ${InfiniCore_BRANCH}
+
+RUN echo "=== Clean InfiniCore ==="
+RUN xmake clean -a || true
+RUN rm -rf build .xmake || true
+
+RUN echo "=== Build+install InfiniCore ==="
+RUN python scripts/install.py --metax-gpu=y --use-mc=y --aten=y --flash-attn=. --ccl=y --graph=y
+RUN python -m pip install -e . -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN xmake build -y infinicore_cpp_api && xmake install -y infinicore_cpp_api
+RUN xmake build -y _infinicore && xmake install -y _infinicore
+
+WORKDIR /workspace/InfiniLM
+
+COPY . ./
+
+RUN echo "=== Clean InfiniLM ==="
+RUN xmake clean -a || true
+RUN rm -rf build .xmake || true
+
+RUN echo "=== Build+install InfiniLM ==="
+RUN xmake build _infinilm && xmake install _infinilm
+RUN python -m pip install -e . --no-build-isolation -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+WORKDIR /workspace
