@@ -41,25 +41,35 @@ def test_shadow_prepare_preflights_runner_availability_before_matrix_jobs_start(
     assert "Preflight self-hosted runner availability" in text
     assert "MATRIX_JSON: ${{ steps.generate.outputs.matrix_json_for_unittest }}" in text
     assert "CI_RUNNER_STATUS_TOKEN" in text
-    assert "CI_RUNNER_STATUS_TOKEN is not configured; skipping preflight runner availability check." in text
+    assert (
+        "CI_RUNNER_STATUS_TOKEN is not configured; skipping preflight runner availability check."
+        in text
+    )
     assert "Queued-job watchdog remains enabled as a fallback." in text
     assert "/actions/runners?per_page=100" in text
     assert "No online self-hosted runner before starting CI v2 jobs:" in text
     assert "job=run-unittest-shadow" in text
 
 
-def test_shadow_workflow_fails_queued_jobs_after_ten_minutes():
+def test_shadow_workflow_fails_queued_jobs_after_thirty_minutes():
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     jobs = workflow["jobs"]
 
     assert "queue-watchdog" in jobs
     watchdog = jobs["queue-watchdog"]
+    assert (
+        watchdog["if"]
+        == "contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')"
+    )
     assert watchdog["runs-on"] == "ubuntu-latest"
 
     step = watchdog["steps"][0]
-    assert step["env"]["QUEUE_TIMEOUT_SECONDS"] == 600
+    assert step["env"]["QUEUE_TIMEOUT_SECONDS"] == 1800
     assert step["env"]["POLL_INTERVAL_SECONDS"] == 15
-    assert step["env"]["MATRIX_JSON"] == "${{ needs.prepare.outputs.matrix_json_for_unittest }}"
+    assert (
+        step["env"]["MATRIX_JSON"]
+        == "${{ needs.prepare.outputs.matrix_json_for_unittest }}"
+    )
     assert 'sleep "${QUEUE_TIMEOUT_SECONDS}"' not in step["run"]
     assert 'job.get("status") == "queued"' in step["run"]
     assert "/actions/runners?per_page=100" in step["run"]

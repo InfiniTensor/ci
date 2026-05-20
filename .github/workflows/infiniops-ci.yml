@@ -468,18 +468,18 @@ jobs:
             "${IMAGE_TAG}"
 
   queue-watchdog:
-    name: Fail queued CI jobs after 10 minutes
+    name: Fail queued CI jobs after 30 minutes
     needs: prepare
     if: contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')
     runs-on: ubuntu-latest
     steps:
-      - name: Fail queued CI jobs after 10 minutes
+      - name: Fail queued CI jobs after 30 minutes
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.run_id }}
           MATRIX_JSON: ${{ needs.prepare.outputs.matrix_json_for_unittest }}
-          QUEUE_TIMEOUT_SECONDS: 600
+          QUEUE_TIMEOUT_SECONDS: 1800
           POLL_INTERVAL_SECONDS: 15
         run: |
           set -euo pipefail
@@ -632,7 +632,7 @@ jobs:
 
               if time.monotonic() >= deadline:
                   if queued:
-                      print("CI jobs still queued after 10 minutes:", file=sys.stderr)
+                      print("CI jobs still queued after 30 minutes:", file=sys.stderr)
                       for job in queued:
                           print(f"- {job.get('name')} {job.get('html_url')}", file=sys.stderr)
                       sys.exit(1)

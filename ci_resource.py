@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Resource detection and allocation for CI Runner Agent."""
+
 from __future__ import annotations
 
 import json
@@ -27,6 +28,8 @@ PLATFORM_DEVICE_ENV = {
     "ascend": "ASCEND_VISIBLE_DEVICES",
 }
 
+PROCESS_EXCLUSIVE_PLATFORMS = {"ascend", "iluvatar"}
+
 
 @dataclass
 class GpuInfo:
@@ -34,6 +37,8 @@ class GpuInfo:
     memory_used_mb: float
     memory_total_mb: float
     utilization_pct: float
+    process_count: int = 0
+    process_pids: tuple[int, ...] = ()
 
 
 @dataclass
@@ -85,11 +90,17 @@ class ResourcePool:
         if self._platform == "cambricon":
             return self._detect_gpus_cambricon()
 
+        if self._platform == "iluvatar":
+            return self._detect_gpus_iluvatar()
+
         if self._platform == "ascend":
             return self._detect_gpus_ascend()
 
         tool = self.GPU_QUERY_TOOLS.get(self._platform)
 
+        return self._detect_gpus_csv(tool)
+
+    def _detect_gpus_csv(self, tool) -> list[GpuInfo]:
         if not tool:
             return []
 
@@ -131,6 +142,66 @@ class ResourcePool:
                 continue
 
         return gpus
+
+    def _detect_gpus_iluvatar(self) -> list[GpuInfo]:
+        tool = self.GPU_QUERY_TOOLS.get("iluvatar")
+        if not tool:
+            return []
+
+        gpus = self._detect_gpus_csv(tool)
+
+        if not gpus:
+            return []
+
+        try:
+            raw_result = subprocess.run(
+                [tool],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return gpus
+
+        if raw_result.returncode != 0:
+            return gpus
+
+        process_pids: dict[int, list[int]] = {}
+        in_process_table = False
+
+        for line in raw_result.stdout.splitlines():
+            if "Processes:" in line:
+                in_process_table = True
+                continue
+
+            if not in_process_table:
+                continue
+
+            content = line.strip().strip("|").strip()
+            tokens = content.split()
+
+            if len(tokens) < 2 or not tokens[0].isdigit() or not tokens[1].isdigit():
+                continue
+
+            try:
+                gpu_index = int(tokens[0])
+                pid = int(tokens[1])
+            except ValueError:
+                continue
+
+            process_pids.setdefault(gpu_index, []).append(pid)
+
+        return [
+            GpuInfo(
+                index=g.index,
+                memory_used_mb=g.memory_used_mb,
+                memory_total_mb=g.memory_total_mb,
+                utilization_pct=g.utilization_pct,
+                process_count=len(process_pids.get(g.index, [])),
+                process_pids=tuple(process_pids.get(g.index, ())),
+            )
+            for g in gpus
+        ]
 
     def _detect_gpus_metax(self) -> list[GpuInfo]:
         """Parse mx-smi output for MetaX GPUs.
@@ -368,6 +439,22 @@ class ResourcePool:
 
         gpus = []
         lines = result.stdout.splitlines()
+        process_pids: dict[int, list[int]] = {}
+
+        for line in lines:
+            process_m = re.match(r"^\|\s*(\d+)\s+\d+\s*\|\s*(\d+)\s*\|", line)
+
+            if not process_m:
+                continue
+
+            try:
+                npu_index = int(process_m.group(1))
+                pid = int(process_m.group(2))
+            except ValueError:
+                continue
+
+            process_pids.setdefault(npu_index, []).append(pid)
+
         i = 0
 
         while i < len(lines):
@@ -377,7 +464,7 @@ class ResourcePool:
 
             m1 = re.match(r"^\|\s+(\d+)\s+", line)
 
-            if m1 and i + 1 < len(lines):
+            if m1 and i + 1 < len(lines) and re.search(r"\b(910|310)\w*\b", line):
                 try:
                     npu_index = int(m1.group(1))
                     row2 = lines[i + 1]
@@ -402,6 +489,8 @@ class ResourcePool:
                             memory_used_mb=used_mb,
                             memory_total_mb=total_mb,
                             utilization_pct=util_pct,
+                            process_count=len(process_pids.get(npu_index, [])),
+                            process_pids=tuple(process_pids.get(npu_index, ())),
                         )
                     )
                 except (ValueError, AttributeError):
@@ -439,7 +528,13 @@ class ResourcePool:
         """Return GPU indices with utilization below threshold."""
         gpus = self.detect_gpus()
         return [
-            g.index for g in gpus if g.utilization_pct < self._utilization_threshold
+            g.index
+            for g in gpus
+            if g.utilization_pct < self._utilization_threshold
+            and (
+                self._platform not in PROCESS_EXCLUSIVE_PLATFORMS
+                or g.process_count == 0
+            )
         ]
 
     def allocate(self, gpu_count, memory_mb=0) -> tuple[list[int], bool]:
@@ -469,6 +564,10 @@ class ResourcePool:
                 if g.index not in self._allocated
                 and self._is_gpu_memory_available(g)
                 and g.utilization_pct < self._utilization_threshold
+                and (
+                    self._platform not in PROCESS_EXCLUSIVE_PLATFORMS
+                    or g.process_count == 0
+                )
             ]
 
             if len(available) < gpu_count:
@@ -477,7 +576,14 @@ class ResourcePool:
             if sys_res is not None and sys_res.available_memory_mb < memory_mb:
                 return ([], False)
 
-            available.sort(key=operator.attrgetter("utilization_pct"))
+            if self._platform in PROCESS_EXCLUSIVE_PLATFORMS:
+                available.sort(
+                    key=operator.attrgetter(
+                        "utilization_pct", "memory_used_mb", "index"
+                    )
+                )
+            else:
+                available.sort(key=operator.attrgetter("utilization_pct"))
             selected = [g.index for g in available[:gpu_count]]
             self._allocated.update(selected)
             return (selected, True)
@@ -512,6 +618,8 @@ class ResourcePool:
                     "memory_used_mb": g.memory_used_mb,
                     "memory_total_mb": g.memory_total_mb,
                     "utilization_pct": g.utilization_pct,
+                    "process_count": g.process_count,
+                    "process_pids": list(g.process_pids),
                     "allocated_by_agent": g.index in allocated,
                 }
                 for g in gpus

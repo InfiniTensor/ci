@@ -15,6 +15,8 @@ def test_gpu_info_fields():
     )
     assert g.index == 0
     assert g.memory_total_mb == 8000
+    assert g.process_count == 0
+    assert g.process_pids == ()
 
 
 def test_system_resources_fields():
@@ -92,7 +94,6 @@ def test_detect_system_resources(monkeypatch, tmp_path):
         "MemFree:        10000000 kB\n"
         "MemAvailable:   20000000 kB\n"
     )
-
 
     _real_open = open
 
@@ -401,13 +402,13 @@ def test_detect_gpus_ascend_hbm_parsing(monkeypatch):
     assert gpus[0].memory_total_mb == 32768.0
 
 
-def test_detect_gpus_ascend_ignores_process_table(monkeypatch):
+def test_detect_gpus_ascend_marks_process_table_busy(monkeypatch):
     npu_output = (
         "+---------------------------+---------------+-------------------------------+\n"
         "| 0     910B4               | OK            | 86.5  41                      |\n"
-        "| 0                         | 0000:c1:00.0  | 0     0 / 0   32761 / 32768   |\n"
+        "| 0                         | 0000:c1:00.0  | 0     0 / 0   64 / 32768      |\n"
         "| 1     910B4               | OK            | 80.1  41                      |\n"
-        "| 0                         | 0000:c2:00.0  | 0     0 / 0   2867 / 32768    |\n"
+        "| 0                         | 0000:c2:00.0  | 1     0 / 0   2867 / 32768    |\n"
         "+---------------------------+---------------+-------------------------------+\n"
         "| NPU     Chip              | Process id    | Process name                  |\n"
         "| 0       0                 | 183216        | python                        |\n"
@@ -426,10 +427,93 @@ def test_detect_gpus_ascend_ignores_process_table(monkeypatch):
     pool = res.ResourcePool("ascend")
     gpus = pool.detect_gpus()
     assert [gpu.index for gpu in gpus] == [0, 1]
+    assert gpus[0].process_count == 1
+    assert gpus[0].process_pids == (183216,)
+    assert gpus[1].process_count == 0
+    assert gpus[1].process_pids == ()
 
     selected, ok = pool.allocate(1)
     assert ok
     assert selected == [1]
+
+
+def test_allocate_ascend_fails_when_all_npus_have_processes(monkeypatch):
+    pool = res.ResourcePool("ascend")
+
+    monkeypatch.setattr(
+        pool,
+        "detect_gpus",
+        lambda: [
+            res.GpuInfo(0, 64, 32768, 0, process_count=1, process_pids=(12345,)),
+            res.GpuInfo(1, 64, 32768, 0, process_count=1, process_pids=(23456,)),
+        ],
+    )
+
+    selected, ok = pool.allocate(1)
+    assert not ok
+    assert selected == []
+
+
+def test_detect_gpus_iluvatar_marks_process_table_busy(monkeypatch):
+    csv_output = "0, 64, 32768, 0\n1, 2867, 32768, 1\n"
+    ixsmi_output = (
+        "+-----------------------------------------------------------------------------+\n"
+        "| Processes:                                                                  |\n"
+        "| GPU        PID       Type   Process name                         GPU Memory |\n"
+        "| 0          12345     C      python                                 530 MiB  |\n"
+        "+-----------------------------------------------------------------------------+\n"
+    )
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = ixsmi_output if cmd == ["ixsmi"] else csv_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    pool = res.ResourcePool("iluvatar")
+    gpus = pool.detect_gpus()
+    assert [gpu.index for gpu in gpus] == [0, 1]
+    assert gpus[0].process_count == 1
+    assert gpus[0].process_pids == (12345,)
+    assert gpus[1].process_count == 0
+    assert gpus[1].process_pids == ()
+
+
+def test_allocate_iluvatar_skips_gpus_with_processes(monkeypatch):
+    pool = res.ResourcePool("iluvatar")
+
+    monkeypatch.setattr(
+        pool,
+        "detect_gpus",
+        lambda: [
+            res.GpuInfo(0, 64, 32768, 0, process_count=1, process_pids=(12345,)),
+            res.GpuInfo(1, 2867, 32768, 1),
+        ],
+    )
+
+    selected, ok = pool.allocate(1)
+    assert ok
+    assert selected == [1]
+
+
+def test_allocate_iluvatar_fails_when_all_gpus_have_processes(monkeypatch):
+    pool = res.ResourcePool("iluvatar")
+
+    monkeypatch.setattr(
+        pool,
+        "detect_gpus",
+        lambda: [
+            res.GpuInfo(0, 64, 32768, 0, process_count=1, process_pids=(12345,)),
+            res.GpuInfo(1, 64, 32768, 0, process_count=1, process_pids=(23456,)),
+        ],
+    )
+
+    selected, ok = pool.allocate(1)
+    assert not ok
+    assert selected == []
 
 
 def test_detect_gpus_moore_gpu_list_json(monkeypatch):
