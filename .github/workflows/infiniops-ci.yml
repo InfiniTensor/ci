@@ -135,23 +135,45 @@ jobs:
                   sys.exit(0)
               raise
 
-          def has_online_runner(label):
+          def runner_has_label(runner, label):
+              return any(item.get("name") == label for item in runner.get("labels", []))
+
+          def has_registered_runner(label):
               for runner in runners:
-                  labels = [item.get("name") for item in runner.get("labels", [])]
-                  if runner.get("status") == "online" and label in labels:
+                  if runner_has_label(runner, label):
                       return True
               return False
 
-          missing = [
+          def has_online_runner(label):
+              for runner in runners:
+                  if runner.get("status") == "online" and runner_has_label(runner, label):
+                      return True
+              return False
+
+          unregistered = [
+              (platform, label)
+              for platform, label in expected.items()
+              if not has_registered_runner(label)
+          ]
+          if unregistered:
+              print("No registered self-hosted runner label before starting CI jobs:", file=sys.stderr)
+              for platform, label in unregistered:
+                  print(f"- job=run-unittest platform={platform} runner_label={label}", file=sys.stderr)
+              sys.exit(1)
+
+          offline = [
               (platform, label)
               for platform, label in expected.items()
               if not has_online_runner(label)
           ]
-          if missing:
-              print("No online self-hosted runner before starting CI jobs:", file=sys.stderr)
-              for platform, label in missing:
+          if offline:
+              print(
+                  "No online self-hosted runner currently available; queued-job watchdog will allow recovery:",
+                  file=sys.stderr,
+              )
+              for platform, label in offline:
                   print(f"- job=run-unittest platform={platform} runner_label={label}", file=sys.stderr)
-              sys.exit(1)
+              sys.exit(0)
 
           print("All required self-hosted runner labels have at least one online runner.")
           PY
@@ -508,6 +530,7 @@ jobs:
           poll_interval = int(os.environ["POLL_INTERVAL_SECONDS"])
           deadline = time.monotonic() + timeout_seconds
           runners_api_warning_printed = False
+          offline_runners_warning_printed = False
 
           def fetch_jobs():
               jobs = []
@@ -575,6 +598,16 @@ jobs:
                   ]
               return result
 
+          def registered_runners_by_platform(runners):
+              result = {}
+              for platform, label in runner_labels.items():
+                  result[platform] = [
+                      runner
+                      for runner in runners
+                      if runner_has_label(runner, label)
+                  ]
+              return result
+
           while True:
               try:
                   platform_jobs = platform_jobs_by_platform(fetch_jobs())
@@ -595,15 +628,16 @@ jobs:
 
               if queued:
                   try:
-                      online_runners = online_runners_by_platform(fetch_runners())
-                      offline = [
+                      runners = fetch_runners()
+                      registered_runners = registered_runners_by_platform(runners)
+                      unregistered = [
                           platform
                           for platform, job in platform_jobs.items()
-                          if job.get("status") == "queued" and not online_runners.get(platform)
+                          if job.get("status") == "queued" and not registered_runners.get(platform)
                       ]
-                      if offline:
-                          print("CI queued jobs have no online self-hosted runner:", file=sys.stderr)
-                          for platform in offline:
+                      if unregistered:
+                          print("CI queued jobs have no registered self-hosted runner:", file=sys.stderr)
+                          for platform in unregistered:
                               label = runner_labels.get(platform, platform)
                               job = platform_jobs[platform]
                               print(
@@ -611,6 +645,26 @@ jobs:
                                   file=sys.stderr,
                               )
                           sys.exit(1)
+
+                      online_runners = online_runners_by_platform(runners)
+                      offline = [
+                          platform
+                          for platform, job in platform_jobs.items()
+                          if job.get("status") == "queued" and not online_runners.get(platform)
+                      ]
+                      if offline and not offline_runners_warning_printed:
+                          print(
+                              "CI queued jobs have no online self-hosted runner; waiting up to 30 minutes for recovery:",
+                              file=sys.stderr,
+                          )
+                          for platform in offline:
+                              label = runner_labels.get(platform, platform)
+                              job = platform_jobs[platform]
+                              print(
+                                  f"- platform={platform} runner_label={label} job={job.get('html_url')}",
+                                  file=sys.stderr,
+                              )
+                          offline_runners_warning_printed = True
                   except (urllib.error.URLError, TimeoutError, OSError) as exc:
                       if not runners_api_warning_printed:
                           print(
