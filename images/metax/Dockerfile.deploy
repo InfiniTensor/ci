@@ -9,7 +9,6 @@ ARG NO_PROXY
 ARG http_proxy
 ARG https_proxy
 ARG no_proxy
-ARG all_proxy=socks5h://127.0.0.1:9992
 
 ARG APT_MIRROR
 RUN if [ -n "$APT_MIRROR" ]; then \
