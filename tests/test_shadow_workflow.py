@@ -47,7 +47,11 @@ def test_shadow_prepare_preflights_runner_availability_before_matrix_jobs_start(
     )
     assert "Queued-job watchdog remains enabled as a fallback." in text
     assert "/actions/runners?per_page=100" in text
-    assert "No online self-hosted runner before starting CI v2 jobs:" in text
+    assert "No registered self-hosted runner label before starting CI v2 jobs:" in text
+    assert (
+        "No online self-hosted runner currently available; "
+        "queued-job watchdog will allow recovery:" in text
+    )
     assert "job=run-unittest-shadow" in text
 
 
@@ -73,7 +77,11 @@ def test_shadow_workflow_fails_queued_jobs_after_thirty_minutes():
     assert 'sleep "${QUEUE_TIMEOUT_SECONDS}"' not in step["run"]
     assert 'job.get("status") == "queued"' in step["run"]
     assert "/actions/runners?per_page=100" in step["run"]
-    assert "CI v2 queued jobs have no online self-hosted runner:" in step["run"]
+    assert "CI v2 queued jobs have no registered self-hosted runner:" in step["run"]
+    assert (
+        "CI v2 queued jobs have no online self-hosted runner; "
+        "waiting up to 30 minutes for recovery:" in step["run"]
+    )
     assert "falling back to queued timeout" in step["run"]
     assert "All expected CI v2 platform jobs completed." in step["run"]
 

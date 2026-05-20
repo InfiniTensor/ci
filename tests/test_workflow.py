@@ -44,7 +44,11 @@ def test_workflow_fails_queued_jobs_after_thirty_minutes():
     assert "POLL_INTERVAL_SECONDS: 15" in text
     assert "/actions/runs/{run_id}/jobs?per_page=100" in text
     assert "/actions/runners?per_page=100" in text
-    assert "CI queued jobs have no online self-hosted runner:" in text
+    assert "CI queued jobs have no registered self-hosted runner:" in text
+    assert (
+        "CI queued jobs have no online self-hosted runner; "
+        "waiting up to 30 minutes for recovery:" in text
+    )
     assert "CI jobs still queued after 30 minutes:" in text
     assert "All expected CI platform jobs completed." in text
 
@@ -61,5 +65,9 @@ def test_prepare_preflights_runner_availability_before_matrix_jobs_start():
     )
     assert "Queued-job watchdog remains enabled as a fallback." in text
     assert "/actions/runners?per_page=100" in text
-    assert "No online self-hosted runner before starting CI jobs:" in text
+    assert "No registered self-hosted runner label before starting CI jobs:" in text
+    assert (
+        "No online self-hosted runner currently available; "
+        "queued-job watchdog will allow recovery:" in text
+    )
     assert "job=run-unittest" in text
