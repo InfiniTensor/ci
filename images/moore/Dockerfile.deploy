@@ -28,7 +28,6 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         libboost-all-dev \
         libffi-dev \
         libssl-dev \
-        libbacktrace-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL
