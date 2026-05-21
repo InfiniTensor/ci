@@ -47,9 +47,9 @@ ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
-ENV INFINI_ROOT="/root/.infinici"
+ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
-ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
+ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
 WORKDIR /workspace
 
