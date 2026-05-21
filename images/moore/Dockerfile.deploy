@@ -48,7 +48,7 @@ RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
 
-RUN git checkout -b ${InfiniCore_BRANCH} origin/${InfiniCore_BRANCH}
+RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake f -y --moore-gpu=y --ccl=y --graph=y -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
