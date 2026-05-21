@@ -109,14 +109,16 @@ jobs:
             images/${{ matrix.platform }}
 
       - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Build and Package
         working-directory: repo
         run: |
           src_dir=$(pwd)
           echo "src_dir: $src_dir"
-          docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu --build-arg InfiniCore_BRANCH=main -t infinilm-ci/${{ matrix.platform }}:${{ replace(github.ref_name, '/', '_') }}-${SHORT_SHA} .
+          docker build -f .ci/images/${{ matrix.platform }}/Dockerfile.deploy --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 --build-arg APT_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/ubuntu --build-arg InfiniCore_BRANCH=main -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .
 
   # run-inferencetest:
   #   name: inference
@@ -204,7 +206,7 @@ jobs:
   #       working-directory: repo
   #       env:
   #         CONFIG: ${{ inputs.config_path }}
-  #         BRANCH: ${{ replace(github.ref_name, '/', '_') }}
+  #         BRANCH: ${REF_SLUG}
   #         STAGE: None
   #         IMAGE_TAG: "${{ env.SHORT_SHA }}"
   #         GPU_ID: all
@@ -430,7 +432,7 @@ jobs:
   #       working-directory: repo
   #       env:
   #         CONFIG: ${{ inputs.config_path }}
-  #         BRANCH: ${{ replace(github.ref_name, '/', '_') }}
+  #         BRANCH: ${REF_SLUG}
   #         STAGE: None
   #         IMAGE_TAG: "${{ env.SHORT_SHA }}"
   #         GPU_ID: all
@@ -653,7 +655,7 @@ jobs:
   #       working-directory: repo
   #       env:
   #         CONFIG: ${{ inputs.config_path }}
-  #         BRANCH: ${{ replace(github.ref_name, '/', '_') }}
+  #         BRANCH: ${REF_SLUG}
   #         STAGE: None
   #         IMAGE_TAG: "${{ env.SHORT_SHA }}"
   #         GPU_ID: all
@@ -873,7 +875,7 @@ jobs:
   #         echo "==> running job: ${{ matrix.job_name }}"
   #         echo "Service Test Starting..."
   #         echo "MODEL_LIST = ${{ matrix.job_env.MODEL_LIST }}"
-  #         echo "Version = infinilm-ci/${{ matrix.platform }}:${{ replace(github.ref_name, '/', '_') }}-${SHORT_SHA}"
+  #         echo "Version = infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
   #         set -m
 
   #         src_dir=$(pwd)
@@ -912,7 +914,7 @@ jobs:
   #         echo "${DOCKER_ARGS} -e 'TEST_PARAM=${TEST_PARAM}' ${VOLUME_ARGS} ${SHM_SIZE}"
   #         echo "${{ github.run_id }}"
   #         echo "${TEST_PARAM}"
-  #         echo "infinilm-ci/${{ matrix.platform }}:${{ replace(github.ref_name, '/', '_') }}-${SHORT_SHA}"
+  #         echo "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
   #         echo "************************************************************************"
 
   #         exec ./daemon.sh \
@@ -923,4 +925,4 @@ jobs:
   #           "${DOCKER_ARGS} -e 'TEST_PARAM=${TEST_PARAM}' ${VOLUME_ARGS} ${SHM_SIZE}" \
   #           ${{ github.run_id }} \
   #           "${TEST_PARAM}" \
-  #           "infinilm-ci/${{ matrix.platform }}:${{ replace(github.ref_name, '/', '_') }}-${SHORT_SHA}"
+  #           "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
