@@ -21,17 +21,26 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         ninja-build \
         curl \
         tar \
+        build-essential \
+        pkg-config \
+        python3-dev \
+        ca-certificates \
+        libboost-all-dev \
+        libffi-dev \
+        libssl-dev \
+        libbacktrace-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    transformers \
-    pyyaml \
-    uvicorn \
-    janus \
-    fastapi \
-    openai
+        transformers \
+        pyyaml \
+        uvicorn \
+        janus \
+        fastapi \
+        openai \
+        pybind11
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
@@ -49,6 +58,8 @@ RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 WORKDIR /workspace/InfiniCore
 
 RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
+
+RUN xmake repo -u
 
 RUN xmake f -y --moore-gpu=y --ccl=y --graph=y -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
