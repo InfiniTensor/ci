@@ -41,7 +41,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
         fastapi \
         openai \
         pybind11 \
-        xxhash
+        xxhash \
+        ml_dtypes
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
