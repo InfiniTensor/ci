@@ -25,7 +25,8 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         pkg-config \
         python3-dev \
         ca-certificates \
-        libboost-all-dev \
+        libboost-dev \
+        libboost-stacktrace-dev \
         libffi-dev \
         libssl-dev \
     && rm -rf /var/lib/apt/lists/*
