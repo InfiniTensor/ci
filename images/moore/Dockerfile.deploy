@@ -40,7 +40,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
         janus \
         fastapi \
         openai \
-        pybind11
+        pybind11 \
+        xxhash
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
