@@ -159,7 +159,7 @@ while true; do
         if acquire_npu_locks_batch "$SERVER_NAME" "${FREE_GPU_INFO[*]}" "$TARGET_FREE_GPUS" "$TASK_ID" "$SESSION_ID" ACUQIRED_LOCKS; then
             echo "成功锁定 $TARGET_FREE_GPUS 张 GPU, 索引：${ACUQIRED_LOCKS[@]}"
             LOCKED_NPUS="${ACUQIRED_LOCKS[@]}"
-            MTHREADS_VISIBLE_DEVICES=$(echo ${LOCKED_NPUS} | sed -E 's/\s+/\,/g')
+            MUSA_VISIBLE_DEVICES=$(echo ${LOCKED_NPUS} | sed -E 's/\s+/\,/g')
             break
         else
             echo "锁定失败（可能被其他任务占用），继续扫描......"
@@ -171,7 +171,7 @@ while true; do
     sleep 10
 done
 
-echo "MTHREADS_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES"
+echo "MUSA_VISIBLE_DEVICES=$MUSA_VISIBLE_DEVICES"
 
 LOG_PATH="<<<LOG_PATH>>>"
 LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
@@ -237,8 +237,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
 fi
 
 EXEC_COMMAND="docker run --name=infiniTensor_moore_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
-EXEC_COMMAND+="-e MTHREADS_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES "
-EXEC_COMMAND+="-e CUDA_VISIBLE_DEVICES=$MTHREADS_VISIBLE_DEVICES "
+EXEC_COMMAND+="-e MUSA_VISIBLE_DEVICES=$MUSA_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
 EOF

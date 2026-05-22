@@ -96,7 +96,7 @@ platforms:
         type: unittest
         resources:
           ngpus: 1
-          gpu_style: none                  # Moore: passthrough via --privileged, MTHREADS_VISIBLE_DEVICES controls visibility
+          gpu_style: none                  # Moore: passthrough via --privileged, MUSA_VISIBLE_DEVICES controls visibility
           memory: 32GB
           shm_size: 16g
           timeout: 3600

@@ -22,7 +22,7 @@ GPU_STYLE_MLU = "mlu"
 PLATFORM_DEVICE_ENV = {
     "iluvatar": "CUDA_VISIBLE_DEVICES",
     "metax": "CUDA_VISIBLE_DEVICES",
-    "moore": "MTHREADS_VISIBLE_DEVICES",
+    "moore": "MUSA_VISIBLE_DEVICES",
     "cambricon": "MLU_VISIBLE_DEVICES",
     "ascend": "ASCEND_VISIBLE_DEVICES",
 }
