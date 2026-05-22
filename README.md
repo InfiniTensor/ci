@@ -53,7 +53,7 @@ Platform device visibility is handled by `ci_resource.PLATFORM_DEVICE_ENV`:
 | `nvidia` | `nvidia-smi` | Docker `--gpus` |
 | `iluvatar` | `ixsmi` | `CUDA_VISIBLE_DEVICES` |
 | `metax` | `mx-smi` | `CUDA_VISIBLE_DEVICES` |
-| `moore` | `mthreads-gmi` | `MTHREADS_VISIBLE_DEVICES` |
+| `moore` | `mthreads-gmi` | `MUSA_VISIBLE_DEVICES` |
 | `cambricon` | `cnmon` | `MLU_VISIBLE_DEVICES` |
 | `ascend` | `npu-smi` | `ASCEND_VISIBLE_DEVICES` |
 
