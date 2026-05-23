@@ -17,6 +17,7 @@ from ci_resource import (
     GPU_STYLE_NVIDIA,
     GPU_STYLE_NONE,
     GPU_STYLE_MLU,
+    DeviceLeaseManager,
     ResourcePool,
     detect_platform,
     parse_gpu_requirement,
@@ -265,7 +266,9 @@ def build_docker_args(
                 args.extend(["-e", f"{device_env}={logical_ids}"])
 
             for logical_id, device_id in enumerate(device_ids):
-                args.append(f"--device=/dev/davinci{device_id}:/dev/davinci{logical_id}")
+                args.append(
+                    f"--device=/dev/davinci{device_id}:/dev/davinci{logical_id}"
+                )
         elif device_env:
             args.extend(["-e", f"{device_env}={gpu_id}"])
         if platform == "moore":
@@ -341,6 +344,14 @@ def resolve_job_names(jobs, platform, job=None):
     return matches
 
 
+def parse_device_ids(raw_gpu_ids):
+    """Parse a comma-separated device list."""
+    if not raw_gpu_ids or raw_gpu_ids == "auto" or raw_gpu_ids == "all":
+        return []
+
+    return [int(part.strip()) for part in raw_gpu_ids.split(",") if part.strip()]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run Docker CI pipeline")
     parser.add_argument(
@@ -389,6 +400,11 @@ def main():
         help="Mount current directory (read-only) into the container instead of cloning from git",
     )
     parser.add_argument(
+        "--resource-lock-dir",
+        type=Path,
+        help="Shared host directory for device lease locks",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print docker command and exit",
@@ -416,7 +432,6 @@ def main():
         sys.exit(1)
 
     job_names = resolve_job_names(jobs, platform, job=args.job)
-    pool = ResourcePool(platform)
     failed = 0
 
     for job_name in job_names:
@@ -442,16 +457,48 @@ def main():
             ]
 
         gpu_id_override = args.gpu_id
-        allocated_ids = []
+        device_lease = None
         raw_gpu_ids = str(job.get("resources", {}).get("gpu_ids", "auto")).strip()
+        requested_gpu_ids = []
+        use_all_devices = gpu_id_override == "all" or (
+            not gpu_id_override and raw_gpu_ids == "all"
+        )
 
-        if not gpu_id_override and raw_gpu_ids == "auto":
-            gpu_count = parse_gpu_requirement(job)
+        if gpu_id_override and gpu_id_override != "all":
+            requested_gpu_ids = parse_device_ids(gpu_id_override)
+        elif raw_gpu_ids not in {"auto", "all", ""}:
+            requested_gpu_ids = parse_device_ids(raw_gpu_ids)
+
+        if (
+            requested_gpu_ids
+            or use_all_devices
+            or (not gpu_id_override and raw_gpu_ids == "auto")
+        ):
+            lease_manager = DeviceLeaseManager(
+                platform, lock_dir=args.resource_lock_dir
+            )
+            gpu_count = (
+                len(lease_manager._pool.detect_gpus())
+                if use_all_devices
+                else parse_gpu_requirement(job)
+            )
             memory_mb = parse_memory_requirement(job)
-            allocated_ids, ok = pool.allocate(gpu_count, memory_mb)
+            resources = job.get("resources", {})
+            queue_timeout = int(resources.get("queue_timeout") or 0)
+            device_lease = lease_manager.acquire(
+                gpu_count,
+                memory_mb,
+                requested_ids=requested_gpu_ids,
+                timeout=queue_timeout,
+                metadata={
+                    "job": job_name,
+                    "workdir": str(Path.cwd().resolve()),
+                    "image_tag": args.image_tag,
+                },
+            )
 
-            if not ok:
-                detected = pool.detect_gpus()
+            if device_lease is None:
+                detected = lease_manager._pool.detect_gpus()
                 if not detected:
                     hint = (
                         f"error: cannot allocate {gpu_count} GPU(s) for {job_name}"
@@ -463,15 +510,16 @@ def main():
                     hint = (
                         f"error: cannot allocate {gpu_count} GPU(s) for {job_name}"
                         f" - {len(detected)} GPU(s) detected but none available"
-                        f" (utilization threshold: {pool._utilization_threshold}%)"
+                        f" (utilization threshold: "
+                        f"{lease_manager._pool._utilization_threshold}%)"
                         f"\nhint: use --gpu-id 0 to bypass auto-allocation"
                     )
                 print(hint, file=sys.stderr)
                 failed += 1
                 continue
 
-            if allocated_ids:
-                gpu_id_override = ",".join(str(g) for g in allocated_ids)
+            if device_lease.device_ids:
+                gpu_id_override = ",".join(str(g) for g in device_lease.device_ids)
 
         job_platform = job.get("platform", platform)
         commit = get_git_commit()
@@ -495,7 +543,8 @@ def main():
 
         if args.dry_run:
             print(shell_join(docker_run_args))
-            pool.release(allocated_ids)
+            if device_lease is not None:
+                device_lease.release()
             continue
 
         print(f"==> running job: {job_name}", file=sys.stderr)
@@ -504,7 +553,8 @@ def main():
         try:
             returncode = subprocess.run(docker_run_args).returncode
         finally:
-            pool.release(allocated_ids)
+            if device_lease is not None:
+                device_lease.release()
 
         if returncode != 0:
             if returncode == 137 and _junit_xml_indicates_pass(results_dir):

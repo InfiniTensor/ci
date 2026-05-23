@@ -71,6 +71,12 @@ def test_docker_run_args_wraps_fragment():
     assert args == ["docker", "run", "--rm", "image", "bash"]
 
 
+def test_parse_device_ids():
+    assert run.parse_device_ids("0,2") == [0, 2]
+    assert run.parse_device_ids("auto") == []
+    assert run.parse_device_ids("all") == []
+
+
 def test_docker_args_correct_image(minimal_config):
     args = run.build_docker_args(
         minimal_config,

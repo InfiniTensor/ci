@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from ci_resource import ResourcePool, parse_memory_requirement
+from ci_resource import DeviceLeaseManager, parse_memory_requirement
 
 TERMINAL_STATUSES = {"passed", "failed", "canceled", "resource_timeout"}
 
@@ -40,7 +40,9 @@ def task_path(state_dir: Path, task_id: str) -> Path:
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(f".{uuid.uuid4().hex}.tmp")
-    tmp.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     os.replace(tmp, path)
 
 
@@ -151,19 +153,21 @@ def resource_count(resources: dict[str, Any]) -> int:
         return 0
 
 
-def wait_for_resources(task: dict[str, Any], deadline: float, poll_interval: float) -> bool:
+def wait_for_resources(
+    task: dict[str, Any], deadline: float, poll_interval: float
+) -> bool:
     resources = task.get("resources", {}) or {}
     gpu_count = resource_count(resources)
     if gpu_count <= 0:
         return True
 
-    pool = ResourcePool(task.get("platform", ""))
     job = {"resources": resources}
     memory_mb = parse_memory_requirement(job)
+    lease_manager = DeviceLeaseManager(task.get("platform", ""))
     while time.monotonic() < deadline:
-        allocated, ok = pool.allocate(gpu_count, memory_mb)
-        if ok:
-            pool.release(allocated)
+        lease = lease_manager.acquire(gpu_count, memory_mb, timeout=0)
+        if lease is not None:
+            lease.release()
             return True
         time.sleep(poll_interval)
     return False
@@ -273,7 +277,10 @@ def daemon_loop(state_dir: Path, poll_interval: float = 5.0) -> None:
 
 
 def wait_task(
-    state_dir: Path, task_id: str, poll_interval: float = 5.0, timeout: int | None = None
+    state_dir: Path,
+    task_id: str,
+    poll_interval: float = 5.0,
+    timeout: int | None = None,
 ) -> bool:
     start = time.monotonic()
     while True:
@@ -384,7 +391,11 @@ def main(argv: list[str] | None = None) -> int:
         print(task_id)
         return 0
     if args.command_name == "wait":
-        return 0 if wait_task(state_dir, args.task_id, args.poll_interval, args.timeout) else 1
+        return (
+            0
+            if wait_task(state_dir, args.task_id, args.poll_interval, args.timeout)
+            else 1
+        )
     if args.command_name == "collect":
         collect_task(state_dir, args.task_id, args.output_dir)
         return 0

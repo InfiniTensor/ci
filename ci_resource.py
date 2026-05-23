@@ -11,7 +11,11 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
+import fcntl
 from dataclasses import dataclass
+from pathlib import Path
+from typing import TextIO
 
 # GPU passthrough styles
 GPU_STYLE_NVIDIA = "nvidia"
@@ -29,6 +33,8 @@ PLATFORM_DEVICE_ENV = {
 }
 
 PROCESS_EXCLUSIVE_PLATFORMS = {"ascend", "iluvatar"}
+RESOURCE_LOCK_DIR_ENV = "CI_RESOURCE_LOCK_DIR"
+DEFAULT_RESOURCE_LOCK_DIR = Path("/tmp/infinitensor-ci-resource-locks")
 
 
 @dataclass
@@ -46,6 +52,198 @@ class SystemResources:
     total_memory_mb: float
     available_memory_mb: float
     cpu_count: int
+
+
+@dataclass
+class DeviceLease:
+    """Host-level device lease backed by open file locks."""
+
+    platform: str
+    device_ids: list[int]
+    _files: list[TextIO]
+    _released: bool = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.release()
+        return False
+
+    def release(self):
+        """Release all device locks held by this lease."""
+        if self._released:
+            return
+
+        for f in self._files:
+            try:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+            finally:
+                f.close()
+
+        self._released = True
+
+
+class DeviceLeaseManager:
+    """Acquire cross-process host device leases for CI jobs."""
+
+    def __init__(self, platform, lock_dir=None, utilization_threshold=10, pool=None):
+        self._platform = platform
+        self._lock_dir = Path(
+            lock_dir
+            or os.environ.get(RESOURCE_LOCK_DIR_ENV)
+            or DEFAULT_RESOURCE_LOCK_DIR
+        )
+        self._pool = pool or ResourcePool(platform, utilization_threshold)
+
+    @property
+    def lock_dir(self):
+        return self._lock_dir
+
+    def acquire(
+        self,
+        gpu_count,
+        memory_mb=0,
+        requested_ids=None,
+        timeout=0,
+        poll_interval=5.0,
+        metadata=None,
+    ) -> DeviceLease | None:
+        """Acquire a lease for available devices.
+
+        The returned lease must be held for the full container lifetime.
+        """
+        requested_ids = list(requested_ids or [])
+        gpu_count = len(requested_ids) if requested_ids else int(gpu_count)
+
+        if gpu_count <= 0:
+            if memory_mb > 0:
+                sys_res = self._pool.detect_system_resources()
+
+                if sys_res.available_memory_mb < memory_mb:
+                    return None
+
+            return DeviceLease(self._platform, [], [])
+
+        deadline = (
+            None if timeout is None else time.monotonic() + max(float(timeout), 0)
+        )
+
+        while True:
+            lease = self._try_acquire(gpu_count, memory_mb, requested_ids, metadata)
+
+            if lease is not None:
+                return lease
+
+            if deadline is not None and time.monotonic() >= deadline:
+                return None
+
+            sleep_for = poll_interval
+
+            if deadline is not None:
+                sleep_for = min(sleep_for, max(deadline - time.monotonic(), 0))
+
+            if sleep_for <= 0:
+                return None
+
+            time.sleep(sleep_for)
+
+    def _try_acquire(
+        self, gpu_count, memory_mb, requested_ids, metadata
+    ) -> DeviceLease | None:
+        self._lock_dir.mkdir(parents=True, exist_ok=True)
+        allocate_lock = self._lock_dir / f"{self._platform}.allocate.lock"
+
+        with allocate_lock.open("a+", encoding="utf-8") as f:
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+            try:
+                return self._try_acquire_locked(
+                    gpu_count, memory_mb, requested_ids, metadata
+                )
+            finally:
+                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+    def _try_acquire_locked(
+        self, gpu_count, memory_mb, requested_ids, metadata
+    ) -> DeviceLease | None:
+        gpus = self._pool.detect_gpus()
+        sys_res = self._pool.detect_system_resources() if memory_mb > 0 else None
+
+        if sys_res is not None and sys_res.available_memory_mb < memory_mb:
+            return None
+
+        available = [g for g in gpus if self._is_eligible(g)]
+
+        if requested_ids:
+            by_index = {g.index: g for g in available}
+            candidates = []
+
+            for idx in requested_ids:
+                if idx not in by_index:
+                    return None
+
+                candidates.append(by_index[idx])
+        else:
+            candidates = sorted(
+                available,
+                key=operator.attrgetter("utilization_pct", "memory_used_mb", "index"),
+            )
+
+        locked_files: list[TextIO] = []
+        selected: list[int] = []
+
+        try:
+            for gpu in candidates:
+                lock_file = self._lock_dir / f"{self._platform}.device.{gpu.index}.lock"
+                lock_file.parent.mkdir(parents=True, exist_ok=True)
+                lf = lock_file.open("a+", encoding="utf-8")
+
+                try:
+                    fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    lf.close()
+                    if requested_ids:
+                        return None
+                    continue
+
+                self._write_lock_metadata(lf, gpu.index, metadata)
+                locked_files.append(lf)
+                selected.append(gpu.index)
+
+                if len(selected) == gpu_count:
+                    return DeviceLease(self._platform, selected, locked_files)
+
+            return None
+        finally:
+            if len(selected) < gpu_count:
+                for lf in locked_files:
+                    try:
+                        fcntl.flock(lf.fileno(), fcntl.LOCK_UN)
+                    finally:
+                        lf.close()
+
+    def _is_eligible(self, gpu: GpuInfo) -> bool:
+        return (
+            self._pool._is_gpu_memory_available(gpu)
+            and gpu.utilization_pct < self._pool._utilization_threshold
+            and (
+                self._platform not in PROCESS_EXCLUSIVE_PLATFORMS
+                or gpu.process_count == 0
+            )
+        )
+
+    def _write_lock_metadata(self, f: TextIO, device_id, metadata):
+        payload = {
+            "platform": self._platform,
+            "device": device_id,
+            "pid": os.getpid(),
+            "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            **(metadata or {}),
+        }
+        f.seek(0)
+        f.truncate()
+        f.write(json.dumps(payload, sort_keys=True) + "\n")
+        f.flush()
 
 
 class ResourcePool:

@@ -303,6 +303,80 @@ def test_thread_safety(monkeypatch):
     assert len(set(allocated_all)) == 4
 
 
+def _pool_with_gpus(platform, gpus, monkeypatch):
+    pool = res.ResourcePool(platform, utilization_threshold=10)
+    monkeypatch.setattr(pool, "detect_gpus", lambda: gpus)
+    monkeypatch.setattr(
+        pool,
+        "detect_system_resources",
+        lambda: res.SystemResources(65536, 65536, 64),
+    )
+    return pool
+
+
+def test_device_lease_manager_skips_device_locked_by_another_manager(
+    tmp_path, monkeypatch
+):
+    gpus = [
+        res.GpuInfo(0, 0, 8192, 0),
+        res.GpuInfo(1, 0, 8192, 0),
+    ]
+    first = res.DeviceLeaseManager(
+        "nvidia", lock_dir=tmp_path, pool=_pool_with_gpus("nvidia", gpus, monkeypatch)
+    )
+    second = res.DeviceLeaseManager(
+        "nvidia", lock_dir=tmp_path, pool=_pool_with_gpus("nvidia", gpus, monkeypatch)
+    )
+
+    lease1 = first.acquire(1, timeout=0)
+    assert lease1 is not None
+    assert lease1.device_ids == [0]
+
+    try:
+        lease2 = second.acquire(1, timeout=0)
+        assert lease2 is not None
+        assert lease2.device_ids == [1]
+        lease2.release()
+    finally:
+        lease1.release()
+
+
+def test_device_lease_release_makes_device_available(tmp_path, monkeypatch):
+    gpus = [res.GpuInfo(0, 0, 8192, 0)]
+    manager = res.DeviceLeaseManager(
+        "nvidia", lock_dir=tmp_path, pool=_pool_with_gpus("nvidia", gpus, monkeypatch)
+    )
+
+    lease1 = manager.acquire(1, timeout=0)
+    assert lease1 is not None
+    assert lease1.device_ids == [0]
+    assert manager.acquire(1, timeout=0) is None
+
+    lease1.release()
+
+    lease2 = manager.acquire(1, timeout=0)
+    assert lease2 is not None
+    assert lease2.device_ids == [0]
+    lease2.release()
+
+
+def test_device_lease_requested_busy_device_fails(tmp_path, monkeypatch):
+    gpus = [
+        res.GpuInfo(0, 64, 32768, 0, process_count=1, process_pids=(12345,)),
+        res.GpuInfo(1, 64, 32768, 0),
+    ]
+    manager = res.DeviceLeaseManager(
+        "ascend", lock_dir=tmp_path, pool=_pool_with_gpus("ascend", gpus, monkeypatch)
+    )
+
+    assert manager.acquire(1, requested_ids=[0], timeout=0) is None
+
+    lease = manager.acquire(1, requested_ids=[1], timeout=0)
+    assert lease is not None
+    assert lease.device_ids == [1]
+    lease.release()
+
+
 # ---------------------------------------------------------------------------
 # Tests for `get_status`.
 # ---------------------------------------------------------------------------

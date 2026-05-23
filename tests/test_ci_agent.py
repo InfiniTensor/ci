@@ -138,10 +138,10 @@ def test_daemon_once_runs_queued_task(tmp_path, monkeypatch):
             "platform": "nvidia",
             "command": (
                 f"{sys.executable} -c "
-                f"\"from pathlib import Path; "
+                f'"from pathlib import Path; '
                 f"Path({str(result_dir)!r}).mkdir(exist_ok=True); "
                 f"Path({str(result_dir / 'test-results.xml')!r}).write_text("
-                f"'<testsuite tests=\\\"1\\\" failures=\\\"0\\\" errors=\\\"0\\\"></testsuite>')\""
+                f'\'<testsuite tests=\\"1\\" failures=\\"0\\" errors=\\"0\\"></testsuite>\')"'
             ),
             "workdir": str(tmp_path),
             "result_dir": str(result_dir),

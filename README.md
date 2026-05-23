@@ -83,6 +83,13 @@ matching jobs, allocates GPUs for `gpu_ids: auto`, builds Docker arguments, and
 runs the configured stages. With `--local`, the current checkout is mounted
 read-only and copied into the container before setup.
 
+Device allocation is protected by host-level lease files so parallel runner
+processes do not assign the same device at the same time. Set
+`CI_RESOURCE_LOCK_DIR` or pass `--resource-lock-dir` to choose the shared lock
+directory. If neither is set, `/tmp/infinitensor-ci-resource-locks` is used.
+The lease is held until the Docker container exits. Static `--gpu-id` and
+`resources.gpu_ids` selections also acquire the corresponding device leases.
+
 ## Reusable GitHub Actions
 
 Caller repositories should keep a thin workflow:
@@ -130,10 +137,11 @@ python3 .ci/ci_agent.py cancel <task-id>
 ```
 
 Task state is stored under `/var/lib/ci-agent` by default. The agent uses JSON
-task files, atomic writes, and per-platform lock files. If resources are busy,
-the task waits up to `resources.queue_timeout` seconds before it is marked as
-`resource_timeout`. A job passes only when the command exits with code 0 and the
-configured JUnit XML exists with no failures or errors.
+task files, atomic writes, and per-platform task lock files. Device exclusivity
+is handled by the shared resource lease directory described above. If resources
+are busy, the task waits up to `resources.queue_timeout` seconds before it is
+marked as `resource_timeout`. A job passes only when the command exits with code
+0 and the configured JUnit XML exists with no failures or errors.
 
 ## Validation
 
