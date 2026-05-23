@@ -278,6 +278,7 @@ jobs:
           RESULT_DIR: None
           TEST: None
           LOCAL: True
+          EXECUTION_MODE: ${{ matrix.execution_mode }}
         run: |
           PYTHONPATH=.ci python3 - <<'PY'
           import os
@@ -326,7 +327,7 @@ jobs:
           commit = get_git_commit()
           results_base = Path(env_opt("RESULT_DIR") or "ci-results")
           results_dir = build_results_dir(results_base, platform, stages, commit)
-          uses_local_runner = platform in {"nvidia", "iluvatar", "ascend"}
+          uses_local_runner = env_opt("EXECUTION_MODE") == "agent_local"
           gpu_id_override = env_opt("GPU_ID")
 
           if not uses_local_runner:
@@ -383,7 +384,7 @@ jobs:
           PY
 
       - name: Run local Unit Test with host device lease
-        if: ${{ matrix.platform == 'nvidia' || matrix.platform == 'iluvatar' || matrix.platform == 'ascend' }}
+        if: ${{ matrix.execution_mode == 'agent_local' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}
@@ -412,7 +413,7 @@ jobs:
             --results-dir "${RESULT_DIR}"
 
       - name: Trigger ${{ matrix.platform }} Unit Test Task
-        if: ${{ matrix.platform != 'nvidia' && matrix.platform != 'iluvatar' && matrix.platform != 'ascend' }}
+        if: ${{ matrix.execution_mode != 'agent_local' }}
         working-directory: repo
         env:
           ${{ matrix.job_env }}

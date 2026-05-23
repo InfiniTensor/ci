@@ -12,6 +12,10 @@ def test_shadow_workflow_uses_agent_cli():
     assert "CI v2 Shadow" in text
     assert "actions/checkout" not in text
     assert "git checkout --force FETCH_HEAD" in text
+    assert (
+        "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" in text
+    )
+    assert "http.https://github.com/.extraheader" not in text
     assert "agent_unavailable" in text
     assert "started transient ci-agent daemon with state dir" in text
     assert 'local probe="${candidate}/locks/${{ matrix.platform }}.lock"' in text

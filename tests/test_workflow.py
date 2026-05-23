@@ -8,10 +8,7 @@ def test_local_unit_runs_through_run_py_without_scheduler():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "Run local Unit Test with host device lease" in text
-    assert (
-        "${{ matrix.platform == 'nvidia' || matrix.platform == 'iluvatar' || matrix.platform == 'ascend' }}"
-        in text
-    )
+    assert "${{ matrix.execution_mode == 'agent_local' }}" in text
     assert "PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py" in text
     assert 'eval "docker run ${DOCKER_ARGS}"' not in text
 
@@ -20,16 +17,14 @@ def test_scheduler_unit_step_skips_local_unit_platforms():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "Trigger ${{ matrix.platform }} Unit Test Task" in text
-    assert (
-        "${{ matrix.platform != 'nvidia' && matrix.platform != 'iluvatar' && matrix.platform != 'ascend' }}"
-        in text
-    )
+    assert "${{ matrix.execution_mode != 'agent_local' }}" in text
 
 
 def test_local_unit_platforms_defer_device_selection_to_run_py():
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert 'uses_local_runner = platform in {"nvidia", "iluvatar", "ascend"}' in text
+    assert 'uses_local_runner = env_opt("EXECUTION_MODE") == "agent_local"' in text
+    assert "EXECUTION_MODE: ${{ matrix.execution_mode }}" in text
     assert "if not uses_local_runner:" in text
     assert 'gpu_id_override = "all"' in text
     assert '--job "${{ matrix.id }}"' in text
