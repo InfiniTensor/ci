@@ -4,15 +4,16 @@ from pathlib import Path
 WORKFLOW = Path(".github/workflows/infiniops-ci.yml")
 
 
-def test_nvidia_unit_runs_directly_without_scheduler():
+def test_local_unit_runs_through_run_py_without_scheduler():
     text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "Run local Unit Test directly" in text
+    assert "Run local Unit Test with host device lease" in text
     assert (
         "${{ matrix.platform == 'nvidia' || matrix.platform == 'iluvatar' || matrix.platform == 'ascend' }}"
         in text
     )
-    assert 'eval "docker run ${DOCKER_ARGS}"' in text
+    assert "PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py" in text
+    assert 'eval "docker run ${DOCKER_ARGS}"' not in text
 
 
 def test_scheduler_unit_step_skips_local_unit_platforms():
@@ -25,13 +26,14 @@ def test_scheduler_unit_step_skips_local_unit_platforms():
     )
 
 
-def test_local_unit_platforms_use_resource_pool_for_auto_gpus():
+def test_local_unit_platforms_defer_device_selection_to_run_py():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert 'uses_local_runner = platform in {"nvidia", "iluvatar", "ascend"}' in text
-    assert "if not gpu_id_override and not uses_local_runner:" in text
+    assert "if not uses_local_runner:" in text
     assert 'gpu_id_override = "all"' in text
-    assert 'if not gpu_id_override and raw_gpu_ids == "auto":' in text
+    assert '--job "${{ matrix.id }}"' in text
+    assert '--results-dir "${RESULT_DIR}"' in text
 
 
 def test_workflow_fails_queued_jobs_after_thirty_minutes():
