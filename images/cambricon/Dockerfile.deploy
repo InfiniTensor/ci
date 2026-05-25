@@ -27,6 +27,7 @@ RUN dnf install -y dnf-plugins-core && \
         pkgconf-pkg-config \
         ca-certificates \
         boost-devel \
+        boost-stacktrace \
         libffi-devel \
         openssl-devel \
     && dnf clean all
@@ -53,6 +54,9 @@ ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
+# libpython3.10.a is static; xmake's pybind11 link check needs these extras.
+ENV LDFLAGS="-ldl -lpthread -lutil"
+ENV LIBS="-ldl -lpthread -lutil"
 
 WORKDIR /workspace
 
