@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=cambricon/pytorch:v1.25.3-torch2.1-anolisos8.8-py310
 FROM ${BASE_IMAGE}
 
+ENV PATH="/usr/local/python3.10/bin:${PATH}"
+
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
@@ -28,9 +30,9 @@ RUN dnf install -y dnf-plugins-core && \
     && dnf clean all
 
 ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
-RUN python -m pip config set global.index-url "${PIP_INDEX_URL}" && \
-    python -m pip install --no-cache-dir --upgrade pip -i "${PIP_INDEX_URL}" && \
-    python -m pip install --no-cache-dir -i "${PIP_INDEX_URL}" \
+RUN pip config set global.index-url "${PIP_INDEX_URL}" && \
+    pip install --no-cache-dir --upgrade pip -i "${PIP_INDEX_URL}" && \
+    pip install --no-cache-dir -i "${PIP_INDEX_URL}" \
         transformers \
         pyyaml \
         uvicorn \
@@ -62,12 +64,12 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 RUN xmake repo -u
 
 RUN xmake f -y --cambricon-mlu=y --ccl=y -cv
-RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && python -m pip install -e . -i "${PIP_INDEX_URL}"
+RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e . -i "${PIP_INDEX_URL}"
 
 WORKDIR /workspace/InfiniLM
 
 COPY . ./
 
-RUN xmake build -y _infinilm && xmake install _infinilm && python -m pip install -e . -i "${PIP_INDEX_URL}"
+RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
 
 WORKDIR /workspace
