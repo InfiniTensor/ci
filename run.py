@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 import uuid
 import xml.etree.ElementTree as ET
 from datetime import datetime
@@ -245,6 +246,11 @@ def build_docker_args(
     ngpus = resources.get("ngpus")
     gpu_style = resources.get("gpu_style", GPU_STYLE_NVIDIA)
 
+    if platform == "ascend" and gpu_style == GPU_STYLE_NONE and not gpu_id:
+        raise ValueError(
+            "Ascend jobs with `gpu_ids=auto` require a resolved device lease."
+        )
+
     if gpu_style == GPU_STYLE_NVIDIA:
         if gpu_id:
             if gpu_id == "all":
@@ -433,6 +439,14 @@ def main():
 
     job_names = resolve_job_names(jobs, platform, job=args.job)
     failed = 0
+    resource_lock_dir = args.resource_lock_dir
+    dry_run_lock_dir = None
+
+    if args.dry_run and resource_lock_dir is None:
+        dry_run_lock_dir = tempfile.TemporaryDirectory(
+            prefix="infinitensor-ci-dry-run-locks-"
+        )
+        resource_lock_dir = Path(dry_run_lock_dir.name)
 
     for job_name in job_names:
         job = jobs[job_name]
@@ -475,7 +489,7 @@ def main():
             or (not gpu_id_override and raw_gpu_ids == "auto")
         ):
             lease_manager = DeviceLeaseManager(
-                platform, lock_dir=args.resource_lock_dir
+                platform, lock_dir=resource_lock_dir
             )
             gpu_count = (
                 len(lease_manager._pool.detect_gpus())
@@ -570,6 +584,9 @@ def main():
                     file=sys.stderr,
                 )
                 failed += 1
+
+    if dry_run_lock_dir is not None:
+        dry_run_lock_dir.cleanup()
 
     sys.exit(1 if failed else 0)
 

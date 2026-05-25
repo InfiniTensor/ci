@@ -298,6 +298,22 @@ def test_docker_args_ascend_selected_device():
     assert "--device=/dev/davinci3:/dev/davinci0" in args
 
 
+def test_docker_args_ascend_auto_requires_resolved_device():
+    config = _make_platform_config("ascend", job_suffix="npu")
+    job_name = "ascend_npu"
+
+    with pytest.raises(ValueError, match="resolved device lease"):
+        run.build_docker_args(
+            config,
+            job_name,
+            "https://github.com/example/repo.git",
+            "master",
+            config["jobs"][job_name]["stages"],
+            "/workspace",
+            None,
+        )
+
+
 def test_config_ascend_does_not_pin_davinci0():
     config = load_config(Path("config.yml"))
     docker_args = config["jobs"]["ascend_npu"].get("docker_args", [])
