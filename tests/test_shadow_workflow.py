@@ -49,46 +49,25 @@ def test_shadow_prepare_preflights_runner_availability_before_matrix_jobs_start(
         "CI_RUNNER_STATUS_TOKEN is not configured; skipping preflight runner availability check."
         in text
     )
-    assert "Queued-job watchdog remains enabled as a fallback." in text
+    assert "GitHub Actions will keep matching jobs queued until a runner is available." in text
     assert "/actions/runners?per_page=100" in text
     assert "No registered self-hosted runner label before starting CI v2 jobs:" in text
     assert (
         "No online self-hosted runner currently available; "
-        "queued-job watchdog will allow recovery:" in text
+        "matching CI v2 jobs will remain queued:" in text
     )
     assert "job=run-unittest-shadow" in text
 
 
-def test_shadow_workflow_fails_queued_jobs_after_thirty_minutes():
+def test_shadow_workflow_does_not_create_queue_watchdog_check():
     workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     jobs = workflow["jobs"]
+    text = WORKFLOW.read_text(encoding="utf-8")
 
-    assert "queue-watchdog" in jobs
-    watchdog = jobs["queue-watchdog"]
-    assert (
-        watchdog["if"]
-        == "contains(fromJSON(needs.prepare.outputs.job_types_with_jobs), 'unittest')"
-    )
-    assert watchdog["runs-on"] == "ubuntu-latest"
-
-    step = watchdog["steps"][0]
-    assert step["env"]["QUEUE_TIMEOUT_SECONDS"] == 1800
-    assert step["env"]["POLL_INTERVAL_SECONDS"] == 15
-    assert (
-        step["env"]["MATRIX_JSON"]
-        == "${{ needs.prepare.outputs.matrix_json_for_unittest }}"
-    )
-    assert 'sleep "${QUEUE_TIMEOUT_SECONDS}"' not in step["run"]
-    assert 'job.get("status") == "queued"' in step["run"]
-    assert "/actions/runners?per_page=100" in step["run"]
-    assert "CI v2 queued jobs have no registered self-hosted runner:" in step["run"]
-    assert (
-        "CI v2 queued jobs have no online self-hosted runner; "
-        "waiting up to 30 minutes for recovery:" in step["run"]
-    )
-    assert "falling back to queued timeout" in step["run"]
-    assert "All expected CI v2 platform jobs have started." in step["run"]
-    assert "Failed to confirm CI v2 runner availability before timeout." not in step["run"]
+    assert "queue-watchdog" not in jobs
+    assert "Fail queued CI v2 jobs after 30 minutes" not in text
+    assert "QUEUE_TIMEOUT_SECONDS" not in text
+    assert "POLL_INTERVAL_SECONDS" not in text
 
 
 def test_shadow_matrix_job_is_strict_except_wait_step_for_artifact_collection():
