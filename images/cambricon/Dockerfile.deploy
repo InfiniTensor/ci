@@ -1,15 +1,8 @@
 ARG BASE_IMAGE=cambricon/pytorch:v1.25.3-torch2.1-anolisos8.8-py310
 FROM ${BASE_IMAGE}
 
-COPY .ci/images/cambricon/patch-xmake-python.py /usr/local/bin/patch-xmake-python.py
-
 ENV PATH="/usr/local/python3.10/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:${LD_LIBRARY_PATH}"
-
-RUN echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-RUN echo "ls -lah /usr/local/python3.10/lib/libpython3.10.so"
-RUN echo "find / -name libpython*.so"
-RUN echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
 
 RUN ln -sf python3.10 /usr/local/python3.10/bin/python3 && \
     ln -sf python3.10 /usr/local/python3.10/bin/python
@@ -38,7 +31,36 @@ RUN dnf install -y dnf-plugins-core && \
         boost-stacktrace \
         libffi-devel \
         openssl-devel \
+        zlib-devel \
+        bzip2-devel \
+        readline-devel \
+        sqlite-devel \
+        ncurses-devel \
+        xz-devel \
+        expat-devel \
     && dnf clean all
+
+# Base image only ships static libpython3.10.a; build shared libpython for pybind11 modules.
+ARG PYTHON_MIRROR=https://mirrors.tuna.tsinghua.edu.cn/python
+RUN PY_PREFIX=/usr/local/python3.10 && \
+    PY_LIB="${PY_PREFIX}/lib" && \
+    PYTHON_VER=$(python3.10 -c 'import sys; print("%s.%s.%s" % sys.version_info[:3])') && \
+    PYTHON_MM=$(python3.10 -c 'import sys; print("%s.%s" % sys.version_info[:2])') && \
+    curl -fsSL "${PYTHON_MIRROR}/${PYTHON_VER}/Python-${PYTHON_VER}.tgz" -o /tmp/Python.tgz && \
+    tar xzf /tmp/Python.tgz -C /tmp && \
+    cd "/tmp/Python-${PYTHON_VER}" && \
+    ./configure --prefix="${PY_PREFIX}" --enable-shared --with-system-ffi \
+        CFLAGS="-fPIC" LDFLAGS="-Wl,-rpath=${PY_PREFIX}/lib" && \
+    make -j"$(nproc)" "libpython${PYTHON_MM}.so" && \
+    cp -a libpython*.so* "${PY_LIB}/" && \
+    SO_FILE=$(ls "${PY_LIB}/libpython${PYTHON_MM}.so."* | head -1) && \
+    ln -sf "$(basename "${SO_FILE}")" "${PY_LIB}/libpython${PYTHON_MM}.so" && \
+    if [ -f "${PY_LIB}/libpython${PYTHON_MM}.a" ]; then \
+        mv "${PY_LIB}/libpython${PYTHON_MM}.a" "${PY_LIB}/libpython${PYTHON_MM}.a.static"; \
+    fi && \
+    echo "${PY_PREFIX}/lib" > /etc/ld.so.conf.d/cambricon-python310.conf && \
+    ldconfig && \
+    rm -rf /tmp/Python*
 
 ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip config set global.index-url "${PIP_INDEX_URL}" && \
@@ -63,30 +85,6 @@ ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
-# Static libpython3.10.a cannot be linked into .so modules (non-PIC on aarch64).
-# Force shared libpython for xmake/pybind11, and wrap g++ for -ldl on link steps.
-RUN PY_LIB=/usr/local/python3.10/lib && \
-    if [ -f "${PY_LIB}/libpython3.10.so.1.0" ] && [ ! -e "${PY_LIB}/libpython3.10.so" ]; then \
-        ln -sf libpython3.10.so.1.0 "${PY_LIB}/libpython3.10.so"; \
-    fi && \
-    if ls ${PY_LIB}/libpython3.10.so* >/dev/null 2>&1 && [ -f ${PY_LIB}/libpython3.10.a ]; then \
-        mv ${PY_LIB}/libpython3.10.a ${PY_LIB}/libpython3.10.a.static; \
-    fi && \
-    for gxx in /usr/local/gcc-11.4.0/bin/g++ /usr/local/gcc-11.4.0/bin/c++ /usr/bin/g++ /usr/bin/c++; do \
-        [ -x "$gxx" ] || continue; \
-        [ -x "${gxx}.real" ] && continue; \
-        mv "$gxx" "${gxx}.real"; \
-        printf '%s\n' \
-            '#!/bin/sh' \
-            "real=\"${gxx}.real\"" \
-            'for arg in "$@"; do' \
-            '  case "$arg" in -c|-E|-S|-M|-MM) exec "$real" "$@" ;; esac' \
-            'done' \
-            'exec "$real" "$@" -ldl -lpthread -lutil' \
-            > "$gxx"; \
-        chmod +x "$gxx"; \
-    done
-
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH
@@ -95,9 +93,6 @@ RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 WORKDIR /workspace/InfiniCore
 
 RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
-
-# Cambricon ships static libpython only; link pybind11 modules without libpython.a.
-RUN python3 /usr/local/bin/patch-xmake-python.py xmake.lua
 
 RUN xmake repo -u
 
@@ -108,12 +103,6 @@ RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake insta
 WORKDIR /workspace/InfiniLM
 
 COPY . ./
-
-RUN python3 /usr/local/bin/patch-xmake-python.py xmake.lua && \
-    if [ -f xmake.lua ]; then \
-        rm -rf /root/.xmake/cache/packages/*/p/python* /root/.xmake/packages/p/python*; \
-        xmake f -y -c -cv; \
-    fi
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
 
