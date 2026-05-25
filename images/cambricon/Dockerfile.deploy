@@ -27,9 +27,10 @@ RUN dnf install -y dnf-plugins-core && \
         openssl-devel \
     && dnf clean all
 
-ARG PIP_INDEX_URL
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir \
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+RUN python -m pip config set global.index-url "${PIP_INDEX_URL}" && \
+    python -m pip install --no-cache-dir --upgrade pip -i "${PIP_INDEX_URL}" && \
+    python -m pip install --no-cache-dir -i "${PIP_INDEX_URL}" \
         transformers \
         pyyaml \
         uvicorn \
@@ -61,12 +62,12 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 RUN xmake repo -u
 
 RUN xmake f -y --cambricon-mlu=y --ccl=y -cv
-RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
+RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && python -m pip install -e . -i "${PIP_INDEX_URL}"
 
 WORKDIR /workspace/InfiniLM
 
 COPY . ./
 
-RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e .
+RUN xmake build -y _infinilm && xmake install _infinilm && python -m pip install -e . -i "${PIP_INDEX_URL}"
 
 WORKDIR /workspace
