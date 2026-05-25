@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=cambricon/pytorch:v1.25.3-torch2.1-anolisos8.8-py310
 FROM ${BASE_IMAGE}
 
+COPY .ci/images/cambricon/patch-xmake-python.py /usr/local/bin/patch-xmake-python.py
+
 ENV PATH="/usr/local/python3.10/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:${LD_LIBRARY_PATH}"
 
@@ -89,6 +91,9 @@ WORKDIR /workspace/InfiniCore
 
 RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
+# Cambricon ships static libpython only; link pybind11 modules without libpython.a.
+RUN python3 /usr/local/bin/patch-xmake-python.py xmake.lua
+
 RUN xmake repo -u
 
 RUN rm -rf /root/.xmake/cache/packages/*/p/python* /root/.xmake/packages/p/python*
@@ -98,6 +103,12 @@ RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake insta
 WORKDIR /workspace/InfiniLM
 
 COPY . ./
+
+RUN python3 /usr/local/bin/patch-xmake-python.py xmake.lua && \
+    if [ -f xmake.lua ]; then \
+        rm -rf /root/.xmake/cache/packages/*/p/python* /root/.xmake/packages/p/python*; \
+        xmake f -y -c -cv; \
+    fi
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
 
