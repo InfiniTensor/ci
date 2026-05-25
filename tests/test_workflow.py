@@ -47,7 +47,8 @@ def test_workflow_fails_queued_jobs_after_thirty_minutes():
         "waiting up to 30 minutes for recovery:" in text
     )
     assert "CI jobs still queued after 30 minutes:" in text
-    assert "All expected CI platform jobs completed." in text
+    assert "All expected CI platform jobs have started." in text
+    assert "Failed to confirm CI runner availability before timeout." not in text
 
 
 def test_prepare_preflights_runner_availability_before_matrix_jobs_start():

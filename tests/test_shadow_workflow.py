@@ -87,7 +87,8 @@ def test_shadow_workflow_fails_queued_jobs_after_thirty_minutes():
         "waiting up to 30 minutes for recovery:" in step["run"]
     )
     assert "falling back to queued timeout" in step["run"]
-    assert "All expected CI v2 platform jobs completed." in step["run"]
+    assert "All expected CI v2 platform jobs have started." in step["run"]
+    assert "Failed to confirm CI v2 runner availability before timeout." not in step["run"]
 
 
 def test_shadow_matrix_job_is_strict_except_wait_step_for_artifact_collection():

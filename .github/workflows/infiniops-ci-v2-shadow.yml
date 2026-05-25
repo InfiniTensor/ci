@@ -605,16 +605,15 @@ jobs:
                               "falling back to queued timeout.",
                               file=sys.stderr,
                           )
-                          runners_api_warning_printed = True
-                      if time.monotonic() >= deadline:
-                          print("Failed to confirm CI v2 runner availability before timeout.", file=sys.stderr)
                           print(f"Last GitHub API error: {exc}", file=sys.stderr)
-                          sys.exit(1)
+                          runners_api_warning_printed = True
 
-              if len(platform_jobs) == len(expected_platforms) and all(
-                  job.get("status") == "completed" for job in platform_jobs.values()
+              if (
+                  len(platform_jobs) == len(expected_platforms)
+                  and not queued
+                  and not missing
               ):
-                  print("All expected CI v2 platform jobs completed.")
+                  print("All expected CI v2 platform jobs have started.")
                   sys.exit(0)
 
               if time.monotonic() >= deadline:
