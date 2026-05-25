@@ -75,7 +75,8 @@ RUN pip config set global.index-url "${PIP_INDEX_URL}" && \
         pybind11 \
         xxhash \
         ml_dtypes \
-        datasets
+        datasets \
+        Pillow
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
