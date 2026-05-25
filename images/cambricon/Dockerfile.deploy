@@ -54,9 +54,27 @@ ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
-# libpython3.10.a is static; xmake's pybind11 link check needs these extras.
-ENV LDFLAGS="-ldl -lpthread -lutil"
-ENV LIBS="-ldl -lpthread -lutil"
+
+# libpython3.10.a is static; xmake's pybind11 on_test links without -ldl.
+# Prefer shared libpython when available, and wrap g++ to append dl/pthread/util on link steps.
+RUN PY_LIB=/usr/local/python3.10/lib && \
+    if ls ${PY_LIB}/libpython3.10.so* >/dev/null 2>&1 && [ -f ${PY_LIB}/libpython3.10.a ]; then \
+        mv ${PY_LIB}/libpython3.10.a ${PY_LIB}/libpython3.10.a.static; \
+    fi && \
+    for gxx in /usr/local/gcc-11.4.0/bin/g++ /usr/local/gcc-11.4.0/bin/c++ /usr/bin/g++ /usr/bin/c++; do \
+        [ -x "$gxx" ] || continue; \
+        [ -x "${gxx}.real" ] && continue; \
+        mv "$gxx" "${gxx}.real"; \
+        printf '%s\n' \
+            '#!/bin/sh' \
+            "real=\"${gxx}.real\"" \
+            'for arg in "$@"; do' \
+            '  case "$arg" in -c|-E|-S|-M|-MM) exec "$real" "$@" ;; esac' \
+            'done' \
+            'exec "$real" "$@" -ldl -lpthread -lutil' \
+            > "$gxx"; \
+        chmod +x "$gxx"; \
+    done
 
 WORKDIR /workspace
 
