@@ -2,6 +2,7 @@ ARG BASE_IMAGE=cambricon/pytorch:v1.25.3-torch2.1-anolisos8.8-py310
 FROM ${BASE_IMAGE}
 
 ENV PATH="/usr/local/python3.10/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:${LD_LIBRARY_PATH}"
 
 RUN ln -sf python3.10 /usr/local/python3.10/bin/python3 && \
     ln -sf python3.10 /usr/local/python3.10/bin/python
@@ -52,12 +53,15 @@ RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV INFINI_ROOT="/root/.infini"
-ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
+ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
-# libpython3.10.a is static; xmake's pybind11 on_test links without -ldl.
-# Prefer shared libpython when available, and wrap g++ to append dl/pthread/util on link steps.
+# Static libpython3.10.a cannot be linked into .so modules (non-PIC on aarch64).
+# Force shared libpython for xmake/pybind11, and wrap g++ for -ldl on link steps.
 RUN PY_LIB=/usr/local/python3.10/lib && \
+    if [ -f "${PY_LIB}/libpython3.10.so.1.0" ] && [ ! -e "${PY_LIB}/libpython3.10.so" ]; then \
+        ln -sf libpython3.10.so.1.0 "${PY_LIB}/libpython3.10.so"; \
+    fi && \
     if ls ${PY_LIB}/libpython3.10.so* >/dev/null 2>&1 && [ -f ${PY_LIB}/libpython3.10.a ]; then \
         mv ${PY_LIB}/libpython3.10.a ${PY_LIB}/libpython3.10.a.static; \
     fi && \
@@ -87,7 +91,8 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake repo -u
 
-RUN xmake f -y --cambricon-mlu=y --ccl=y -cv
+RUN rm -rf /root/.xmake/cache/packages/*/p/python* /root/.xmake/packages/p/python*
+RUN xmake f -y --cambricon-mlu=y --ccl=y -c -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e . -i "${PIP_INDEX_URL}"
 
 WORKDIR /workspace/InfiniLM
