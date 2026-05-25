@@ -6,6 +6,11 @@ COPY .ci/images/cambricon/patch-xmake-python.py /usr/local/bin/patch-xmake-pytho
 ENV PATH="/usr/local/python3.10/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/usr/local/python3.10/lib:${LD_LIBRARY_PATH}"
 
+RUN echo "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+RUN echo "ls -lah /usr/local/python3.10/lib/libpython3.10.so"
+RUN echo "find / -name libpython*.so"
+RUN echo "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+
 RUN ln -sf python3.10 /usr/local/python3.10/bin/python3 && \
     ln -sf python3.10 /usr/local/python3.10/bin/python
 
