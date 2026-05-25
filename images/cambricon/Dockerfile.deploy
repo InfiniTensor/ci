@@ -1,8 +1,6 @@
 ARG BASE_IMAGE=cambricon/pytorch:v1.25.3-torch2.1-anolisos8.8-py310
 FROM ${BASE_IMAGE}
 
-ENV DEBIAN_FRONTEND=noninteractive
-
 ARG HTTP_PROXY
 ARG HTTPS_PROXY
 ARG NO_PROXY
@@ -10,26 +8,24 @@ ARG http_proxy
 ARG https_proxy
 ARG no_proxy
 
-ARG APT_MIRROR
-RUN if [ -n "$APT_MIRROR" ]; then \
-        sed -i "s|http://[^/]*/ubuntu|${APT_MIRROR}|g" /etc/apt/sources.list; \
-    fi && \
-    apt-get update && \
-    apt-get install -y --no-install-recommends \
+RUN dnf install -y dnf-plugins-core && \
+    (dnf config-manager --set-enabled powertools || dnf config-manager --set-enabled crb || true) && \
+    dnf install -y \
         git \
         cmake \
         ninja-build \
         curl \
         tar \
-        build-essential \
-        pkg-config \
-        python3-dev \
+        gcc \
+        gcc-c++ \
+        make \
+        pkgconf-pkg-config \
+        python3-devel \
         ca-certificates \
-        libboost-dev \
-        libboost-stacktrace-dev \
-        libffi-dev \
-        libssl-dev \
-    && rm -rf /var/lib/apt/lists/*
+        boost-devel \
+        libffi-devel \
+        openssl-devel \
+    && dnf clean all
 
 ARG PIP_INDEX_URL
 RUN pip install --no-cache-dir --upgrade pip && \
