@@ -342,7 +342,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "${RESULT_DIR}"
-          command="PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py --config '${CONFIG_PATH}' --job '${JOB_ID}' --local --image-tag '${SHORT_SHA}' --results-dir '${RESULT_DIR}'"
+          command="PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py --config '${CONFIG_PATH}' --platform '${{ matrix.platform }}' --job '${JOB_ID}' --local --image-tag '${SHORT_SHA}' --results-dir '${RESULT_DIR}'"
           task_id="$(python3 .ci/ci_agent.py submit \
             --id "${TASK_ID}" \
             --platform "${{ matrix.platform }}" \

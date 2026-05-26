@@ -20,6 +20,7 @@ def test_shadow_workflow_uses_agent_cli():
     assert "started transient ci-agent daemon with state dir" in text
     assert 'local probe="${candidate}/locks/${{ matrix.platform }}.lock"' in text
     assert "ci_agent.py submit" in text
+    assert "--platform '${{ matrix.platform }}'" in text
     assert "ci_agent.py wait" in text
     assert "ci_agent.py collect" in text
     assert "ci_agent.py cancel" in text

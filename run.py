@@ -370,6 +370,11 @@ def main():
         "--branch", type=str, help="Override repo branch (default: config repo.branch)"
     )
     parser.add_argument(
+        "--platform",
+        type=str,
+        help="Override platform detection (for agent jobs on hosts without vendor CLIs)",
+    )
+    parser.add_argument(
         "--job",
         type=str,
         help="Job name: short name (gpu) or full name (nvidia_gpu). Default: all jobs",
@@ -422,7 +427,7 @@ def main():
     repo_url = repo.get("url", "https://github.com/InfiniTensor/InfiniOps.git")
     branch = args.branch or repo.get("branch", "master")
 
-    platform = detect_platform()
+    platform = args.platform or detect_platform()
 
     if not platform:
         tools = ", ".join(ResourcePool.GPU_QUERY_TOOLS.values())
