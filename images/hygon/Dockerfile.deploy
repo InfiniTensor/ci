@@ -60,6 +60,6 @@ RUN xmake repo -u
 
 COPY . ./
 
-RUN xmake build -y _infinilm && xmake install _infinilm && INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation
+RUN source /opt/dtk/env.sh && source /opt/dtk/cuda/cuda-12/env.sh && xmake build -y _infinilm && xmake install _infinilm && INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation
 
 WORKDIR /workspace
