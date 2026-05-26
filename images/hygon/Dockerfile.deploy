@@ -57,6 +57,20 @@ ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
 ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 
+WORKDIR /workspace
+
+ARG InfiniCore_BRANCH
+RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
+
+WORKDIR /workspace/InfiniCore
+
+RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
+
+RUN xmake repo -u
+
+RUN xmake f -y --hygon-npu=y --ccl=y --graph=y -cv
+RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
+
 WORKDIR /workspace/InfiniLM
 
 RUN xmake repo -u
