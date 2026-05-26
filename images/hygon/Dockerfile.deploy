@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nvcr.io/nvidia/pytorch:25.12-py3
+ARG BASE_IMAGE=harbor.sourcefind.cn:5443/dcu/admin/base/custom:vllm015-ubuntu22.04-dtk26.04-0409-modelzoo:5e4e1ced6f9d
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -21,62 +21,45 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         ninja-build \
         curl \
         tar \
+        build-essential \
+        pkg-config \
+        python3-dev \
+        ca-certificates \
+        libboost-dev \
+        libboost-stacktrace-dev \
+        libffi-dev \
+        libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    transformers \
-    pyyaml \
-    uvicorn \
-    janus \
-    fastapi \
-    openai
+        transformers \
+        pyyaml \
+        uvicorn \
+        janus \
+        fastapi \
+        openai \
+        pybind11 \
+        xxhash \
+        ml_dtypes \
+        datasets
 
 ENV XMAKE_ROOT=y
 RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
-ENV CPATH=/usr/local/cuda/include
-ENV LIBRARY_PATH=/usr/local/cuda/lib64
-ENV INFINI_ROOT="/root/.infinici"
+ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
-ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
-
-WORKDIR /workspace
-
-ARG InfiniCore_BRANCH
-RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
-
-WORKDIR /workspace/InfiniCore
-RUN git switch ${InfiniCore_BRANCH}
-
-WORKDIR /workspace/InfiniCore/third_party
-
-RUN git clone https://github.com/Dao-AILab/flash-attention.git && \
-    git clone https://github.com/NVIDIA/cutlass.git && \
-    cd flash-attention && \
-    git checkout 10846960ca0793b993446f6dbaf696479c127a9d && \
-    cd ../cutlass && \
-    git checkout 087c84df83d254b5fb295a7a408f1a1d554085cf
-
-ENV CUTLASS_HOME=/workspace/InfiniCore/third_party/cutlass/include/ \
-    CUTLASS_ROOT=/workspace/InfiniCore/third_party/cutlass
-ENV PATH=${CUTLASS_HOME}:${PATH}
-
-WORKDIR /workspace/InfiniCore
-
-RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
-RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
+ENV LD_LIBRARY_PATH=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'):$LD_LIBRARY_PATH
+ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
 WORKDIR /workspace/InfiniLM
 
+RUN xmake repo -u
+
 COPY . ./
 
-RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e .
-
-WORKDIR /root
-
-COPY .ci/images/nvidia/.bashrc ./
+RUN xmake build -y _infinilm && xmake install _infinilm && INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation
 
 WORKDIR /workspace
