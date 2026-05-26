@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=harbor.sourcefind.cn:5443/dcu/admin/base/custom:vllm015-ubuntu22.04-dtk26.04-0409-modelzoo:5e4e1ced6f9d
+ARG BASE_IMAGE=image.sourcefind.cn:5000/dcu/admin/base/pytorch:2.4.1-ubuntu22.04-dtk25.04.1-py3.10
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
