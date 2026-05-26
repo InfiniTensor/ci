@@ -51,7 +51,7 @@ ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
-ENV LD_LIBRARY_PATH=$(python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))'):$LD_LIBRARY_PATH
+RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
 ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
 WORKDIR /workspace/InfiniLM
