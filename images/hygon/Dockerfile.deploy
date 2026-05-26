@@ -68,7 +68,7 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake repo -u
 
-RUN xmake f -y --hygon-npu=y --ccl=y --graph=y -cv
+RUN xmake f -y --hygon-dcu=y --ccl=y --graph=y -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
 WORKDIR /workspace/InfiniLM
