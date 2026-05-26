@@ -1,6 +1,9 @@
 ARG BASE_IMAGE=image.sourcefind.cn:5000/dcu/admin/base/pytorch:2.4.1-ubuntu22.04-dtk25.04.1-py3.10
 FROM ${BASE_IMAGE}
 
+# DTK env.sh uses bash syntax; default /bin/sh (dash) causes "Bad substitution".
+SHELL ["/bin/bash", "-c"]
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 ARG HTTP_PROXY
@@ -52,7 +55,7 @@ ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 ENV INFINI_ROOT="/root/.infini"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
-ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
+ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 
 WORKDIR /workspace/InfiniLM
 
@@ -60,6 +63,8 @@ RUN xmake repo -u
 
 COPY . ./
 
-RUN . /opt/dtk/env.sh && . /opt/dtk/cuda/cuda-12/env.sh && xmake build -y _infinilm && xmake install _infinilm && INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation
+RUN source /opt/dtk/env.sh && source /opt/dtk/cuda/cuda-12/env.sh && \
+    xmake build -y _infinilm && xmake install _infinilm && \
+    INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation ${PIP_INDEX_URL:+-i "${PIP_INDEX_URL}"}
 
 WORKDIR /workspace
