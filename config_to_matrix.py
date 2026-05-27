@@ -268,25 +268,36 @@ def convert_by_job_type(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return {k: {"include": v} for k, v in sorted(grouped.items())}
 
 
-def inferencetest_deploy_build_matrix(
-    matrices_by_type: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    """Matrix for the standalone inference deploy-image job: one row per distinct platform."""
-    inf = matrices_by_type.get("inferencetest")
-    if not inf:
-        return {"include": []}
-    platforms: list[str] = []
-    for entry in inf.get("include", []) or []:
-        if not isinstance(entry, dict):
+def deploy_build_matrix(config: dict[str, Any]) -> dict[str, Any]:
+    """Matrix for deploy-image build jobs: one row per platform in ``config['images']``.
+
+    Each row carries ``dockerfile`` (``Dockerfile.deploy`` under the image directory)
+    and ``build_args`` from the platform image config—not from any test-type matrix,
+    since not every platform defines every job type (e.g. inferencetest).
+    """
+    images = config.get("images", {}) or {}
+    include: list[dict[str, Any]] = []
+    for platform in sorted(images):
+        image_cfg = images[platform]
+        if not isinstance(image_cfg, dict):
             continue
-        p = str(entry.get("platform", "")).strip()
-        if p and p not in platforms:
-            platforms.append(p)
-    return {"include": [{"platform": p} for p in platforms]}
+        dockerfile_dir = str(image_cfg.get("dockerfile", "")).rstrip("/")
+        dockerfile = f"{dockerfile_dir}/Dockerfile.deploy" if dockerfile_dir else ""
+        include.append(
+            {
+                "platform": platform,
+                "runner_label": platform,
+                "dockerfile": dockerfile,
+                "build_args": _normalize_build_args(image_cfg.get("build_args")),
+            }
+        )
+    return {"include": include}
 
 
 def write_github_matrix_outputs(
-    github_output: Path, matrices_by_type: dict[str, dict[str, Any]]
+    github_output: Path,
+    matrices_by_type: dict[str, dict[str, Any]],
+    config: dict[str, Any],
 ) -> None:
     types_ordered = sorted(matrices_by_type.keys())
     payload = json.dumps(types_ordered, ensure_ascii=True)
@@ -306,17 +317,10 @@ def write_github_matrix_outputs(
             f.write(body + "\n")
             f.write(f"{delim_m}\n")
 
-        infer_build = inferencetest_deploy_build_matrix(matrices_by_type)
-        inf_matrix = matrices_by_type.get("inferencetest")
-        inf_include = (inf_matrix or {}).get("include") or []
-        if inf_include and not infer_build.get("include"):
-            raise ValueError(
-                "inferencetest jobs are present but every job has an empty platform; "
-                "set a non-empty platform for each inferencetest job."
-            )
+        build_matrix = deploy_build_matrix(config)
         delim_ib = f"INF_BUILD_{uuid.uuid4().hex}"
         f.write(f"matrix_json_for_build<<{delim_ib}\n")
-        f.write(json.dumps(infer_build, ensure_ascii=True) + "\n")
+        f.write(json.dumps(build_matrix, ensure_ascii=True) + "\n")
         f.write(f"{delim_ib}\n")
 
 
@@ -350,7 +354,7 @@ def main() -> int:
             print("error: GITHUB_OUTPUT is not set", file=sys.stderr)
             return 1
         matrices = convert_by_job_type(config)
-        write_github_matrix_outputs(Path(out), matrices)
+        write_github_matrix_outputs(Path(out), matrices, config)
         return 0
 
     if args.dump_by_type:
