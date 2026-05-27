@@ -55,9 +55,6 @@ ENV PATH="/opt/dtk-25.04/cuda/bin:$PATH"
 RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
 ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 
-# Remove duplicates and empty paths from LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '^$' | awk '!seen[$0]++' | paste -sd: -)
-
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH
