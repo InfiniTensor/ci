@@ -55,6 +55,9 @@ ENV PATH="/opt/dtk-25.04/cuda/bin:$PATH"
 RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
 ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 
+# Remove duplicates and empty paths from LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$(echo "$LD_LIBRARY_PATH" | tr ':' '\n' | grep -v '^$' | awk '!seen[$0]++' | paste -sd: -)
+
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH
@@ -66,18 +69,16 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake repo -u
 
-RUN source /opt/dtk/env.sh && source /opt/dtk/cuda/cuda-12/env.sh && \
+RUN source /opt/dtk-25.04.1/env.sh && source /opt/dtk-25.04.1/cuda/env.sh && \
     xmake f -y --hygon-dcu=y --ccl=y --graph=y -cv
-RUN source /opt/dtk/env.sh && source /opt/dtk/cuda/cuda-12/env.sh && \
+RUN source /opt/dtk-25.04.1/env.sh && source /opt/dtk-25.04.1/cuda/env.sh && \
     xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
 WORKDIR /workspace/InfiniLM
 
-RUN xmake repo -u
-
 COPY . ./
 
-RUN source /opt/dtk/env.sh && source /opt/dtk/cuda/cuda-12/env.sh && \
+RUN source /opt/dtk-25.04.1/env.sh && source /opt/dtk-25.04.1/cuda/env.sh && \
     xmake build -y _infinilm && xmake install _infinilm && \
     INFINILM_ENABLE_HYGON=1 pip install -e . --no-build-isolation ${PIP_INDEX_URL:+-i "${PIP_INDEX_URL}"}
 
