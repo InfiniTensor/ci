@@ -44,7 +44,8 @@ def main():
 
     test_type = sys.argv[1]
     docker_args = sys.argv[2]
-    version = sys.argv[3]
+    test_param = sys.argv[3]
+    version = sys.argv[4]
 
     curr_dir = os.getcwd()
 
@@ -74,44 +75,12 @@ def main():
     log_path = ""
 
     if test_type == "Inference":
-        m = re.search(r"--tp=(\d+)", docker_args)
-        tp_num = m.group(1) if m else ""
-        target_file = f"InfiniLM_job_executor_for_InferenceTest_{tp_num}.sh"
+        target_file = f"InfiniLM_job_executor_for_InferenceTest_{test_param}.sh"
     elif test_type == "Bench":
-        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        if m:
-            s = m.group(1)
-            test_param = s.replace(" ", "_")
-        else:
-            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
-            if m:
-                test_param = m.group(1)
-            else:
-                test_param = ""
         target_file = f"InfiniLM_job_executor_for_BenchTest_{test_param}.sh"
-    elif test_type == "Service":
-        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        if m:
-            s = m.group(1)
-            test_param = s.replace(" ", "_")
-        else:
-            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
-            if m:
-                test_param = m.group(1)
-            else:
-                test_param = ""
+    elif test_type == "Service":        
         target_file = f"InfiniLM_job_executor_for_ServiceTest_{test_param}.sh"
     elif test_type == "Accuracy":
-        m = re.search(r"-e\s+\'TEST_PARAM=([^\']+)\'", docker_args)
-        if m:
-            s = m.group(1)
-            test_param = s.replace(" ", "_")
-        else:
-            m = re.search(r"-e\s+TEST_PARAM=([^\s]+)", docker_args)
-            if m:
-                test_param = m.group(1)
-            else:
-                test_param = ""
         target_file = f"InfiniLM_job_executor_for_AccuracyTest_{test_param}.sh"
 
     if test_type == "Service":
@@ -142,9 +111,11 @@ def main():
                     src_code += f"elif [ \"${{MODEL}}_${{GPU_MODEL}}\" == \"{name}_{card_type}\" ]; then\n"
                 src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh "
                 src_code += result
+                src_code += " ${TEST_PARAM}"
                 src_code += "\"\n"
                 src_code += "    EXEC_COMMAND+=\" "
                 src_code += result
+                src_code += " ${TEST_PARAM}"
                 src_code += " > $LOG_PATH/$LOG_NAME 2>&1 &\"\n"
         src_code += "fi\n"
         m = re.search(r"-v\s+(/[^:\s]+):/artifacts", docker_args)

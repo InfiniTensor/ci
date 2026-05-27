@@ -46,15 +46,15 @@ echo "##########################################################################
 
 if [ $ENGINE_TYPE == "InfiniLM" ]; then
     if [ -z $version ]; then
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
     else
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" $version`)
     fi
 elif [ $ENGINE_TYPE == "vLLM" ]; then
     if [ -z $version ]; then
-        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
     else
-        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_vLLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" $version`)
     fi
 fi
 
@@ -504,12 +504,8 @@ for name in "${!H800_server_list[@]}"; do
 done
 
 if [ $TEST_TYPE != "Service" ]; then
-    if [ $TEST_TYPE == "Inference" ]; then
-        GPU_QUANTITY=${TEST_PARAM}
-    else
-        GPU_QUANTITY=1
-    fi
-
+    GPU_QUANTITY=`echo "${TEST_PARAM}" | awk '{print $NF}'`
+    
     while true; do
         model="None"
         GPU_MODEL="A100"

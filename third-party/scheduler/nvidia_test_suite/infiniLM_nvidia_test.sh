@@ -551,11 +551,7 @@ else
     echo "*************开始执行 ${TEST_TYPE}Test 任务，日期时间:$(date +"%Y%m%d_%H%M%S")***************"
     model="None"
     gpu_model="A100"
-    if [ $TEST_TYPE == "Inference" ]; then
-        gpu_quantity=${TEST_PARAM}
-    else
-        gpu_quantity=1
-    fi
+    gpu_quantity=`echo "${TEST_PARAM}" | awk '{print $NF}'`
     
     test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
     filename="${log_name_suffix}_${TEST_TYPE}Test_${OPTIONS}.log"
