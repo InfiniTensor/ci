@@ -60,7 +60,7 @@ RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
 
-RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
+RUN git fetch origin musa_silu_and_mul && git checkout musa_silu_and_mul
 
 RUN xmake repo -u
 
