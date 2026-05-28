@@ -47,8 +47,6 @@ def main():
     test_param = sys.argv[3]
     version = sys.argv[4]
 
-    print(f"test_type={test_type}, docker_args={docker_args}, test_param={test_param}, version={version}")
-
     curr_dir = os.getcwd()
 
     yaml_candidates = [

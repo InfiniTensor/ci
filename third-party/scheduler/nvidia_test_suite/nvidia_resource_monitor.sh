@@ -40,9 +40,9 @@ if [ -z $MODEL_LIST ]; then
     exit 1
 fi
 
-echo "################################### Nvidia ######################################"
-echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
-echo "#################################################################################"
+echo "################################### Nvidia #############################################"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID ${TEST_PARAM// /_} $version"
+echo "########################################################################################"
 
 if [ $ENGINE_TYPE == "InfiniLM" ]; then
     if [ -z $version ]; then
