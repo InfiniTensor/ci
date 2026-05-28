@@ -516,7 +516,7 @@ if [ $TEST_TYPE != "Service" ]; then
             echo
             if [ $TEST_TYPE == "Inference" ]; then
                 inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${GPU_QUANTITY}_${log_name_suffix}_0.log
-                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${GPU_QUANTITY} ${version} > $inference_log 2>&1 &
+                $curr_dir/infiniLM_nvidia_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $inference_log 2>&1 &
             else
                 test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
                 log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
