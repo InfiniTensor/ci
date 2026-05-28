@@ -102,7 +102,7 @@ def main():
 
             result = re.sub(r"--port\s+\d+", "--port $PORT", args)
             result = re.sub(r"--node-rank\s+\d+", "--node-rank $NODE_RANK", result)
-            
+
             card_types = extract_card_types(GPU)
             for card_type in card_types:
                 if start:
