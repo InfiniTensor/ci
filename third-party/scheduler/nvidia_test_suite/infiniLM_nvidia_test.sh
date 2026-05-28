@@ -604,8 +604,8 @@ else
     # 清理工作
     for ip in ${server_list[@]}; do
         if [ $ENGINE_TYPE == "InfiniLM" ]; then
-            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${session_id}_0
-            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${session_id}_0
+            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_nvidia_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
         fi
     done
 
@@ -619,7 +619,7 @@ else
         --model "InfiniOps" \
         --gpu "A100" \
         --cmd "${launch_cmd}"
-    
+
     exit $err
 fi
 
