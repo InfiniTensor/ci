@@ -78,7 +78,7 @@ def main():
         target_file = f"InfiniLM_job_executor_for_InferenceTest_{test_param}.sh"
     elif test_type == "Bench":
         target_file = f"InfiniLM_job_executor_for_BenchTest_{test_param}.sh"
-    elif test_type == "Service":        
+    elif test_type == "Service":
         target_file = f"InfiniLM_job_executor_for_ServiceTest_{test_param}.sh"
     elif test_type == "Accuracy":
         target_file = f"InfiniLM_job_executor_for_AccuracyTest_{test_param}.sh"
