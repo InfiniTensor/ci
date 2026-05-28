@@ -38,8 +38,8 @@ def extract_card_types(card_type_str):
 
 
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: python script_generator_for_InfiniLM.py <test_type> <docker_args> <version>")
+    if len(sys.argv) != 5:
+        print("Usage: python script_generator_for_InfiniLM.py <test_type> <docker_args> <test_param> <version>")
         sys.exit(1)
 
     test_type = sys.argv[1]
