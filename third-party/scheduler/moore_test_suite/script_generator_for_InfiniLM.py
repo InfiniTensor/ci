@@ -4,14 +4,48 @@ import os
 import sys
 
 
+def clean_card_type(card_type):
+    """清理卡型，去掉括号中的内容和额外描述"""
+    if not card_type:
+        return None
+
+    card_type = str(card_type).strip()
+    card_type = re.sub(r'\s*\([^)]*\)', '', card_type)
+    card_type = re.sub(r'\s+[^\w/]+.*$', '', card_type)
+    return card_type.strip()
+
+
+def extract_card_types(card_type_str):
+    """从卡型字符串中提取所有卡型（可能包含多个，用顿号分隔）"""
+    if not card_type_str:
+        return []
+
+    card_type_str = str(card_type_str).strip()
+    card_types = [ct.strip() for ct in card_type_str.split('、')]
+
+    cleaned_cards = []
+    for ct in card_types:
+        cleaned = clean_card_type(ct)
+        if cleaned:
+            if '/' in cleaned:
+                parts = [p.strip() for p in cleaned.split('/')]
+                for part in parts:
+                    cleaned_cards.append(part)
+            else:
+                cleaned_cards.append(cleaned)
+
+    return cleaned_cards
+
+
 def main():
-    if len(sys.argv) != 4:
-        print("Usage: python script_generator_for_InfiniTensor.py <test_type> <docker_args> <version>")
+    if len(sys.argv) != 5:
+        print("Usage: python script_generator_for_InfiniLM.py <test_type> <docker_args> <test_param> <version>")
         sys.exit(1)
 
     test_type = sys.argv[1]
     docker_args = sys.argv[2]
-    version = sys.argv[3]
+    test_param = sys.argv[3]
+    version = sys.argv[4]
 
     curr_dir = os.getcwd()
 
@@ -40,64 +74,55 @@ def main():
     src_code = ""
     log_path = ""
 
-    if test_type == "Smoke":
-        target_file = "InfiniTensor_job_executor_for_SmokeTest.sh"
-    if test_type == "Unit":
-        target_file = "InfiniTensor_job_executor_for_UnitTest.sh"
-    elif test_type == "Performance":
-        target_file = "InfiniTensor_job_executor_for_PerformanceTest.sh"
-    elif test_type == "Stability":
-        target_file = "InfiniTensor_job_executor_for_StabilityTest.sh"
+    if test_type == "Inference":
+        target_file = f"InfiniLM_job_executor_for_InferenceTest_{test_param}.sh"
+    elif test_type == "Bench":
+        target_file = f"InfiniLM_job_executor_for_BenchTest_{test_param}.sh"
+    elif test_type == "Service":
+        target_file = f"InfiniLM_job_executor_for_ServiceTest_{test_param}.sh"
     elif test_type == "Accuracy":
-        target_file = "InfiniTensor_job_executor_for_AccuracyTest.sh"
+        target_file = f"InfiniLM_job_executor_for_AccuracyTest_{test_param}.sh"
 
-    if test_type != "Unit":
+    if test_type == "Service":
         model_list = ""
         start = True
         for model in models:
             name = (model or {}).get('model_name')
+            GPU = (model or {}).get('card_type')
             args = (model or {}).get('default_params') or ''
 
-            if not name or not args:
+            if not name or not GPU or not args:
                 continue
 
             args = str(args).splitlines()[0].strip()
 
-            match = re.search(r"-tp\s+(\d+)", args)
-            npu_quantity = match.group(1) if match else "0"
+            match = re.search(r"--tp\s+(\d+)", args)
+            npu_quantity = match.group(1) if match else "1"
+            model_list += f"{name}:{npu_quantity}:{GPU} "
 
-            model_list += f"{name}:{npu_quantity} "
-
-            result = re.sub(
-                r"^.*docker\.xcoresigma\.com/docker/infiniTensor-aarch64-moore\:\S+",
-                "",
-                args,
-            )
-            result = re.sub(r"--prometheus-port\s+\d+", "--prometheus-port $PROMETHEUS_PORT", result)
-            result = re.sub(r"--port\s+\d+", "--port $PORT", result)
-            result = re.sub(r"--master-addr\s+\S+", "--master-addr $MASTER_IP", result)
+            result = re.sub(r"--port\s+\d+", "--port $PORT", args)
             result = re.sub(r"--node-rank\s+\d+", "--node-rank $NODE_RANK", result)
-            result = re.sub(r"--schedule-policy\s+\S+", "--schedule-policy $SCHEDULE_POLICY", result)
-            result = re.sub(r"--master-port\s+\d+", "--master-port $MASTER_PORT", result)
             
-            if start:
-                src_code += f"if [ $MODEL == \"{name}\" ]; then\n"
-                start = False
-            else:
-                src_code += f"elif [ $MODEL == \"{name}\" ]; then\n"
-            src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh "
-            src_code += result
-            src_code += "\"\n"
-
-            src_code += "    EXEC_COMMAND+=\" "
-            src_code += result
-            src_code += " > $LOG_NAME 2>&1 &\"\n"
-
+            card_types = extract_card_types(GPU)
+            for card_type in card_types:
+                if start:
+                    src_code += f"if [ \"${{MODEL}}_${{GPU_MODEL}}\" == \"{name}_{card_type}\" ]; then\n"
+                    start = False
+                else:
+                    src_code += f"elif [ \"${{MODEL}}_${{GPU_MODEL}}\" == \"{name}_{card_type}\" ]; then\n"
+                src_code += "    echo \"SIG_LOG_LEVEL='warn,console_logger=info' ./start.sh "
+                src_code += result
+                src_code += " ${TEST_PARAM}"
+                src_code += "\"\n"
+                src_code += "    EXEC_COMMAND+=\" "
+                src_code += result
+                src_code += " ${TEST_PARAM}"
+                src_code += " > $LOG_PATH/$LOG_NAME 2>&1 &\"\n"
         src_code += "fi\n"
-        m = re.search(r"-v\s+(/[^:\s]+):/workspace", docker_args)
+        m = re.search(r"-v\s+(/[^:\s]+):/artifacts", docker_args)
         log_path = m.group(1) if m else ""
 
-    template_file = "job_executor_template_for_InfiniTensor.sh"
+    template_file = "job_executor_template_for_InfiniLM.sh"
 
     try:
         with open(f"{curr_dir}/{template_file}", 'r', encoding='utf-8') as file:
@@ -106,28 +131,26 @@ def main():
         line_num = 0
         for line in lines:
             if "<<<generated source code>>>" in line:
-                if test_type == "Unit":
-                    lines[line_num] = line.replace("<<<generated source code>>>", "")
-                else:
+                if test_type == "Service":
                     lines[line_num] = src_code
+                else:
+                    lines[line_num] = line.replace("<<<generated source code>>>", "")
             elif "<<<TEST_TYPE>>>" in line:
-                if test_type == "Smoke":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "SmokeTest")
-                elif test_type == "Unit":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "UnitTest")    
-                elif test_type == "Performance":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "PerformanceTest")
+                if test_type == "Inference":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "InferenceTest")
+                elif test_type == "Bench":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "BenchTest")
                 elif test_type == "Accuracy":
                     lines[line_num] = line.replace("<<<TEST_TYPE>>>", "AccuracyTest")
-                elif test_type == "Stability":
-                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "StabilityTest")
+                elif test_type == "Service":
+                    lines[line_num] = line.replace("<<<TEST_TYPE>>>", "ServiceTest")
             elif "<<<LOG_PATH>>>" in line:
                 lines[line_num] = line.replace("<<<LOG_PATH>>>", log_path)
             elif "<<<DOCKER_ARGS>>>" in line:
-                if test_type == "Unit":
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
+                if test_type == "Service":
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e MUSA_VISIBLE_DEVICES=$MUSA_VISIBLE_DEVICES $DOCKER_IMAGE_URL python InfiniLM/python/infinilm/server/inference_server.py")
                 else:
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e MUSA_VISIBLE_DEVICES=$MUSA_VISIBLE_DEVICES docker.infinitensor.com/docker/infiniTensor-aarch64-moore:$LATEST_TAG")
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:
@@ -139,7 +162,7 @@ def main():
 
     os.system(f"chmod 777 {target_file}")
 
-    if test_type != "Unit":
+    if test_type == "Service":
         print(model_list.rstrip())
     else:
         print("None")
