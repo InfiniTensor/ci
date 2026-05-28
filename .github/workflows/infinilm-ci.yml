@@ -164,7 +164,9 @@ jobs:
             /config_to_matrix.py
 
       - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -209,7 +211,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${REF_SLUG}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -391,7 +393,9 @@ jobs:
             /config_to_matrix.py
 
       - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -436,7 +440,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${REF_SLUG}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -618,7 +622,9 @@ jobs:
             /config_to_matrix.py
 
       - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -663,7 +669,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${REF_SLUG}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -845,7 +851,9 @@ jobs:
             /config_to_matrix.py
 
       - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
