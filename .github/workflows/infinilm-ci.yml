@@ -211,7 +211,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -339,7 +339,7 @@ jobs:
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${TEST_PARAM} ${NGPUS}"
-          echo "${IMAGE_REF}"
+          echo "infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"
           echo "**************************************************************************************"
 
           exec ./daemon.sh \
@@ -350,7 +350,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
+            "${IMAGE_REF}"
 
   run-benchtest:
     name: bench
@@ -440,7 +440,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -568,7 +568,7 @@ jobs:
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${TEST_PARAM} ${NGPUS}"
-          echo "${IMAGE_REF}"
+          echo "infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"
           echo "**************************************************************************************"
 
           exec ./daemon.sh \
@@ -579,7 +579,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
+            "${IMAGE_REF}"
 
   run-accuracytest:
     name: accuracy
@@ -669,7 +669,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ env.REF_SLUG }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -797,7 +797,7 @@ jobs:
           echo "${DOCKER_ARGS}"
           echo "${{ github.run_id }}"
           echo "${TEST_PARAM} ${NGPUS}"
-          echo "${IMAGE_REF}"
+          echo "infinilm-ci/${{ matrix.platform }}:${{ github.ref_name }}-${SHORT_SHA}"
           echo "**************************************************************************************"
 
           exec ./daemon.sh \
@@ -808,7 +808,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
+            "${IMAGE_REF}"
 
   run-servicetest:
     name: service
