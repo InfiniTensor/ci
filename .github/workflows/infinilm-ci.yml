@@ -111,6 +111,7 @@ jobs:
       - name: Short SHA for image tags
         run: |
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Build and Package
         working-directory: repo
@@ -120,7 +121,7 @@ jobs:
           docker build -f .ci/${{ matrix.dockerfile }} \
           --build-arg ${{ join(matrix.build_args, ' --build-arg ') }} \
           --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \
-          -t infinilm-ci/${{ matrix.platform }}:${GITHUB_REF_NAME}-${SHORT_SHA} .
+          -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .
 
   run-inferencetest:
     name: inference
@@ -165,6 +166,7 @@ jobs:
       - name: Short SHA for image tags
         run: |
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -348,7 +350,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "${IMAGE_REF}"
+            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
 
   run-benchtest:
     name: bench
@@ -393,6 +395,7 @@ jobs:
       - name: Short SHA for image tags
         run: |
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -576,7 +579,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "${IMAGE_REF}"
+            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
 
   run-accuracytest:
     name: accuracy
@@ -621,6 +624,7 @@ jobs:
       - name: Short SHA for image tags
         run: |
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -804,7 +808,7 @@ jobs:
             "${DOCKER_ARGS}" \
             ${{ github.run_id }} \
             "${TEST_PARAM} ${NGPUS}" \
-            "${IMAGE_REF}"
+            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
 
   run-servicetest:
     name: service
@@ -849,6 +853,7 @@ jobs:
       - name: Short SHA for image tags
         run: |
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+          echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
       - name: Install CI dependency
         working-directory: repo
@@ -939,4 +944,4 @@ jobs:
             "${DOCKER_ARGS} -e 'TEST_PARAM=${TEST_PARAM}' ${VOLUME_ARGS} ${SHM_SIZE}" \
             ${{ github.run_id }} \
             "${TEST_PARAM//=/.}" \
-            "infinilm-ci/${{ matrix.platform }}:${GITHUB_REF_NAME}-${SHORT_SHA}"
+            "infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA}"
