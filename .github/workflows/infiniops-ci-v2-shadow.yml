@@ -241,9 +241,16 @@ jobs:
           git config --local gc.auto 0
           git config --global --add safe.directory "${PWD}"
 
-      - name: Short SHA for image tags
+      - name: Resolve image tag
         working-directory: repo
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+        run: |
+          IMAGE_TAG_VALUE="$(python3 .ci/build.py \
+            --config "${{ inputs.config_path }}" \
+            --platform "${{ matrix.platform }}" \
+            --tag-mode content \
+            --print-tag)"
+          echo "IMAGE_TAG_VALUE=${IMAGE_TAG_VALUE}" >> "$GITHUB_ENV"
+          echo "Using image tag: ${IMAGE_TAG_VALUE}"
 
       - name: Build image
         working-directory: repo
@@ -251,7 +258,8 @@ jobs:
           python3 .ci/build.py \
             --config "${{ inputs.config_path }}" \
             --platform "${{ matrix.platform }}" \
-            --commit "${SHORT_SHA}" \
+            --tag-mode content \
+            --reuse-existing \
             --force
 
       - name: Check local CI agent
@@ -342,7 +350,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "${RESULT_DIR}"
-          command="PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py --config '${CONFIG_PATH}' --platform '${{ matrix.platform }}' --job '${JOB_ID}' --local --image-tag '${SHORT_SHA}' --results-dir '${RESULT_DIR}'"
+          command="PYTHONDONTWRITEBYTECODE=1 python3 .ci/run.py --config '${CONFIG_PATH}' --platform '${{ matrix.platform }}' --job '${JOB_ID}' --local --image-tag '${IMAGE_TAG_VALUE}' --results-dir '${RESULT_DIR}'"
           task_id="$(python3 .ci/ci_agent.py submit \
             --id "${TASK_ID}" \
             --platform "${{ matrix.platform }}" \

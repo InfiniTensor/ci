@@ -2,6 +2,7 @@
 """CI image builder: detect changes, build, tag, and optionally push Docker images."""
 
 import argparse
+import hashlib
 import json
 import os
 import shlex
@@ -89,6 +90,57 @@ def build_image_tag(registry_url, project, platform, tag):
     return f"{project}-ci/{platform}:{tag}"
 
 
+def hash_file(hasher, root, path):
+    rel = path.relative_to(root).as_posix()
+    hasher.update(rel.encode("utf-8"))
+    hasher.update(b"\0")
+    hasher.update(path.read_bytes())
+    hasher.update(b"\0")
+
+
+def build_context_fingerprint(dockerfile_dir, platform_cfg):
+    """Return a stable digest for the Docker build inputs that define an image."""
+    root = Path(dockerfile_dir)
+    hasher = hashlib.sha256()
+
+    hasher.update(b"infiniops-ci-image-v1\0")
+
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        hash_file(hasher, root, path)
+
+    image_cfg = {
+        "build_args": platform_cfg.get("build_args", {}),
+        "buildkit": bool(platform_cfg.get("buildkit")),
+        "private_sdk": platform_cfg.get("private_sdk", {}),
+        "skip_build": bool(platform_cfg.get("skip_build")),
+        "source_image": platform_cfg.get("source_image", ""),
+    }
+    private_sdk = platform_cfg.get("private_sdk", {})
+    source_env = private_sdk.get("source_env", "")
+    if source_env:
+        image_cfg["private_sdk_url_sha256"] = hashlib.sha256(
+            os.environ.get(source_env, "").encode("utf-8")
+        ).hexdigest()
+
+    hasher.update(json.dumps(image_cfg, sort_keys=True).encode("utf-8"))
+    return hasher.hexdigest()
+
+
+def build_content_tag(dockerfile_dir, platform_cfg, length=12):
+    return f"df-{build_context_fingerprint(dockerfile_dir, platform_cfg)[:length]}"
+
+
+def image_exists(tag):
+    return (
+        subprocess.run(
+            ["docker", "image", "inspect", tag],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
 def resolve_dockerfile_dir(dockerfile_dir):
     """Resolve Dockerfile directories from caller or CI-tool relative paths."""
     path = Path(dockerfile_dir)
@@ -104,13 +156,30 @@ def resolve_dockerfile_dir(dockerfile_dir):
     return str(path)
 
 
-def build_image(platform, platform_cfg, registry_cfg, commit, push, dry_run, logged_in):
+def build_image(
+    platform,
+    platform_cfg,
+    registry_cfg,
+    commit,
+    push,
+    dry_run,
+    logged_in,
+    reuse_existing=False,
+):
     """Build a single platform image. Returns True on success."""
     registry_url = registry_cfg.get("url", "")
     project = registry_cfg.get("project", "infiniops")
     commit_tag = build_image_tag(registry_url, project, platform, commit)
     latest_tag = build_image_tag(registry_url, project, platform, "latest")
     build_args_cfg = platform_cfg.get("build_args", {})
+
+    if reuse_existing:
+        if dry_run:
+            print(f"[dry-run] docker image inspect {commit_tag}")
+        elif image_exists(commit_tag):
+            print(f"==> {platform}: reusing existing image {commit_tag}", file=sys.stderr)
+            tag_latest = subprocess.run(["docker", "tag", commit_tag, latest_tag])
+            return tag_latest.returncode == 0
 
     if platform_cfg.get("skip_build"):
         source_image = platform_cfg.get("source_image") or build_args_cfg.get("BASE_IMAGE")
@@ -270,6 +339,22 @@ def main():
         help="Git ref or tag string for the image; omit to use current HEAD (short SHA)",
     )
     parser.add_argument(
+        "--tag-mode",
+        choices=("commit", "content"),
+        default="commit",
+        help="Use the git commit tag or a Dockerfile content tag (default: commit)",
+    )
+    parser.add_argument(
+        "--print-tag",
+        action="store_true",
+        help="Print the resolved image tag string for the selected platform and exit",
+    )
+    parser.add_argument(
+        "--reuse-existing",
+        action="store_true",
+        help="Skip docker build when the resolved image tag already exists locally",
+    )
+    parser.add_argument(
         "--push",
         action="store_true",
         help="Push images to registry after building (requires registry in config)",
@@ -305,6 +390,10 @@ def main():
             sys.exit(1)
         platforms = [args.platform]
 
+    if args.print_tag and args.platform == "all":
+        print("error: --print-tag requires a single --platform", file=sys.stderr)
+        sys.exit(1)
+
     commit = args.commit if args.commit is not None else get_git_commit()
     logged_in = docker_login(registry_cfg, args.dry_run) if args.push else True
     failed = False
@@ -321,6 +410,16 @@ def main():
             )
             continue
 
+        image_tag = (
+            build_content_tag(dockerfile_dir, platform_cfg)
+            if args.tag_mode == "content"
+            else commit
+        )
+
+        if args.print_tag:
+            print(image_tag)
+            continue
+
         if not args.force and not has_dockerfile_changed(dockerfile_dir):
             print(f"==> {platform}: no changes detected, skipping", file=sys.stderr)
             continue
@@ -329,10 +428,11 @@ def main():
             platform,
             platform_cfg,
             registry_cfg,
-            commit,
+            image_tag,
             args.push,
             args.dry_run,
             logged_in=logged_in,
+            reuse_existing=args.reuse_existing,
         )
 
         if not ok:

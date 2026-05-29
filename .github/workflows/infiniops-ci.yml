@@ -216,8 +216,16 @@ jobs:
           ref: ${{ inputs.ci_ref }}
           path: repo/.ci
 
-      - name: Short SHA for image tags
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
+      - name: Resolve image tag
+        working-directory: repo
+        run: |
+          IMAGE_TAG_VALUE="$(python3 .ci/build.py \
+            --config "${{ inputs.config_path }}" \
+            --platform "${{ matrix.platform }}" \
+            --tag-mode content \
+            --print-tag)"
+          echo "IMAGE_TAG_VALUE=${IMAGE_TAG_VALUE}" >> "$GITHUB_ENV"
+          echo "Using image tag: ${IMAGE_TAG_VALUE}"
 
       - name: Install CI dependency
         working-directory: repo
@@ -264,7 +272,8 @@ jobs:
           python3 .ci/build.py \
             --config "${{ inputs.config_path }}" \
             --platform "${{ matrix.platform }}" \
-            --commit "${SHORT_SHA}" \
+            --tag-mode content \
+            --reuse-existing \
             --force
 
       - name: Prepare docker args and write GITHUB_ENV
@@ -273,7 +282,7 @@ jobs:
           CONFIG: ${{ inputs.config_path }}
           BRANCH: None
           STAGE: None
-          IMAGE_TAG: "${{ env.SHORT_SHA }}"
+          IMAGE_TAG: "${{ env.IMAGE_TAG_VALUE }}"
           GPU_ID: None
           RESULT_DIR: None
           TEST: None
@@ -409,7 +418,7 @@ jobs:
             --config "${{ inputs.config_path }}" \
             --job "${{ matrix.id }}" \
             --local \
-            --image-tag "${SHORT_SHA}" \
+            --image-tag "${IMAGE_TAG_VALUE}" \
             --results-dir "${RESULT_DIR}"
 
       - name: Trigger ${{ matrix.platform }} Unit Test Task

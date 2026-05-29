@@ -23,6 +23,39 @@ def test_build_image_tag_commit_hash():
     assert tag == "registry.example.com:5000/proj/ascend:deadbeef"
 
 
+def test_build_content_tag_changes_when_dockerfile_changes(tmp_path):
+    dockerfile_dir = tmp_path / "image"
+    dockerfile_dir.mkdir()
+    dockerfile = dockerfile_dir / "Dockerfile"
+    dockerfile.write_text("FROM ubuntu:24.04\n", encoding="utf-8")
+
+    cfg = {"build_args": {"PIP_INDEX_URL": "https://pypi.org/simple"}}
+    first = build.build_content_tag(dockerfile_dir, cfg)
+
+    dockerfile.write_text("FROM ubuntu:24.04\nRUN echo changed\n", encoding="utf-8")
+    second = build.build_content_tag(dockerfile_dir, cfg)
+
+    assert first.startswith("df-")
+    assert first != second
+
+
+def test_build_content_tag_changes_when_build_args_change(tmp_path):
+    dockerfile_dir = tmp_path / "image"
+    dockerfile_dir.mkdir()
+    (dockerfile_dir / "Dockerfile").write_text("FROM ubuntu:24.04\n", encoding="utf-8")
+
+    first = build.build_content_tag(
+        dockerfile_dir,
+        {"build_args": {"BASE_IMAGE": "base:v1"}},
+    )
+    second = build.build_content_tag(
+        dockerfile_dir,
+        {"build_args": {"BASE_IMAGE": "base:v2"}},
+    )
+
+    assert first != second
+
+
 # ---------------------------------------------------------------------------
 # Tests for `has_dockerfile_changed`.
 # ---------------------------------------------------------------------------
@@ -112,7 +145,7 @@ def _platform_cfg():
 
 def test_resolve_dockerfile_dir_tool_relative():
     resolved = build.resolve_dockerfile_dir("images/nvidia/")
-    assert resolved.endswith("images/nvidia")
+    assert resolved.replace("\\", "/").endswith("images/nvidia")
 
 
 def _registry_cfg():
@@ -150,6 +183,36 @@ def test_build_image_dry_run_output_contains_image_tag(mocker, monkeypatch, caps
     )
     captured = capsys.readouterr()
     assert "abc1234" in captured.out
+
+
+def test_build_image_reuse_existing_skips_build(mocker, monkeypatch):
+    monkeypatch.delenv("HTTP_PROXY", raising=False)
+    run_mock = mocker.patch(
+        "subprocess.run",
+        return_value=mocker.Mock(returncode=0),
+    )
+    result = build.build_image(
+        "nvidia",
+        _platform_cfg(),
+        _registry_cfg(),
+        "df-abc123",
+        push=False,
+        dry_run=False,
+        logged_in=True,
+        reuse_existing=True,
+    )
+
+    assert result is True
+    calls = [call.args[0] for call in run_mock.call_args_list]
+    assert calls == [
+        ["docker", "image", "inspect", "localhost:5000/infiniops/nvidia:df-abc123"],
+        [
+            "docker",
+            "tag",
+            "localhost:5000/infiniops/nvidia:df-abc123",
+            "localhost:5000/infiniops/nvidia:latest",
+        ],
+    ]
 
 
 def test_build_image_skip_build_tags_source_image(mocker, monkeypatch):

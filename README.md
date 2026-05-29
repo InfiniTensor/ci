@@ -69,6 +69,13 @@ Supported platforms are `nvidia`, `iluvatar`, `metax`, `moore`, `cambricon`,
 `ascend`, and `all`. Image tags default to `infiniops-ci/<platform>:<commit>`
 and `infiniops-ci/<platform>:latest` unless a registry is configured.
 
+Reusable CI workflows use content-based tags for test images:
+`infiniops-ci/<platform>:df-<hash>`. The hash is derived from the platform
+Dockerfile directory and image build configuration, so jobs reuse the same local
+image while those inputs stay unchanged. When the same tag already exists on a
+self-hosted runner, `build.py --tag-mode content --reuse-existing --force`
+skips `docker build` and retags it as `latest`.
+
 ## Local Runner
 
 ```bash
