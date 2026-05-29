@@ -25,7 +25,47 @@ version=$8
 
 curr_dir=$(pwd)
 
-docker run --rm --name="CI_test_job_${platform}_${test_type}_${test_param// /_}_${CI_job_id}" --ipc=host --net=host --privileged -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks -v /data/shared/limingge/CI_Workspace_for_InfiniLM:/CI_Workspace -v /data-aisoft/artifacts:/artifacts -v ~/.ssh:/root/.ssh -v /var/run/docker.sock:/var/run/docker.sock auto-test:latest $platform $test_type $engine $model_list "$docker_args" $CI_job_id "$test_param" $version &
+container_script='
+set -euo pipefail
+
+mkdir -p ~/.ssh
+if [ -d /CI_Host_SSH ]; then
+    cp -LR /CI_Host_SSH/. ~/.ssh/
+fi
+chmod 700 ~/.ssh
+find ~/.ssh -type f -name "id_*" -exec chmod 600 {} +
+cat > ~/.ssh/config <<EOF
+Host *
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+EOF
+chmod 600 ~/.ssh/config
+
+exec /CI_Workspace/entrypoint.sh "$@"
+'
+
+docker run --rm \
+    --name="CI_test_job_${platform}_${test_type}_${test_param// /_}_${CI_job_id}" \
+    --ipc=host \
+    --net=host \
+    --privileged \
+    -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks \
+    -v /data/shared/limingge/CI_Workspace_for_InfiniLM:/CI_Workspace \
+    -v /data-aisoft/artifacts:/artifacts \
+    -v "${HOME}/.ssh:/CI_Host_SSH:ro" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --entrypoint /bin/bash \
+    auto-test:latest \
+    -lc "${container_script}" \
+    bash \
+    "$platform" \
+    "$test_type" \
+    "$engine" \
+    "$model_list" \
+    "$docker_args" \
+    "$CI_job_id" \
+    "$test_param" \
+    "$version" &
 CHILD_PID=$!
 
 echo -n "Running"
