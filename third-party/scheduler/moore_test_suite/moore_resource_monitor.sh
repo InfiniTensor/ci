@@ -51,7 +51,6 @@ if [ $ENGINE_TYPE == "InfiniLM" ]; then
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
     else
-        version="${version##*:}"
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" $version`)
     fi
 fi
