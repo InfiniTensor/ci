@@ -211,7 +211,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${GITHUB_REF_NAME}
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -440,7 +440,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${GITHUB_REF_NAME}
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
@@ -669,7 +669,7 @@ jobs:
         working-directory: repo
         env:
           CONFIG: ${{ inputs.config_path }}
-          BRANCH: ${GITHUB_REF_NAME}
+          BRANCH: ${{ github.ref_name }}
           STAGE: None
           IMAGE_TAG: "${{ env.SHORT_SHA }}"
           GPU_ID: all
