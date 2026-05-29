@@ -344,6 +344,7 @@ jobs:
           CONFIG_PATH: ${{ inputs.config_path }}
           JOB_ID: ${{ matrix.id }}
           QUEUE_TIMEOUT: ${{ matrix.queue_timeout }}
+          GPU_IDS: ${{ matrix.gpu_ids }}
           NGPU: ${{ matrix.ngpus }}
           MEMORY: ${{ matrix.memory }}
           JUNIT_PATH: ${{ matrix.junit_path }}
@@ -360,6 +361,7 @@ jobs:
             --result-dir "${RESULT_DIR}" \
             --junit-path "${JUNIT_PATH}" \
             --queue-timeout "${QUEUE_TIMEOUT}" \
+            --gpu-ids "${GPU_IDS}" \
             --ngpus "${NGPU:-0}" \
             --memory "${MEMORY}")"
           echo "task_id=${task_id}" >> "${GITHUB_OUTPUT}"

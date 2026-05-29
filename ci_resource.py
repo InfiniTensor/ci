@@ -89,16 +89,27 @@ class DeviceLeaseManager:
 
     def __init__(self, platform, lock_dir=None, utilization_threshold=10, pool=None):
         self._platform = platform
-        self._lock_dir = Path(
-            lock_dir
-            or os.environ.get(RESOURCE_LOCK_DIR_ENV)
-            or DEFAULT_RESOURCE_LOCK_DIR
-        )
+        self._lock_dir = self._resolve_lock_dir(lock_dir)
         self._pool = pool or ResourcePool(platform, utilization_threshold)
 
     @property
     def lock_dir(self):
         return self._lock_dir
+
+    def _resolve_lock_dir(self, lock_dir=None):
+        configured = lock_dir or os.environ.get(RESOURCE_LOCK_DIR_ENV)
+        if configured:
+            return Path(configured)
+
+        try:
+            DEFAULT_RESOURCE_LOCK_DIR.mkdir(parents=True, exist_ok=True)
+            probe = DEFAULT_RESOURCE_LOCK_DIR / ".write-test"
+            with probe.open("a", encoding="utf-8"):
+                pass
+            probe.unlink(missing_ok=True)
+            return DEFAULT_RESOURCE_LOCK_DIR
+        except OSError:
+            return Path(f"{DEFAULT_RESOURCE_LOCK_DIR}-{os.getuid()}")
 
     def acquire(
         self,
@@ -174,6 +185,11 @@ class DeviceLeaseManager:
 
         available = [g for g in gpus if self._is_eligible(g)]
 
+        if requested_ids and not gpus:
+            return self._try_acquire_requested_ids_without_probe(
+                requested_ids, metadata
+            )
+
         if requested_ids:
             by_index = {g.index: g for g in available}
             candidates = []
@@ -216,6 +232,35 @@ class DeviceLeaseManager:
             return None
         finally:
             if len(selected) < gpu_count:
+                for lf in locked_files:
+                    try:
+                        fcntl.flock(lf.fileno(), fcntl.LOCK_UN)
+                    finally:
+                        lf.close()
+
+    def _try_acquire_requested_ids_without_probe(
+        self, requested_ids, metadata
+    ) -> DeviceLease | None:
+        locked_files: list[TextIO] = []
+
+        try:
+            for idx in requested_ids:
+                lock_file = self._lock_dir / f"{self._platform}.device.{idx}.lock"
+                lock_file.parent.mkdir(parents=True, exist_ok=True)
+                lf = lock_file.open("a+", encoding="utf-8")
+
+                try:
+                    fcntl.flock(lf.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    lf.close()
+                    return None
+
+                self._write_lock_metadata(lf, idx, metadata)
+                locked_files.append(lf)
+
+            return DeviceLease(self._platform, list(requested_ids), locked_files)
+        finally:
+            if len(locked_files) < len(requested_ids):
                 for lf in locked_files:
                     try:
                         fcntl.flock(lf.fileno(), fcntl.LOCK_UN)

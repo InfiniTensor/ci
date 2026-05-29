@@ -590,6 +590,35 @@ def test_allocate_iluvatar_fails_when_all_gpus_have_processes(monkeypatch):
     assert selected == []
 
 
+def test_device_lease_static_ids_without_probe(tmp_path, monkeypatch):
+    pool = res.ResourcePool("iluvatar")
+    monkeypatch.setattr(pool, "detect_gpus", lambda: [])
+
+    manager = res.DeviceLeaseManager("iluvatar", lock_dir=tmp_path, pool=pool)
+    lease = manager.acquire(1, requested_ids=[0], timeout=0)
+
+    assert lease is not None
+    assert lease.device_ids == [0]
+    lease.release()
+
+
+def test_device_lease_default_lock_dir_falls_back_when_unwritable(
+    tmp_path, monkeypatch
+):
+    default_dir = tmp_path / "root-owned-locks"
+
+    def deny_write(*args, **kwargs):
+        raise PermissionError("permission denied")
+
+    monkeypatch.setattr(res, "DEFAULT_RESOURCE_LOCK_DIR", default_dir)
+    monkeypatch.setattr(res.Path, "open", deny_write)
+    monkeypatch.delenv(res.RESOURCE_LOCK_DIR_ENV, raising=False)
+
+    manager = res.DeviceLeaseManager("nvidia")
+
+    assert manager.lock_dir == res.Path(f"{default_dir}-{res.os.getuid()}")
+
+
 def test_detect_gpus_moore_gpu_list_json(monkeypatch):
     moore_output = """
 {

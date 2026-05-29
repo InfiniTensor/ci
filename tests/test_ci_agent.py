@@ -30,6 +30,10 @@ def test_submit_writes_queued_task(tmp_path):
     assert task["queue_timeout"] == 1800
 
 
+def test_resource_count_prefers_static_gpu_ids():
+    assert ci_agent.resource_count({"gpu_ids": "0,2", "ngpus": 8}) == 2
+
+
 def test_junit_required_for_pass_when_declared(tmp_path):
     result_dir = tmp_path / "results"
     result_dir.mkdir()

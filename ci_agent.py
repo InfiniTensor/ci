@@ -147,6 +147,10 @@ def evaluate_result(
 
 
 def resource_count(resources: dict[str, Any]) -> int:
+    gpu_ids = str(resources.get("gpu_ids", "") or "").strip()
+    if gpu_ids and gpu_ids not in {"auto", "all"}:
+        return len([part for part in gpu_ids.split(",") if part.strip()])
+
     try:
         return int(resources.get("ngpus", 0) or 0)
     except (TypeError, ValueError):
@@ -161,11 +165,20 @@ def wait_for_resources(
     if gpu_count <= 0:
         return True
 
+    gpu_ids = str(resources.get("gpu_ids", "") or "").strip()
+    requested_ids = []
+    if gpu_ids and gpu_ids not in {"auto", "all"}:
+        requested_ids = [
+            int(part.strip()) for part in gpu_ids.split(",") if part.strip()
+        ]
+
     job = {"resources": resources}
     memory_mb = parse_memory_requirement(job)
     lease_manager = DeviceLeaseManager(task.get("platform", ""))
     while time.monotonic() < deadline:
-        lease = lease_manager.acquire(gpu_count, memory_mb, timeout=0)
+        lease = lease_manager.acquire(
+            gpu_count, memory_mb, requested_ids=requested_ids, timeout=0
+        )
         if lease is not None:
             lease.release()
             return True
@@ -335,7 +348,11 @@ def load_payload(args: argparse.Namespace) -> dict[str, Any]:
         "result_dir": args.result_dir,
         "junit_path": args.junit_path,
         "queue_timeout": args.queue_timeout,
-        "resources": {"ngpus": args.ngpus, "memory": args.memory},
+        "resources": {
+            "gpu_ids": args.gpu_ids,
+            "ngpus": args.ngpus,
+            "memory": args.memory,
+        },
     }
     return {key: value for key, value in payload.items() if value is not None}
 
@@ -359,6 +376,7 @@ def build_parser() -> argparse.ArgumentParser:
     submit.add_argument("--result-dir")
     submit.add_argument("--junit-path")
     submit.add_argument("--queue-timeout", type=int, default=1800)
+    submit.add_argument("--gpu-ids", default="")
     submit.add_argument("--ngpus", type=int, default=0)
     submit.add_argument("--memory", default="")
 
