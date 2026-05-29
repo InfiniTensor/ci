@@ -47,19 +47,19 @@ if [ $platform == "Ascend" ]; then
     cd ascend_test_suite
     mkdir -p $version
     cp latest/model_list.yml $version
-    ./ascend_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
+    ./ascend_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id "$test_param" $version &
     CHILD_PID=$!
 elif [ $platform == "Nvidia" ]; then
     cd nvidia_test_suite
     mkdir -p $version
     cp latest/model_list.yml $version
-    ./nvidia_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
+    ./nvidia_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id "$test_param" $version &
     CHILD_PID=$!
 elif [ $platform == "Moore" ]; then
     cd moore_test_suite
     mkdir -p $version
     cp latest/model_list.yml $version
-    ./moore_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id $test_param $version &
+    ./moore_resource_monitor.sh $test_type $engine $model_list "$docker_args" $CI_job_id "$test_param" $version &
     CHILD_PID=$!
 fi
 
