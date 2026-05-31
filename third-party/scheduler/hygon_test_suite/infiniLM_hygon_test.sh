@@ -18,11 +18,11 @@ LOCK_DIR="/home/zkjh/.npu_locks"
 LOCK_FILE="server_config.lock"
 
 declare -A npu_server_list=(
-    ["172.22.162.16"]="AICC_001"
+    ["172.22.162.57"]="AICC_001"
 )
 
 declare -A local_ip_map=(
-    ["172.22.162.16"]="192.168.162.16"
+    ["172.22.162.57"]="192.168.162.57"
 )
 
 if [ -z $send_report ]; then
