@@ -140,7 +140,7 @@ while true; do
     # 方法一: 用hy-smi -u判断DCU%
     # GPU_INFO=($(/opt/hyhal/bin/hy-smi -u | awk '/DCU\[/ { match($0, /DCU\[([0-9]+)\]/, a) if ($NF + 0 > 0) print a[1] }'))
     # 方法二: 使用hy-smi综合判断 DCU% + VRAM%
-    GPU_INFO=($(/opt/hyhal/bin/hy-smi | awk '$1 ~ /^[0-9]+$/ { dcu=$1 gsub(/%/, "", $6); gsub(/%/, "", $7) if ($6 + 0 > 0 || $7 + 0 > 0) print dcu }'))
+    GPU_INFO=($(/opt/hyhal/bin/hy-smi | awk '$1 ~ /^[0-9]+$/ { dcu=$1 gsub(/%/, "", $6); gsub(/%/, "", $7); if ($6 + 0 > 0 || $7 + 0 > 0) print dcu }'))
     # 去重
     GPU_INFO=($(echo "${GPU_INFO[@]}" | tr ' ' '\n' | sort -u))
     # 检查使用中的 GPU 数量
