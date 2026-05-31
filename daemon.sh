@@ -50,8 +50,16 @@ exec /CI_Workspace/entrypoint.sh "$@"
 
 if [ $platform == "Hygon" ]; then
     CI_Workspace="/data-aisoft/limingge/CI_Workspace_for_InfiniLM"
+    extra_args=(
+        "-v" "/opt/hyhal:/opt/hyhal"
+        "-v" "/usr/bin/lspci:/usr/bin/lspci:ro"
+        "-v" "/lib/x86_64-linux-gnu/libpci.so.3:/lib/x86_64-linux-gnu/libpci.so.3:ro"
+        "-e" "PATH=/opt/hyhal/bin:$PATH"
+        "-e" "LD_LIBRARY_PATH=/opt/hyhal/lib:/opt/dtk/.hyhal/hydm/lib:$LD_LIBRARY_PATH"
+    )
 else
     CI_Workspace="/data/shared/limingge/CI_Workspace_for_InfiniLM"
+    extra_args=()
 fi
 
 docker run --rm \
@@ -60,10 +68,11 @@ docker run --rm \
     --net=host \
     --privileged \
     -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks \
-    -v ${CI_Workspace}:/CI_Workspace \
+    -v "${CI_Workspace}:/CI_Workspace" \
     -v /data-aisoft/artifacts:/artifacts \
     -v "${HOME}/.ssh:/CI_Host_SSH:ro" \
     -v /var/run/docker.sock:/var/run/docker.sock \
+    "${extra_args[@]}" \
     --entrypoint /bin/bash \
     auto-test:latest \
     -lc "${container_script}" \
