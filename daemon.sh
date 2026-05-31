@@ -41,6 +41,10 @@ Host *
 EOF
 chmod 600 ~/.ssh/config
 
+if [ -d /CI_Workspace/ci_autotest ]; then
+    git config --global --add safe.directory /CI_Workspace/ci_autotest
+fi
+
 exec /CI_Workspace/entrypoint.sh "$@"
 '
 

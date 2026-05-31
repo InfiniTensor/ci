@@ -30,6 +30,10 @@ EOF
 
 cd /CI_Workspace
 
+if [ -d ci_autotest ]; then
+    git config --global --add safe.directory /CI_Workspace/ci_autotest
+fi
+
 if [ ! -d ci_autotest ]; then
     git clone https://github.com/InfiniTensor/ci.git ci_autotest
     cd ci_autotest
