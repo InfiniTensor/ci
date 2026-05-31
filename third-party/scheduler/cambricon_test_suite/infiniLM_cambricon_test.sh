@@ -323,7 +323,7 @@ if [ $TEST_TYPE == "Service" ]; then
         echo "Starting the model ${TEST_TYPE} testing task..."
 
         if [ $TEST_TYPE == "Service" ]; then
-            ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
+            ssh -q -p 14735 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
                     docker exec ${ENGINE_TYPE,}_cambricon_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count} /bin/bash -c \"
                         python InfiniLM/scripts/test_perf.py --port ${server_port} --verbose
                     \"
@@ -517,8 +517,8 @@ else
     declare -A pid_map
     ip=${server_list[0]}
 
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh
-    ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh $model $gpu_quantity "${OPTIONS}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
+    ssh -q -p 14735 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip chmod a+x /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh
+    ssh -q -p 14735 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$ip /home/zkjh/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${OPTIONS}.sh $model $gpu_quantity "${OPTIONS}" $server_list_str 0 0 $gpu_model $session_id $version > "$curr_dir/logs/${test_type}/$session_id/${filename}" &
     ssh_pid=$!
     pid_map[$ssh_pid]=$ip
     SSH_PID_MAP[$ssh_pid]=$ip
@@ -550,8 +550,8 @@ else
     # 清理工作
     for ip in ${server_list[@]}; do
         if [ $ENGINE_TYPE == "InfiniLM" ]; then
-            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_cambricon_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
-            ssh -q -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_cambricon_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+            ssh -q -p 14735 -o ConnectionAttempts=3 zkjh@$ip docker stop infiniLM_cambricon_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
+            ssh -q -p 14735 -o ConnectionAttempts=3 zkjh@$ip docker rm infiniLM_cambricon_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count}
         fi
     done
 
