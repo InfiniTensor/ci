@@ -1,0 +1,375 @@
+#!/bin/bash
+
+# 捕获 SIGINT (Ctrl+C)、SIGTERM、SIGHUP (SSH Disconn)、SIGPIPE 和 EXIT 信号
+# trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+cleanup() {
+    trap - SIGINT SIGTERM SIGHUP SIGPIPE
+    kill -- -$$
+    exit 130
+}
+
+trap cleanup SIGINT SIGTERM SIGHUP SIGPIPE
+
+TEST_TYPE=$1
+ENGINE_TYPE=$2
+MODEL_LIST=$3
+DOCKER_ARGS="$4"
+SESSION_ID=$5
+TEST_PARAM="$6"
+version=$7
+curr_dir=$(pwd)
+
+if [ -z $TEST_TYPE ]; then
+    echo "Parameter Test_Type required!"
+    exit 1
+elif [ $TEST_TYPE != "Inference" ] && [ $TEST_TYPE != "Bench" ] && [ $TEST_TYPE != "Service" ] && [ $TEST_TYPE != "Accuracy" ]; then
+    echo "Test_Type is wrong!"
+    exit 1
+fi
+
+if [ -z $ENGINE_TYPE ]; then
+    echo "Parameter PLATFORM required!"
+    exit 1
+elif [ $ENGINE_TYPE != "InfiniLM" ]; then
+    echo "Inference Engine Type is wrong!"
+    exit 1
+fi
+
+if [ -z $MODEL_LIST ]; then
+    echo "Parameter Model List required!"
+    exit 1
+fi
+
+echo "#################################### Hygon #########################################"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID ${TEST_PARAM// /_} $version"
+echo "########################################################################################"
+
+if [ $ENGINE_TYPE == "InfiniLM" ]; then
+    declare -A npu_server_list=(
+        ["aicc001"]="172.22.162.16"
+    )
+    if [ -z $version ]; then
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
+    else
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" $version`)
+    fi
+fi
+
+log_name_suffix=$(date +"%Y%m%d")
+export TASK_START_TIME=${log_name_suffix}
+parallel=3
+
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/bench/$SESSION_ID $curr_dir/logs/inference/$SESSION_ID $curr_dir/logs/service/$SESSION_ID
+mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
+
+if [ $TEST_TYPE == "Inference" ]; then
+    processed_models=${curr_dir}/logs/inference/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+elif [ $TEST_TYPE == "Bench" ]; then
+    processed_models=${curr_dir}/logs/bench/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+elif [ $TEST_TYPE == "Service" ]; then
+    processed_models=${curr_dir}/logs/service/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+elif [ $TEST_TYPE == "Accuracy" ]; then
+    processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
+    touch ${processed_models}
+fi
+
+echo "model config list: ${model_config_list[@]}"
+
+full_model_list=()
+model_list=($(echo "$MODEL_LIST" | tr ',' ' '))
+for model in "${model_list[@]}"; do
+    for item in "${model_config_list[@]}"; do
+        name=`echo "$item" | awk -F : '{print $1}'`
+        if [ $model == $name ]; then
+            full_model_list+=($item)
+        fi
+    done
+done
+
+search_servers() {
+    local MODEL=$1
+    local JOB_COUNT=$2
+    local NPU_QUANTITY=$3
+    local -n servers_found=$4     # 传名引用
+
+    if [ $NPU_QUANTITY -lt 8 ]; then
+        SERVER_QUANTITY=1
+    else
+        SERVER_QUANTITY=$(($NPU_QUANTITY/8))
+    fi
+
+    echo "Searching for ${SERVER_QUANTITY} GPU server(s)..."
+    
+    servers_found=()
+    for key in "${!npu_server_list[@]}"; do
+        echo "$key => ${npu_server_list[$key]}"
+        ssh -q -p 14735 -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@${npu_server_list[$key]} "# 目标空闲 GPU 数量
+            source /home/zkjh/npu_lock_manager_for_ci.sh
+            if [ $NPU_QUANTITY -eq 16 ]; then
+                TARGET_FREE_GPUS=8
+            else
+                TARGET_FREE_GPUS=$NPU_QUANTITY
+            fi
+            echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
+            # 使用 hy-smi 获取 DCU 使用情况
+            # 方法一: 用hy-smi -u判断DCU%
+            # GPU_INFO=(\$(hy-smi -u | awk '/DCU\\[/ { match(\$0, /DCU\\[([0-9]+)\\]/, a) if (\$NF + 0 > 0) print a[1] }'))
+            # 方法二: 使用hy-smi综合判断 DCU% + VRAM%
+            GPU_INFO=(\$(hy-smi | awk '\$1 ~ /^[0-9]+$/ { dcu=\$1 gsub(/%/, "", \$6); gsub(/%/, "", \$7) if (\$6 + 0 > 0 || \$7 + 0 > 0) print dcu }'))
+            # 去重
+            GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
+            # 检查使用中的 GPU 数量
+            USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
+            echo \"GPUs currently in use: \$USE_COUNT, indices: \${GPU_INFO[@]}\"
+            TOTAL_COUNT=\$(hy-smi -i | grep -c '^DCU\\[')
+            FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
+            FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
+            echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${FREE_GPU_INFO[@]}\"
+            # 如果找到足够的空闲 GPU, 则返回结果并退出
+            if [ \"\$FREE_COUNT\" -ge \"\$TARGET_FREE_GPUS\" ]; then
+                echo \"Successfully found \$TARGET_FREE_GPUS idle GPU(s), indices: \${FREE_GPU_INFO[@]}\"
+                echo \"Checking if \$TARGET_FREE_GPUS GPUs can be locked\"
+                # 生成唯一的任务ID
+                TASK_ID=\"${TEST_TYPE}Test_${MODEL}_${JOB_COUNT}\"
+                LOCAL_IP=\$(hostname -I | xargs printf \"%s\\n\" | head -n 1)
+                SERVER_NAME=\$(echo \$LOCAL_IP | sed 's/\./_/g')
+                check_npu_locks_batch \${SERVER_NAME} \"\${FREE_GPU_INFO[*]}\" \${TASK_ID} ${SESSION_ID} NPU_LIST_FOUND
+                if [ \${#NPU_LIST_FOUND[@]} -ge \$TARGET_FREE_GPUS ]; then
+                    SELECTED_NPUS=\"\${NPU_LIST_FOUND[@]:0:\$TARGET_FREE_GPUS}\"
+                    echo \"Can lock \$TARGET_FREE_GPUS of these NPUs, indices: \${SELECTED_NPUS}\"
+                    exit 0
+                else
+                    echo \"Failed to acquire the lock (resources may be taken by other tasks), resuming scan....\"
+                fi
+            fi
+            exit 1"
+        err=$?
+        if [ $err -eq 0 ]; then
+            servers_found+=(${npu_server_list[$key]})
+        fi
+
+        if [ ${#servers_found[@]} -ge $SERVER_QUANTITY ]; then
+            break
+        fi
+    done
+}
+
+for name in "${!npu_server_list[@]}"; do
+    echo "$name => ${npu_server_list[$name]}"
+    scp -P 14735 "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+    scp -P 14735 "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+done
+
+if [ $TEST_TYPE != "Service" ]; then
+    GPU_QUANTITY=`echo "${TEST_PARAM}" | awk '{print $NF}'`
+
+    while true; do
+        model="None"
+        GPU_MODEL="Z100L"
+        echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
+        search_servers $model 0 $GPU_QUANTITY servers
+        if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
+            echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
+            echo
+            if [ $TEST_TYPE == "Inference" ]; then
+                inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_hygon_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $inference_log 2>&1 &
+            else
+                test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
+                log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_hygon_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $log_path 2>&1 &
+            fi
+            last_pid=$!
+            wait $last_pid  # 等待子进程结束
+            err=$?          # 保存结束子进程的退出状态
+            if [ $err -ne 0 ]; then
+                if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                    echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
+                    sleep 10
+                    continue
+                fi
+                if [ $TEST_TYPE == "Inference" ]; then
+                    echo "Inference test failed with exit code $err. Last 200 lines of $inference_log:"
+                    tail -n 200 "$inference_log" || true
+                else
+                    echo "${TEST_TYPE} test failed with exit code $err. Last 200 lines of $log_path:"
+                    tail -n 200 "$log_path" || true
+                fi
+            fi
+            break
+        else
+            echo "No sufficient idle GPUs are available, try it later..."
+            echo
+            # 等待一段时间后重新扫描（例如 10 秒）
+            sleep 10
+        fi
+    done
+
+    echo "All tests completed!"
+
+    if [ $TEST_TYPE == "Inference" ]; then
+        echo "Inference test is successful, logs:"
+        cat $inference_log
+    else
+        echo "${TEST_TYPE} test is successful, logs:"
+        if [ $TEST_TYPE == "Accuracy" ]; then
+            tail -n 200 "$log_path"
+        else
+            cat "$log_path"
+        fi
+    fi
+
+    exit $err
+else
+    GPU_resource_demand=()
+
+    for item in "${full_model_list[@]}"; do
+        # 模型是否还没有测试过
+        if [ -z `cat ${processed_models} | grep -w ${item}_${TEST_PARAM// /_}` ]; then
+            GPU_resource_demand+=(${item})
+        fi
+    done
+
+    GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
+
+    echo "Beginning testing of the model list: ${GPU_resource_demand[@]}"
+
+    if [ -z $version ]; then
+        echo "Inference Engine Version: Latest"
+    else
+        echo "Inference Engine Version: ${version}"
+    fi
+
+    ret=0
+
+    while true; do
+        job_count=0
+        temp_list=()
+        unset pid_map
+        declare -A pid_map
+        for item in "${GPU_resource_demand[@]}"; do
+            model=`echo "$item" | awk -F : '{print $1}'`
+            GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
+            GPU_MODEL=`echo "$item" | awk -F : '{print $3}'`
+            echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
+            search_servers $model $job_count $GPU_QUANTITY servers
+            if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
+                echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
+                echo
+                $curr_dir/infiniLM_hygon_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model ${TEST_TYPE} testing task|All tests have completed"`
+
+                if [ "$status_msg" == "All tests have completed" ]; then
+                    echo "Failed to set up the model runtime environment. Trying the next model..."
+                    echo
+                    wait $last_pid  # 等待上一个子进程结束
+                    err=$?          # 保存上一个结束子进程的退出状态
+                    if [ $err -ne 0 ]; then
+                        if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                            echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
+                            temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
+                            continue
+                        fi
+                    else
+                        echo "The program encountered an error!"
+                    fi
+                    ret=1
+                    continue
+                else
+                    echo $status_msg
+                fi
+
+                ((job_count++))
+                if [ $job_count -ge $parallel ]; then
+                    # 等待所有后台子任务结束
+                    remaining=$job_count
+                    while (( remaining > 0 )); do
+                        wait -n -p done_pid  # 等待任意一个子进程结束
+                        err=$?               # 保存最先结束子进程的退出状态
+                        if [ $err -ne 0 ]; then
+                            if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                                temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                            fi
+                        fi
+                        ((remaining--))
+                    done
+
+                    job_count=0
+                    echo "The current batch of model tests has completed!"
+                    echo
+                fi
+            else
+                temp_list+=(${item})
+                echo "No sufficient idle GPUs are available, model ${model} cannot be tested. Proceeding to the next model..."
+                echo
+                # 等待一段时间后重新扫描（例如 10 秒）
+                sleep 10
+            fi
+        done
+
+        if [ $job_count -gt 0 ] && [ $job_count -lt $parallel ]; then
+            # 等待所有后台子任务结束
+            remaining=$job_count
+            while (( remaining > 0 )); do
+                wait -n -p done_pid  # 等待任意一个子进程结束
+                err=$?               # 保存最先结束子进程的退出状态
+                if [ $err -ne 0 ]; then
+                    if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                        temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                    fi
+                fi
+                ((remaining--))
+            done
+
+            echo "The current batch of model tests has completed!"
+            echo
+        fi
+
+        if [[ ${#temp_list[@]} -eq 0 ]]; then
+            echo "All tests completed!"
+            cat "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
+
+            # if [ $TEST_TYPE == "Accuracy" ]; then
+            #     python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Hygon_Z100L --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
+            # elif [ $TEST_TYPE == "Smoke" ]; then
+            #     if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
+            #         latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
+            #     else
+            #         latest_tag="unknown"
+            #     fi
+                
+            #     python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
+
+            #     last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
+            #     if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
+            #         last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
+            #     else
+            #         last_version="unknown"
+            #     fi
+                
+            #     if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
+            #         console_output_flag=0
+            #         if [ $console_output_flag -eq 1 ]; then
+            #             python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
+            #         else
+            #             python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            #         fi
+            #     fi
+            # fi
+
+            break
+        else
+            GPU_resource_demand=("${temp_list[@]}")
+            echo
+            echo "Preparing to start the next round of model testing: ${GPU_resource_demand[@]}"
+            echo
+        fi
+    done
+
+    exit $ret
+fi
