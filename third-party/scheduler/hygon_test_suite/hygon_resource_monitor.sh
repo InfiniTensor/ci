@@ -116,15 +116,15 @@ search_servers() {
             echo \"Beginning GPU scan on ${key}, Goal: locate \$TARGET_FREE_GPUS idle GPUs...\"
             # 使用 hy-smi 获取 DCU 使用情况
             # 方法一: 用hy-smi -u判断DCU%
-            # GPU_INFO=(\$(hy-smi -u | awk '/DCU\\[/ { match(\$0, /DCU\\[([0-9]+)\\]/, a) if (\$NF + 0 > 0) print a[1] }'))
+            # GPU_INFO=(\$(/opt/hyhal/bin/hy-smi -u | awk '/DCU\\[/ { match(\$0, /DCU\\[([0-9]+)\\]/, a) if (\$NF + 0 > 0) print a[1] }'))
             # 方法二: 使用hy-smi综合判断 DCU% + VRAM%
-            GPU_INFO=(\$(hy-smi | awk '\$1 ~ /^[0-9]+$/ { dcu=\$1 gsub(/%/, "", \$6); gsub(/%/, "", \$7) if (\$6 + 0 > 0 || \$7 + 0 > 0) print dcu }'))
+            GPU_INFO=(\$(/opt/hyhal/bin/hy-smi | awk '\$1 ~ /^[0-9]+$/ { dcu=\$1 gsub(/%/, "", \$6); gsub(/%/, "", \$7) if (\$6 + 0 > 0 || \$7 + 0 > 0) print dcu }'))
             # 去重
             GPU_INFO=(\$(echo \"\${GPU_INFO[@]}\" | tr ' ' '\n' | sort -u))
             # 检查使用中的 GPU 数量
             USE_COUNT=\$(echo \"\${GPU_INFO[@]}\" | wc -w)
             echo \"GPUs currently in use: \$USE_COUNT, indices: \${GPU_INFO[@]}\"
-            TOTAL_COUNT=\$(hy-smi -i | grep -c '^DCU\\[')
+            TOTAL_COUNT=\$(/opt/hyhal/bin/hy-smi -i | grep -c '^DCU\\[')
             FREE_COUNT=\$((\$TOTAL_COUNT-\$USE_COUNT))
             FREE_GPU_INFO=(\$(seq 0 \$((\$TOTAL_COUNT-1)) | grep -vxFf <(printf \"%s\\n\" \"\${GPU_INFO[@]}\")))
             echo \"Idle GPUs: \$FREE_COUNT; GPU indices: \${FREE_GPU_INFO[@]}\"
