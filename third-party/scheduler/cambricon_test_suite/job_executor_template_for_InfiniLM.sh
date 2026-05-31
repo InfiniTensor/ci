@@ -9,15 +9,17 @@ LOCK_FILE="server_config.lock"
 # 接收参数
 MODEL=$1
 GPU_QUANITY=$2
-SERVER_LIST=$3
-NODE_RANK=$4
-JOB_COUNT=$5
-SESSION_ID=$6
-VERSION=$7
+OPTIONS="$3"
+SERVER_LIST=$4
+NODE_RANK=$5
+JOB_COUNT=$6
+GPU_MODEL=$7
+SESSION_ID=$8
+VERSION=$9
 
 # 生成唯一的任务ID
-TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${JOB_COUNT}"
-JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${SESSION_ID}_${JOB_COUNT}"
+TASK_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${JOB_COUNT}"
+JOB_ID="<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}"
 LOCAL_IP=$(hostname -I | xargs printf "%s\n" | head -n 1)
 SERVER_NAME=$(echo $LOCAL_IP | sed 's/\./_/g')
 
@@ -74,14 +76,14 @@ if [ -z $VERSION ]; then
     # 先拿到所有 tag 并按字母升序
     TAGS=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
-        /api/docker/docker-local/v2/infiniTensor-aarch64-cambricon/tags/list \
+        /api/docker/docker-local/v2/infiniLM-aarch64-cambricon/tags/list \
     | jq -r '.tags[]' | sort)
 
     # 遍历每个 tag，查询 Storage API 并输出 tag + 创建时间
     for tag in $TAGS; do
     created=$(/home/zkjh/jfrog rt curl \
         --server-id=my-jcr \
-        /api/storage/docker-local/infiniTensor-aarch64-cambricon/$tag \
+        /api/storage/docker-local/infiniLM-aarch64-cambricon/$tag \
         | jq -r '.created')
     echo "$tag $created"
     done > tag_dates.txt
@@ -93,17 +95,11 @@ else
     echo "The specified version : $LATEST_TAG"
 fi
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
-    docker pull docker.xcoresigma.com/docker/infiniTensor-aarch64-cambricon:$LATEST_TAG
-    if [ $? -ne 0 ]; then
-        exit 1;
-    fi
-fi
-
-ret=`docker ps -a | grep infiniTensor_cambricon_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}`
+DOCKER_IMAGE_URL=$LATEST_TAG
+ret=`docker ps -a | grep infiniLM_cambricon_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}`
 if [ $? -eq 0 ]; then
-  docker stop infiniTensor_cambricon_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
-  docker rm infiniTensor_cambricon_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT}
+  docker stop infiniLM_cambricon_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}
+  docker rm infiniLM_cambricon_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}
 fi
 
 # Slave节点需要等待Master节点的HTTP Server启动完成......
@@ -176,9 +172,9 @@ MLU_VISIBLE_DEVICES=$(echo "${GPU_INFO[@]}" | sed -E 's/\s+/\,/g')
 echo "MLU_VISIBLE_DEVICES=$MLU_VISIBLE_DEVICES"
 
 LOG_PATH="<<<LOG_PATH>>>"
-LOG_NAME="server_log_<<<TEST_TYPE>>>_$(date +'%Y%m%d_%H%M%S').log"
+LOG_NAME="server_log_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT}_$(date +'%Y%m%d_%H%M%S').log"
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     MASTER_IP=`echo $SERVER_LIST | tr '_' '\n' | head -n 1`
     if [ $LOCAL_IP == $MASTER_IP ]; then        # 获取Master节点的端口号
         # 获取文件锁（阻塞）
@@ -238,7 +234,7 @@ if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
     fi
 fi
 
-EXEC_COMMAND="docker run --name=infiniTensor_cambricon_<<<TEST_TYPE>>>_${SESSION_ID}_${JOB_COUNT} "
+EXEC_COMMAND="docker run --name=infiniLM_cambricon_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT} "
 EXEC_COMMAND+="-e MLU_VISIBLE_DEVICES=$MLU_VISIBLE_DEVICES "
 EXEC_COMMAND+=$(cat <<'EOF'
     <<<DOCKER_ARGS>>>
@@ -254,7 +250,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ "<<<TEST_TYPE>>>" != "UnitTest" ]; then
+if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     TIMEOUT_SECONDS=$((60*30)) # 设置启动超时时间为30分钟
     if [ $NODE_RANK -eq 0 ]; then
         timeout $TIMEOUT_SECONDS tail -F "$LOG_PATH/$LOG_NAME" | grep --line-buffered -m 1 -E "INFO:\s+Application startup complete\."

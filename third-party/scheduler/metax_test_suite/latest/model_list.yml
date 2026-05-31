@@ -1,5 +1,5 @@
 models:
 - model_name: 9g_8b_thinking_llama
   card_type: C550
-  default_params: --moore --model_path=/data/shared/zs/9g_8b_thinking_llama/ --max_tokens=1000 --max_batch_size=4 --temperature=1.0 --top_p=0.8 --top_k=1 --tp=1 --port=$PORT
+  default_params: --metax --model_path=/data-aisoft/mechdancer/models/9g_8b_thinking_llama/ --max_tokens=1000 --max_batch_size=4 --temperature=1.0 --top_p=0.8 --top_k=1 --tp=1 --port=$PORT
   note: ''

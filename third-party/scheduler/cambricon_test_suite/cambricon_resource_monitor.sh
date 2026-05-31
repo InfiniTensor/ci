@@ -15,12 +15,14 @@ ENGINE_TYPE=$2
 MODEL_LIST=$3
 DOCKER_ARGS="$4"
 SESSION_ID=$5
+TEST_PARAM="$6"
+version=$7
 curr_dir=$(pwd)
 
 if [ -z $TEST_TYPE ]; then
     echo "Parameter Test_Type required!"
     exit 1
-elif [ $TEST_TYPE != "Smoke" ] && [ $TEST_TYPE != "Performance" ] && [ $TEST_TYPE != "Stability" ] && [ $TEST_TYPE != "Accuracy" ] && [ $TEST_TYPE != "Unit" ]; then
+elif [ $TEST_TYPE != "Inference" ] && [ $TEST_TYPE != "Bench" ] && [ $TEST_TYPE != "Service" ] && [ $TEST_TYPE != "Accuracy" ]; then
     echo "Test_Type is wrong!"
     exit 1
 fi
@@ -28,7 +30,7 @@ fi
 if [ -z $ENGINE_TYPE ]; then
     echo "Parameter PLATFORM required!"
     exit 1
-elif [ $ENGINE_TYPE != "InfiniTensor" ]; then
+elif [ $ENGINE_TYPE != "InfiniLM" ]; then
     echo "Inference Engine Type is wrong!"
     exit 1
 fi
@@ -38,33 +40,18 @@ if [ -z $MODEL_LIST ]; then
     exit 1
 fi
 
-if [ $TEST_TYPE == "Performance" ]; then
-    TEST_PARAM=$6
-    version=$7
-    if [ -z $TEST_PARAM ]; then
-        echo "Parameter Test_Param required!"
-        exit 1
-    elif [ $TEST_PARAM != "Random" ] && [ $TEST_PARAM != "SharedGPT" ]; then
-        echo "Test_Param is wrong!"
-        exit 1
-    fi
-else
-    version=$6
-fi
+echo "#################################### Cambricon #########################################"
+echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID ${TEST_PARAM// /_} $version"
+echo "########################################################################################"
 
-echo "#################################### Cambricon #####################################"
-echo "$TEST_TYPE $ENGINE_TYPE $MODEL_LIST $DOCKER_ARGS $SESSION_ID $TEST_PARAM $version"
-echo "#################################################################################"
-
-if [ $ENGINE_TYPE == "InfiniTensor" ]; then
+if [ $ENGINE_TYPE == "InfiniLM" ]; then
     declare -A npu_server_list=(
         ["aicc001"]="172.22.162.16"
     )
     if [ -z $version ]; then
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" "latest"`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
     else
-        version="${version##*:}"
-        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniTensor.py ${TEST_TYPE} "${DOCKER_ARGS}" $version`)
+        model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" $version`)
     fi
 fi
 
@@ -72,28 +59,20 @@ log_name_suffix=$(date +"%Y%m%d")
 export TASK_START_TIME=${log_name_suffix}
 parallel=3
 
-mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/stability/$SESSION_ID $curr_dir/logs/performance/$SESSION_ID $curr_dir/logs/smoke/$SESSION_ID $curr_dir/logs/unit/$SESSION_ID
+mkdir -p $curr_dir/logs/accuracy/$SESSION_ID $curr_dir/logs/bench/$SESSION_ID $curr_dir/logs/inference/$SESSION_ID $curr_dir/logs/service/$SESSION_ID
 mkdir -p $curr_dir/report_${log_name_suffix}/$SESSION_ID
 
-if [ $TEST_TYPE == "Smoke" ]; then
-    rm -rf $curr_dir/logs/smoke/$SESSION_ID/*.log $curr_dir/logs/smoke/$SESSION_ID/*.log_* $curr_dir/logs/smoke/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/smoke/$SESSION_ID/"processed_models"_${log_name_suffix}
+if [ $TEST_TYPE == "Inference" ]; then
+    processed_models=${curr_dir}/logs/inference/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-elif [ $TEST_TYPE == "Performance" ]; then
-    rm -rf $curr_dir/logs/performance/$SESSION_ID/*.log $curr_dir/logs/performance/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/performance/$SESSION_ID/"processed_models"_${log_name_suffix}
+elif [ $TEST_TYPE == "Bench" ]; then
+    processed_models=${curr_dir}/logs/bench/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
-elif [ $TEST_TYPE == "Stability" ]; then
-    rm -rf $curr_dir/logs/stability/$SESSION_ID/*.log $curr_dir/logs/stability/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/stability/$SESSION_ID/"processed_models"_${log_name_suffix}
+elif [ $TEST_TYPE == "Service" ]; then
+    processed_models=${curr_dir}/logs/service/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 elif [ $TEST_TYPE == "Accuracy" ]; then
-    rm -rf $curr_dir/logs/accuracy/$SESSION_ID/*.log $curr_dir/logs/accuracy/$SESSION_ID/processed_models_*
     processed_models=${curr_dir}/logs/accuracy/$SESSION_ID/"processed_models"_${log_name_suffix}
-    touch ${processed_models}
-elif [ $TEST_TYPE == "Unit" ]; then
-    rm -rf $curr_dir/logs/unit/$SESSION_ID/*.log $curr_dir/logs/unit/$SESSION_ID/processed_models_*
-    processed_models=${curr_dir}/logs/unit/$SESSION_ID/"processed_models"_${log_name_suffix}
     touch ${processed_models}
 fi
 
@@ -177,22 +156,29 @@ search_servers() {
 
 for name in "${!npu_server_list[@]}"; do
     echo "$name => ${npu_server_list[$name]}"
-    scp -P 14735 "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
+    scp -P 14735 "${curr_dir}/${ENGINE_TYPE}_job_executor_for_${TEST_TYPE}Test_${TEST_PARAM// /_}.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
     scp -P 14735 "${curr_dir}/npu_lock_manager_for_ci.sh" zkjh@${npu_server_list[$name]}:/home/zkjh
 done
 
-if [ $TEST_TYPE == "Unit" ]; then
+if [ $TEST_TYPE != "Service" ]; then
+    GPU_QUANTITY=`echo "${TEST_PARAM}" | awk '{print $NF}'`
+
     while true; do
         model="None"
-        GPU_QUANTITY=1
         GPU_MODEL="MLU590"
         echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
         search_servers $model 0 $GPU_QUANTITY servers
         if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
-            echo "Idle GPU(s) satisfying the conditions have been found, Unit Test will begin..."
+            echo "Idle GPU(s) satisfying the conditions have been found, Inference Test will begin..."
             echo
-            unit_log=$curr_dir/logs/unit/$SESSION_ID/cron_job_${log_name_suffix}_0.log
-            $curr_dir/infiniTensor_cambricon_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $unit_log 2>&1 &
+            if [ $TEST_TYPE == "Inference" ]; then
+                inference_log=$curr_dir/logs/inference/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_cambricon_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $inference_log 2>&1 &
+            else
+                test_type=$(echo "${TEST_TYPE}" | tr '[:upper:]' '[:lower:]')
+                log_path=$curr_dir/logs/${test_type}/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_0.log
+                $curr_dir/infiniLM_cambricon_test.sh 1 "${servers[*]}" ${model} 0 ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $log_path 2>&1 &
+            fi
             last_pid=$!
             wait $last_pid  # 等待子进程结束
             err=$?          # 保存结束子进程的退出状态
@@ -202,8 +188,13 @@ if [ $TEST_TYPE == "Unit" ]; then
                     sleep 10
                     continue
                 fi
-                echo "Unit test failed with exit code $err. Last 200 lines of $unit_log:"
-                tail -n 200 "$unit_log" || true
+                if [ $TEST_TYPE == "Inference" ]; then
+                    echo "Inference test failed with exit code $err. Last 200 lines of $inference_log:"
+                    tail -n 200 "$inference_log" || true
+                else
+                    echo "${TEST_TYPE} test failed with exit code $err. Last 200 lines of $log_path:"
+                    tail -n 200 "$log_path" || true
+                fi
             fi
             break
         else
@@ -216,171 +207,166 @@ if [ $TEST_TYPE == "Unit" ]; then
 
     echo "All tests completed!"
 
-    exit $err
-fi
-
-GPU_resource_demand=()
-
-for item in "${full_model_list[@]}"; do
-    model=`echo "$item" | awk -F : '{print $1}'`
-    # 模型是否还没有测试过
-    if [ -z `cat ${processed_models} | grep -w ${model}` ]; then
-        GPU_resource_demand+=(${item})
-    fi
-done
-
-GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
-
-echo "Starting tests for Model List: ${GPU_resource_demand[@]}"
-
-if [ -z $version ]; then
-    echo "Inference Engine Version: Latest"
-else
-    echo "Inference Engine Version: ${version}"
-fi
-
-ret=0
-
-while true; do
-    job_count=0
-    temp_list=()
-    unset pid_map
-    declare -A pid_map
-    for item in "${GPU_resource_demand[@]}"; do
-        model=`echo "$item" | awk -F : '{print $1}'`
-        GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
-        echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY"
-        search_servers $model $job_count $GPU_QUANTITY servers
-        if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
-            echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
-            echo
-            if [ $TEST_TYPE == "Stability" ]; then
-                $curr_dir/infiniTensor_cambricon_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/stability/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Stability testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Performance" ]; then
-                $curr_dir/infiniTensor_cambricon_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${TEST_PARAM} ${version} > $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/performance/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Performance testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Smoke" ]; then
-                $curr_dir/infiniTensor_cambricon_test.sh 1 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/smoke/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Smoke testing task|All tests have completed"`
-            elif [ $TEST_TYPE == "Accuracy" ]; then
-                $curr_dir/infiniTensor_cambricon_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} ${version} > $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log 2>&1 &
-                last_pid=$!
-                pid_map[$last_pid]=$item
-                status_msg=`tail -F $curr_dir/logs/accuracy/$SESSION_ID/cron_job_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model Accuracy testing task|All tests have completed"`
-            else
-                echo "Test Type is Wrong!"
-                exit 1
-            fi
-
-            if [ "$status_msg" == "All tests have completed" ]; then
-                echo "Failed to set up the model runtime environment. Trying the next model..."
-                echo
-                wait $last_pid  # 等待上一个子进程结束
-                err=$?          # 保存上一个结束子进程的退出状态
-                if [ $err -ne 0 ]; then
-                    if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                        echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
-                        temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
-                        continue
-                    fi
-                else
-                    echo "The program encountered an error!"
-                fi
-                ret=1
-                continue
-            else
-                echo $status_msg
-            fi
-
-            ((job_count++))
-            if [ $job_count -ge $parallel ]; then
-                # 等待所有后台子任务结束
-                remaining=$job_count
-                while (( remaining > 0 )); do
-                    wait -n -p done_pid  # 等待任意一个子进程结束
-                    err=$?               # 保存最先结束子进程的退出状态
-                    if [ $err -ne 0 ]; then
-                        if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                            temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
-                        fi
-                    fi
-                    ((remaining--))
-                done
-
-                job_count=0
-                echo "The current batch of model tests has completed!"
-                echo
-            fi
+    if [ $TEST_TYPE == "Inference" ]; then
+        echo "Inference test is successful, logs:"
+        cat $inference_log
+    else
+        echo "${TEST_TYPE} test is successful, logs:"
+        if [ $TEST_TYPE == "Accuracy" ]; then
+            tail -n 200 "$log_path"
         else
-            temp_list+=(${item})
-            echo "No sufficient idle GPUs are available, model ${model} cannot be tested. Proceeding to the next model..."
-            echo
-            # 等待一段时间后重新扫描（例如 10 秒）
-            sleep 10
+            cat "$log_path"
+        fi
+    fi
+
+    exit $err
+else
+    GPU_resource_demand=()
+
+    for item in "${full_model_list[@]}"; do
+        # 模型是否还没有测试过
+        if [ -z `cat ${processed_models} | grep -w ${item}_${TEST_PARAM// /_}` ]; then
+            GPU_resource_demand+=(${item})
         fi
     done
 
-    if [ $job_count -gt 0 ] && [ $job_count -lt $parallel ]; then
-        # 等待所有后台子任务结束
-        remaining=$job_count
-        while (( remaining > 0 )); do
-            wait -n -p done_pid  # 等待任意一个子进程结束
-            err=$?               # 保存最先结束子进程的退出状态
-            if [ $err -ne 0 ]; then
-                if [ $err -eq 10 ]; then  # 没有资源，等待超时
-                    temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+    GPU_resource_demand=($(printf "%s\n" "${GPU_resource_demand[@]}" | uniq))
+
+    echo "Beginning testing of the model list: ${GPU_resource_demand[@]}"
+
+    if [ -z $version ]; then
+        echo "Inference Engine Version: Latest"
+    else
+        echo "Inference Engine Version: ${version}"
+    fi
+
+    ret=0
+
+    while true; do
+        job_count=0
+        temp_list=()
+        unset pid_map
+        declare -A pid_map
+        for item in "${GPU_resource_demand[@]}"; do
+            model=`echo "$item" | awk -F : '{print $1}'`
+            GPU_QUANTITY=`echo "$item" | awk -F : '{print $2}'`
+            GPU_MODEL=`echo "$item" | awk -F : '{print $3}'`
+            echo "Current Model: $model, GPU Quantity: $GPU_QUANTITY, GPU Model: $GPU_MODEL"
+            search_servers $model $job_count $GPU_QUANTITY servers
+            if [ ${#servers[@]} -ge ${SERVER_QUANTITY} ]; then
+                echo "Idle GPU(s) satisfying the conditions have been found, model ${model} testing will begin..."
+                echo
+                $curr_dir/infiniLM_cambricon_test.sh 0 "${servers[*]}" ${item} ${job_count} ${TEST_TYPE} ${ENGINE_TYPE} ${SESSION_ID} "${TEST_PARAM}" ${version} > $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log 2>&1 &
+                last_pid=$!
+                pid_map[$last_pid]=$item
+                status_msg=`tail -F $curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_${job_count}.log | grep --line-buffered -m 1 -E "Starting the model ${TEST_TYPE} testing task|All tests have completed"`
+
+                if [ "$status_msg" == "All tests have completed" ]; then
+                    echo "Failed to set up the model runtime environment. Trying the next model..."
+                    echo
+                    wait $last_pid  # 等待上一个子进程结束
+                    err=$?          # 保存上一个结束子进程的退出状态
+                    if [ $err -ne 0 ]; then
+                        if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                            echo "Resources unavailable; the wait exceeded the timeout. Added to the queue; retry scheduled..."
+                            temp_list+=(${pid_map[$last_pid]})  # 加入队列，稍后重试
+                            continue
+                        fi
+                    else
+                        echo "The program encountered an error!"
+                    fi
+                    ret=1
+                    continue
+                else
+                    echo $status_msg
                 fi
+
+                ((job_count++))
+                if [ $job_count -ge $parallel ]; then
+                    # 等待所有后台子任务结束
+                    remaining=$job_count
+                    while (( remaining > 0 )); do
+                        wait -n -p done_pid  # 等待任意一个子进程结束
+                        err=$?               # 保存最先结束子进程的退出状态
+                        if [ $err -ne 0 ]; then
+                            if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                                temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                            fi
+                        fi
+                        ((remaining--))
+                    done
+
+                    job_count=0
+                    echo "The current batch of model tests has completed!"
+                    echo
+                fi
+            else
+                temp_list+=(${item})
+                echo "No sufficient idle GPUs are available, model ${model} cannot be tested. Proceeding to the next model..."
+                echo
+                # 等待一段时间后重新扫描（例如 10 秒）
+                sleep 10
             fi
-            ((remaining--))
         done
 
-        echo "The current batch of model tests has completed!"
-        echo
-    fi
+        if [ $job_count -gt 0 ] && [ $job_count -lt $parallel ]; then
+            # 等待所有后台子任务结束
+            remaining=$job_count
+            while (( remaining > 0 )); do
+                wait -n -p done_pid  # 等待任意一个子进程结束
+                err=$?               # 保存最先结束子进程的退出状态
+                if [ $err -ne 0 ]; then
+                    if [ $err -eq 10 ]; then  # 没有资源，等待超时
+                        temp_list+=(${pid_map[$done_pid]})  # 加入队列，稍后重试
+                    fi
+                fi
+                ((remaining--))
+            done
 
-    if [[ ${#temp_list[@]} -eq 0 ]]; then
-        echo "All tests completed!"
-        if [ $TEST_TYPE == "Accuracy" ]; then
-            python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Cambricon_MLU590 --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
-        elif [ $TEST_TYPE == "Smoke" ]; then
-            if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
-                latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
-            else
-                latest_tag="unknown"
-            fi
-            
-            python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
+            echo "The current batch of model tests has completed!"
+            echo
+        fi
 
-            # last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
-            # if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
-            #     last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
-            # else
-            #     last_version="unknown"
-            # fi
-            
-            # if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
-            #     console_output_flag=0
-            #     if [ $console_output_flag -eq 1 ]; then
-            #         python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
+        if [[ ${#temp_list[@]} -eq 0 ]]; then
+            echo "All tests completed!"
+            cat "$curr_dir/logs/service/$SESSION_ID/cron_job_${TEST_PARAM// /_}_${log_name_suffix}_$((job_count-1)).log"
+
+            # if [ $TEST_TYPE == "Accuracy" ]; then
+            #     python3 $curr_dir/write_file.py --file "$curr_dir/report_${log_name_suffix}/$SESSION_ID/${log_name_suffix}_result.txt" --framework Cambricon_MLU590 --engine ${ENGINE_TYPE} --sessionID ${SESSION_ID}
+            # elif [ $TEST_TYPE == "Smoke" ]; then
+            #     if [ -f $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt ]; then
+            #         latest_tag=$(cat $curr_dir/report_${log_name_suffix}/$SESSION_ID/version.txt)
             #     else
-            #         python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            #         latest_tag="unknown"
+            #     fi
+                
+            #     python3 $curr_dir/SendMsgToBot.py "$latest_tag" "$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt"
+
+            #     last_date=$(date -d "$log_name_suffix -1 day" +"%Y%m%d")
+            #     if [ -f $curr_dir/report_${last_date}/$SESSION_ID/version.txt ]; then
+            #         last_version=$(cat $curr_dir/report_${last_date}/$SESSION_ID/version.txt)
+            #     else
+            #         last_version="unknown"
+            #     fi
+                
+            #     if [ -f "$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt" ]; then
+            #         console_output_flag=0
+            #         if [ $console_output_flag -eq 1 ]; then
+            #             python3 -c "from SendMsgToBot import compare_summary_files; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); print(result)"
+            #         else
+            #             python3 -c "from SendMsgToBot import compare_summary_files, send_summary_to_server; result = compare_summary_files(\"$latest_tag\", \"$curr_dir/report_${log_name_suffix}/$SESSION_ID/summary_${log_name_suffix}.txt\", \"$last_version\", \"$curr_dir/report_${last_date}/$SESSION_ID/summary_${last_date}.txt\"); send_summary_to_server(None, None, result)"
+            #         fi
             #     fi
             # fi
-        fi
-        break
-    else
-        GPU_resource_demand=("${temp_list[@]}")
-        echo
-        echo "Preparing to start the next round of model testing: ${GPU_resource_demand[@]}"
-        echo
-    fi
-done
 
-exit $ret
+            break
+        else
+            GPU_resource_demand=("${temp_list[@]}")
+            echo
+            echo "Preparing to start the next round of model testing: ${GPU_resource_demand[@]}"
+            echo
+        fi
+    done
+
+    exit $ret
+fi
