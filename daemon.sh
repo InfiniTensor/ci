@@ -44,13 +44,19 @@ chmod 600 ~/.ssh/config
 exec /CI_Workspace/entrypoint.sh "$@"
 '
 
+if [ $platform == "Hygon" ]; then
+    CI_Workspace="/data-aisoft/limingge/CI_Workspace_for_InfiniLM"
+else
+    CI_Workspace="/data/shared/limingge/CI_Workspace_for_InfiniLM"
+fi
+
 docker run --rm \
     --name="CI_test_job_${platform}_${test_type}_${test_param// /_}_${CI_job_id}" \
     --ipc=host \
     --net=host \
     --privileged \
     -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks \
-    -v /data/shared/limingge/CI_Workspace_for_InfiniLM:/CI_Workspace \
+    -v ${CI_Workspace}:/CI_Workspace \
     -v /data-aisoft/artifacts:/artifacts \
     -v "${HOME}/.ssh:/CI_Host_SSH:ro" \
     -v /var/run/docker.sock:/var/run/docker.sock \
