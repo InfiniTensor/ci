@@ -1,5 +1,5 @@
 models:
-- model_name: 9g_8b_thinking_llama
+- model_name: 9g_8b_thinking
   card_type: Z100L
-  default_params: --device hygon --model=/data-aisoft/mechdancer/models/9g_8b_thinking_llama/ --max-new-tokens=100 --max-batch-size=32 --tp=1 --temperature=1.0 --top-p=0.8 --top-k=1 --port=$PORT
+  default_params: --device hygon --model=/data-aisoft/mechdancer/models/9g_8b_thinking/ --max-new-tokens=100 --max-batch-size=32 --tp=1 --temperature=1.0 --top-p=0.8 --top-k=1 --port=$PORT
   note: ''
