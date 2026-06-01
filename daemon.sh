@@ -48,11 +48,7 @@ fi
 exec /CI_Workspace/entrypoint.sh "$@"
 '
 
-if [ $platform == "Hygon" ]; then
-    CI_Workspace="/data-aisoft/limingge/CI_Workspace_for_InfiniLM"
-else
-    CI_Workspace="/data/shared/limingge/CI_Workspace_for_InfiniLM"
-fi
+CI_Workspace="/data/shared/limingge/CI_Workspace_for_InfiniLM"
 
 docker run --rm \
     --name="CI_test_job_${platform}_${test_type}_${test_param// /_}_${CI_job_id}" \
