@@ -55,19 +55,12 @@ docker run --rm \
     --ipc=host \
     --net=host \
     --privileged \
-    --device=/dev/kfd \
-    --device=/dev/mkfd \
-    --device=/dev/dri \
-    -v /opt/hyhal:/opt/hyhal \
     -v /home/zkjh/.npu_locks:/home/zkjh/.npu_locks \
     -v "${CI_Workspace}:/CI_Workspace" \
     -v /data-aisoft/artifacts:/artifacts \
     -v "${HOME}/.ssh:/CI_Host_SSH:ro" \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    --group-add video \
     --entrypoint /bin/bash \
-    --cap-add=SYS_PTRACE \
-    --security-opt seccomp=unconfined \
     auto-test:latest \
     -lc "${container_script}" \
     bash \
