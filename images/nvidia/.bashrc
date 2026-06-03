@@ -103,10 +103,10 @@ test -f "/root/.xmake/profile" && source "/root/.xmake/profile"
 
 export XMAKE_ROOT=y
 
-export INFINI_ROOT="$HOME/.infinici"
+export INFINI_ROOT="/root/.infinici"
 export LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 
-export PYTHONPATH="$HOME/.infini/lib":$PYTHONPATH
+export PYTHONPATH="/root/.infini/lib":$PYTHONPATH
 
 export XMAKE_MAIN_REPO=https://gitee.com/crapromer/xmake-repo.git
 
