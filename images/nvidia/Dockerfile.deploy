@@ -38,7 +38,7 @@ RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV CPATH=/usr/local/cuda/include
-ENV LIBRARY_PATH=/usr/local/cuda/lib64
+ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 ENV INFINI_ROOT="/root/.infinici"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
