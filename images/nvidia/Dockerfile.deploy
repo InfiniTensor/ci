@@ -49,7 +49,6 @@ ARG InfiniCore_BRANCH
 RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
-RUN git switch ${InfiniCore_BRANCH}
 
 WORKDIR /workspace/InfiniCore/third_party
 
