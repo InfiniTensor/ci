@@ -66,7 +66,7 @@ ENV PATH=${CUTLASS_HOME}:${PATH}
 WORKDIR /workspace/InfiniCore
 
 # Docker build has nvcc but no GPU driver/nvidia-smi; set CUDA arch explicitly.
-ARG CUDA_ARCH=sm_80,sm_86,sm_89,sm_90
+ARG CUDA_ARCH="8.0"
 ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
 RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --cuda_arch=${CUDA_ARCH} --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
