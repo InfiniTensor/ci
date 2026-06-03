@@ -114,6 +114,9 @@ export XMAKE_MAIN_REPO=https://gitee.com/crapromer/xmake-repo.git
 # export CUTLASS_ROOT=/home/wuwei/lmci/InfiniCore/third_party/cutlass
 # export PATH=$CUTLASS_HOME:$PATH
 
+export CUTLASS_HOME=/workspace/InfiniCore/third_party/cutlass/
+export PATH=$CUTLASS_HOME:$PATH
+
 export CPLUS_INCLUDE_PATH=/usr/include/python3.12:$CPLUS_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH=$CUDA_HOME/include:$CPLUS_INCLUDE_PATH
 
