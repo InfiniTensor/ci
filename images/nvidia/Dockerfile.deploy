@@ -38,7 +38,7 @@ RUN curl -fsSL https://xmake.io/shget.text | bash
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV CPATH=/usr/local/cuda/include
-ENV LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+ENV LIBRARY_PATH=/usr/local/cuda/lib64:$LIBRARY_PATH
 ENV INFINI_ROOT="/root/.infinici"
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
 ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
@@ -49,6 +49,7 @@ ARG InfiniCore_BRANCH
 RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
+RUN git switch ${InfiniCore_BRANCH}
 
 WORKDIR /workspace/InfiniCore/third_party
 
@@ -64,7 +65,10 @@ ENV PATH=${CUTLASS_HOME}:${PATH}
 
 WORKDIR /workspace/InfiniCore
 
-RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
+# Docker build has nvcc but no GPU driver/nvidia-smi; set CUDA arch explicitly.
+ARG CUDA_ARCH=sm_80,sm_86,sm_89,sm_90
+ENV TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0"
+RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --cuda_arch=${CUDA_ARCH} --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
 WORKDIR /workspace/InfiniLM
