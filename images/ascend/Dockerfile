@@ -11,6 +11,11 @@ ARG https_proxy
 ARG no_proxy
 ARG PIP_INDEX_URL=https://pypi.org/simple
 
+ENV HTTP_PROXY=${HTTP_PROXY} \
+    HTTPS_PROXY=${HTTPS_PROXY} \
+    http_proxy=${http_proxy} \
+    https_proxy=${https_proxy}
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         git \
