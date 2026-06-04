@@ -89,7 +89,8 @@ ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH
-RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
+RUN RUN git config --global --unset-all url.git@github.com:.insteadof || true && \
+        git clone --recursive https://github.com/Vincent777/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
 
