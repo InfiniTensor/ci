@@ -69,6 +69,9 @@ RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake repo -u
 
+# Base image links libmusa.so.4 to an empty libmusa.so.4.3.1 stub.
+RUN ln -sf libmusa.so.4.3.5 /usr/lib/x86_64-linux-gnu/libmusa.so.4
+
 RUN xmake f -y --moore-gpu=y --ccl=y --graph=y -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
