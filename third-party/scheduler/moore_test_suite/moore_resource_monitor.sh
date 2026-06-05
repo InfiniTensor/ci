@@ -46,7 +46,7 @@ echo "##########################################################################
 
 if [ $ENGINE_TYPE == "InfiniLM" ]; then
     declare -A npu_server_list=(
-        ["aicc001"]="172.22.162.95"
+        ["aicc001"]="172.22.162.97"
     )
     if [ -z $version ]; then
         model_config_list=(`python3 $curr_dir/script_generator_for_InfiniLM.py ${TEST_TYPE} "${DOCKER_ARGS}" "${TEST_PARAM// /_}" "latest"`)
