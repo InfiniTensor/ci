@@ -1,0 +1,48 @@
+name: Cleanup CI Docker Images
+
+on:
+  workflow_call:
+    inputs:
+      keep_count:
+        description: Number of newest images to keep per prefix
+        required: false
+        default: "5"
+        type: string
+      dry_run:
+        description: Dry run only (list without deleting)
+        required: false
+        default: false
+        type: boolean
+      platform:
+        description: Platform to clean
+        required: false
+        default: "all"
+        type: string
+
+jobs:
+  cleanup:
+    name: cleanup (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON((inputs.platform != 'all') && format('["{0}"]', inputs.platform) || '["nvidia","metax","moore","cambricon","hygon"]') }}
+    runs-on:
+      - self-hosted
+      - linux
+      - ${{ matrix.platform }}
+      - InfiniLM
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cleanup old CI Docker images
+        env:
+          KEEP_COUNT: ${{ inputs.keep_count || '5' }}
+          DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          args=(--platform "${{ matrix.platform }}" --count "${KEEP_COUNT}")
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            args+=(--dry-run)
+          fi
+          bash ./cleanup_ci_images.sh "${args[@]}"
