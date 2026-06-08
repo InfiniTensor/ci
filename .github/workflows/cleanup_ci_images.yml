@@ -32,9 +32,17 @@ jobs:
       - ${{ matrix.platform }}
       - InfiniLM
     timeout-minutes: 10
-    steps:
-      - name: Checkout repository
+    steps:      
+      - name: Checkout CI tools
         uses: actions/checkout@v4
+        with:
+          repository: InfiniTensor/ci
+          ref: ${{ inputs.ci_ref }}
+          path: repo/.ci
+          fetch-depth: 1
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /cleanup_ci_images.sh
 
       - name: Cleanup old CI Docker images
         env:
@@ -45,4 +53,4 @@ jobs:
           if [[ "${DRY_RUN}" == "true" ]]; then
             args+=(--dry-run)
           fi
-          bash ./cleanup_ci_images.sh "${args[@]}"
+          bash repo/.ci/cleanup_ci_images.sh "${args[@]}"
