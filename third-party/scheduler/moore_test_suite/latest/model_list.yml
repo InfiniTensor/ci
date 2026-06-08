@@ -1,5 +1,5 @@
 models:
-- model_name: 9g_8b_thinking_llama
+- model_name: 9g_8b_thinking
   card_type: A100
   default_params: --device moore --model=/data-aisoft/zhushuang/models/9g_8b_thinking_llama/ --max-new-tokens=512 --max-batch-size=32 --temperature=1.0 --top-p=0.8 --top-k=1 --tp=2 --port=$PORT
   note: ''
