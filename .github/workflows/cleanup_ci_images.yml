@@ -3,6 +3,11 @@ name: Cleanup CI Docker Images
 on:
   workflow_call:
     inputs:
+      ci_ref:
+        description: "Ref of InfiniTensor/ci to use for CI tooling"
+        required: false
+        type: string
+        default: "infiniCore_ci"
       keep_count:
         description: Number of newest images to keep per prefix
         required: false
