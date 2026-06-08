@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: ${{ fromJSON((inputs.platform != 'all') && format('["{0}"]', inputs.platform) || '["nvidia","metax","moore","cambricon","hygon"]') }}
+        platform: ${{ fromJSON((inputs.platform != '' && inputs.platform != 'all') && format('["{0}"]', inputs.platform) || '["nvidia","metax","moore","cambricon","hygon"]') }}
     runs-on:
       - self-hosted
       - linux
