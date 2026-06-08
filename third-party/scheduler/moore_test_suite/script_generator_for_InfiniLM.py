@@ -96,7 +96,7 @@ def main():
 
             args = str(args).splitlines()[0].strip()
 
-            match = re.search(r"--tp\s+(\d+)", args)
+            match = re.search(r"--tp(?:=|\s+)(\d+)", args)
             npu_quantity = match.group(1) if match else "1"
             model_list += f"{name}:{npu_quantity}:{GPU} "
 
