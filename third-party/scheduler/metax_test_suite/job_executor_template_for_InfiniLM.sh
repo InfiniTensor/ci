@@ -45,7 +45,14 @@ cleanup_locks() {
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
-        echo "正常退出（退出码: 0），保留NPU锁"
+        if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
+            echo "正常退出（退出码: 0），保留NPU锁"
+        else
+            if [ ! -z "$LOCKED_NPUS" ]; then
+                echo "正在释放NPU锁: ${LOCKED_NPUS}"
+                release_npu_locks_batch "$SERVER_NAME" "$LOCKED_NPUS" "$TASK_ID" "$SESSION_ID"
+            fi
+        fi
     fi
 }
 

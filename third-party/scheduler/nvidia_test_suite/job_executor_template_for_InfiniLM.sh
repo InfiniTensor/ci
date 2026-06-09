@@ -45,7 +45,14 @@ cleanup_locks() {
             release_npu_locks_batch "$SERVER_NAME" "$LOCKED_GPUS" "$TASK_ID" "$SESSION_ID"
         fi
     else
-        echo "正常退出（退出码: 0），保留GPU锁"
+        if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
+            echo "正常退出（退出码: 0），保留GPU锁"
+        else
+            if [ ! -z "$LOCKED_GPUS" ]; then
+                echo "正在释放GPU锁: ${LOCKED_GPUS}"
+                release_npu_locks_batch "$SERVER_NAME" "$LOCKED_GPUS" "$TASK_ID" "$SESSION_ID"
+            fi
+        fi
     fi
 }
 
