@@ -327,7 +327,7 @@ if [ $TEST_TYPE == "Service" ]; then
                     docker exec ${ENGINE_TYPE,}_moore_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count} /bin/bash -c \"
                         unset http_proxy https_proxy
                         unset HTTP_PROXY HTTPS_PROXY
-                        python InfiniLM/scripts/test_perf.py --port ${server_port} --verbose
+                        python InfiniLM/scripts/test_perf.py --api-url 127.0.0.1:${server_port} --verbose
                     \"
                 " > "$curr_dir/logs/service/$session_id/$filename" 2>&1 &
             pid=$!
