@@ -37,6 +37,11 @@ def extract_card_types(card_type_str):
     return cleaned_cards
 
 
+def escape_for_heredoc(text):
+    """Escape $ so heredoc does not expand container-internal variables on the host."""
+    return text.replace('$', r'\$')
+
+
 def main():
     if len(sys.argv) != 5:
         print("Usage: python script_generator_for_InfiniLM.py <test_type> <docker_args> <test_param> <version>")
@@ -149,7 +154,7 @@ def main():
                 if test_type == "Service":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " $DOCKER_IMAGE_URL python InfiniLM/python/infinilm/server/inference_server.py")
                 else:
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " 2>&1 &")
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", escape_for_heredoc(docker_args) + " 2>&1 &")
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:
