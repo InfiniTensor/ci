@@ -150,7 +150,7 @@ def main():
                 if test_type == "Service":
                     lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " -e MUSA_VISIBLE_DEVICES=$MUSA_VISIBLE_DEVICES $DOCKER_IMAGE_URL python InfiniLM/python/infinilm/server/inference_server.py")
                 else:
-                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args)
+                    lines[line_num] = line.replace("<<<DOCKER_ARGS>>>", docker_args + " 2>&1 &")
             line_num += 1
 
         with open(f"{curr_dir}/{target_file}", 'w') as file:

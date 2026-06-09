@@ -303,5 +303,12 @@ if [ "<<<TEST_TYPE>>>" == "ServiceTest" ]; then
     #     sleep 5
     # done
 else
+    pid=$!
+    wait $pid   # 等待子进程结束
+    err=$?      # 保存结束子进程的退出状态
+    if [ $err -ne 0 ]; then
+        exit $err
+    fi
+
     exit 0
 fi
