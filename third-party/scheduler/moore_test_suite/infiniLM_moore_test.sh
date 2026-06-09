@@ -325,10 +325,19 @@ if [ $TEST_TYPE == "Service" ]; then
         if [ $TEST_TYPE == "Service" ]; then
             ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 zkjh@$local_master_ip "
                     docker exec ${ENGINE_TYPE,}_moore_${TEST_TYPE}Test_${model}_${OPTIONS}_${session_id}_${job_count} /bin/bash -c \"
+                        unset http_proxy https_proxy
+                        unset HTTP_PROXY HTTPS_PROXY
                         python InfiniLM/scripts/test_perf.py --port ${server_port} --verbose
                     \"
-                " > "$curr_dir/logs/service/$session_id/$filename"
-
+                " > "$curr_dir/logs/service/$session_id/$filename" 2>&1 &
+            pid=$!
+            wait $pid   # 等待子进程结束
+            err=$?      # 保存结束子进程的退出状态
+            if [ $err -ne 0 ]; then
+                echo "测试结果失败！请检查......"
+            else
+                echo "测试完成！"
+            fi
             cat "$curr_dir/logs/service/$session_id/$filename"
         elif [ $TEST_TYPE == "Smoke" ]; then
             # 获取模型启动命令，并做为参数传入
