@@ -243,7 +243,7 @@ fi
 
 EXEC_COMMAND="docker run --name=infiniLM_cambricon_<<<TEST_TYPE>>>_${MODEL}_${OPTIONS}_${SESSION_ID}_${JOB_COUNT} "
 EXEC_COMMAND+="-e MLU_VISIBLE_DEVICES=$MLU_VISIBLE_DEVICES "
-EXEC_COMMAND+=$(cat <<'EOF'
+EXEC_COMMAND+=$(cat <<EOF
     <<<DOCKER_ARGS>>>
 EOF
 )
