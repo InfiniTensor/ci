@@ -18,6 +18,11 @@ on:
         required: false
         type: number
         default: 5
+      infinicore_branch:
+        description: "InfiniCore branch to pass as InfiniCore_BRANCH build-arg"
+        required: false
+        type: string
+        default: "main"
 
 jobs:
   prepare:
@@ -115,11 +120,19 @@ jobs:
 
       - name: Build and Package
         working-directory: repo
+        env:
+          INFINICORE_BRANCH: ${{ inputs.infinicore_branch }}
+          BUILD_ARGS_RAW: ${{ join(matrix.build_args, ' ') }}
         run: |
           src_dir=$(pwd)
           echo "src_dir: $src_dir"
+          build_args="${BUILD_ARGS_RAW//__Branch_Name__/$INFINICORE_BRANCH}"
+          build_arg_flags=()
+          for arg in $build_args; do
+            build_arg_flags+=(--build-arg "$arg")
+          done
           docker build -f .ci/${{ matrix.dockerfile }} \
-          --build-arg ${{ join(matrix.build_args, ' --build-arg ') }} \
+          "${build_arg_flags[@]}" \
           --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \
           -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .
 
