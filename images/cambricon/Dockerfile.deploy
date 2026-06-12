@@ -69,7 +69,7 @@ RUN PY_PREFIX=/usr/local/python3.10 && \
 
 ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 RUN pip config set global.index-url "${PIP_INDEX_URL}" && \
-    pip install --no-cache-dir --upgrade pip setuptools wheel -i "${PIP_INDEX_URL}" && \
+    pip install --no-cache-dir --upgrade pip "setuptools<82" wheel -i "${PIP_INDEX_URL}" && \
     pip install --no-cache-dir -i "${PIP_INDEX_URL}" \
         transformers \
         pyyaml \
@@ -114,5 +114,8 @@ WORKDIR /workspace/InfiniLM
 COPY . ./
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
+
+RUN pip install --no-cache-dir "setuptools<82" -i "${PIP_INDEX_URL}" && \
+    python -c "import pkg_resources; from transformers import AutoConfig, AutoProcessor; print('transformers import ok')"
 
 WORKDIR /workspace
