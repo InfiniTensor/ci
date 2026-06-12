@@ -97,6 +97,11 @@ jobs:
       - InfiniLM
     timeout-minutes: 180
     steps:
+      - name: Prepare workspace for self-hosted runner
+        run: |
+          git config --global --add safe.directory '*'
+          rm -rf repo
+
       - name: Checkout caller repository
         uses: actions/checkout@v4
         with:
