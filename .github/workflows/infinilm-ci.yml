@@ -138,7 +138,7 @@ jobs:
           for arg in $build_args; do
             build_arg_flags+=(--build-arg "$arg")
           done
-          docker build --no-cache -f .ci/${{ matrix.dockerfile }} \
+          docker build -f .ci/${{ matrix.dockerfile }} \
           "${build_arg_flags[@]}" \
           --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \
           -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .
