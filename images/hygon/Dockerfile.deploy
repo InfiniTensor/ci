@@ -19,13 +19,11 @@ ENV HTTP_PROXY=${HTTP_PROXY} \
     https_proxy=${https_proxy}
 
 ARG APT_MIRROR
-# apt GPG verification fails when HTTP(S)_PROXY is set (CI passes localhost:9992).
-RUN set -eux; \
-    if [ -n "$APT_MIRROR" ]; then \
-        sed -i "s|https\\?://[^/]*/ubuntu|${APT_MIRROR}|g" /etc/apt/sources.list; \
-    fi; \
-    http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= apt-get update; \
-    http_proxy= https_proxy= HTTP_PROXY= HTTPS_PROXY= apt-get install -y --no-install-recommends \
+RUN if [ -n "$APT_MIRROR" ]; then \
+        sed -i "s|http://[^/]*/ubuntu|${APT_MIRROR}|g" /etc/apt/sources.list; \
+    fi && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
         git \
         cmake \
         ninja-build \
@@ -38,8 +36,8 @@ RUN set -eux; \
         libboost-dev \
         libboost-stacktrace-dev \
         libffi-dev \
-        libssl-dev; \
-    rm -rf /var/lib/apt/lists/*
+        libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -61,7 +59,7 @@ ENV LD_LIBRARY_PATH="/opt/dtk-25.04/lib:/opt/dtk-25.04/cuda/lib64:$LD_LIBRARY_PA
 ENV LD_LIBRARY_PATH="/opt/dtk/.hyhal/hydm/lib:$LD_LIBRARY_PATH"
 ENV PATH="/opt/dtk-25.04/cuda/bin:$PATH"
 RUN python -c 'import torch, os; print(os.path.join(os.path.dirname(torch.__file__), "lib"))' >> /etc/ld.so.conf.d/torch.conf && ldconfig
-ENV PYTHONPATH="/root/.infini/lib"
+ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 
 WORKDIR /workspace
 
