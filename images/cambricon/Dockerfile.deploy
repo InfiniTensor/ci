@@ -115,7 +115,4 @@ COPY . ./
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
 
-RUN pip install --no-cache-dir "setuptools<82" -i "${PIP_INDEX_URL}" && \
-    python -c "import pkg_resources; from transformers import AutoConfig, AutoProcessor; print('transformers import ok')"
-
 WORKDIR /workspace
