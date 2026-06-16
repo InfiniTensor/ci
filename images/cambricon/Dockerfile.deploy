@@ -93,15 +93,17 @@ ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
 WORKDIR /workspace
 
-ARG InfiniCore_BRANCH
+ARG InfiniCore_BRANCH=main
+ARG InfiniCore_SHA
 RUN git config --global --unset-all url.git@github.com:.insteadof || true && \
     git config --global http.proxy "${http_proxy}" && \
     git config --global https.proxy "${https_proxy}" && \
-    git clone --recursive https://github.com/InfiniTensor/InfiniCore.git
+    git clone --recursive https://github.com/InfiniTensor/InfiniCore.git && \
+    cd InfiniCore && \
+    git fetch origin ${InfiniCore_BRANCH} && \
+    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}
 
 WORKDIR /workspace/InfiniCore
-
-RUN git fetch origin ${InfiniCore_BRANCH} && git checkout ${InfiniCore_BRANCH}
 
 RUN xmake repo -u
 

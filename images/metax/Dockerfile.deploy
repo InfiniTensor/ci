@@ -59,11 +59,13 @@ ENV PYTHONPATH=/workspace/InfiniLM/python:/workspace/InfiniCore/python:${PYTHONP
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH=main
-RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git
+ARG InfiniCore_SHA
+RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git && \
+    cd InfiniCore && \
+    git fetch origin ${InfiniCore_BRANCH} && \
+    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}
 
 WORKDIR /workspace/InfiniCore
-
-RUN git switch ${InfiniCore_BRANCH}
 
 RUN echo "=== Clean InfiniCore ==="
 RUN xmake clean -a || true

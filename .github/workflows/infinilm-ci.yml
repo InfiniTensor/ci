@@ -125,6 +125,18 @@ jobs:
           echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> "$GITHUB_ENV"
           echo "REF_SLUG=${GITHUB_REF_NAME//\//_}" >> "$GITHUB_ENV"
 
+      - name: Resolve InfiniCore commit SHA
+        env:
+          INFINICORE_BRANCH: ${{ inputs.infinicore_branch }}
+        run: |
+          SHA=$(git ls-remote https://github.com/InfiniTensor/InfiniCore.git "refs/heads/${INFINICORE_BRANCH}" | awk '{print $1}')
+          if [ -z "$SHA" ]; then
+            echo "Failed to resolve InfiniCore branch: ${INFINICORE_BRANCH}" >&2
+            exit 1
+          fi
+          echo "INFINICORE_SHA=$SHA" >> "$GITHUB_ENV"
+          echo "InfiniCore ${INFINICORE_BRANCH} @ ${SHA}"
+
       - name: Build and Package
         working-directory: repo
         env:
@@ -138,7 +150,9 @@ jobs:
           for arg in $build_args; do
             build_arg_flags+=(--build-arg "$arg")
           done
-          docker build --no-cache -f .ci/${{ matrix.dockerfile }} \
+          build_arg_flags+=(--build-arg "InfiniCore_BRANCH=${INFINICORE_BRANCH}")
+          build_arg_flags+=(--build-arg "InfiniCore_SHA=${INFINICORE_SHA}")
+          docker build -f .ci/${{ matrix.dockerfile }} \
           "${build_arg_flags[@]}" \
           --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \
           -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .

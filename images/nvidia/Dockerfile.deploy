@@ -50,11 +50,14 @@ ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
 
 WORKDIR /workspace
 
-ARG InfiniCore_BRANCH
-RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git
+ARG InfiniCore_BRANCH=main
+ARG InfiniCore_SHA
+RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git && \
+    cd InfiniCore && \
+    git fetch origin ${InfiniCore_BRANCH} && \
+    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}
 
 WORKDIR /workspace/InfiniCore
-RUN git switch ${InfiniCore_BRANCH}
 
 WORKDIR /workspace/InfiniCore/third_party
 
