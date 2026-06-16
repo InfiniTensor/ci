@@ -64,7 +64,7 @@ ENV PYTHONPATH="/root/.infini/lib:${PYTHONPATH:-}"
 WORKDIR /workspace
 
 ARG InfiniCore_BRANCH
-RUN git clone --recursive https://github.com/Vincent777/InfiniCore.git
+RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git
 
 WORKDIR /workspace/InfiniCore
 

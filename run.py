@@ -361,7 +361,7 @@ def main():
 
     config = load_config(args.config)
     repo = config.get("repo", {})
-    repo_url = repo.get("url", "https://github.com/Vincent777/InfiniLM.git")
+    repo_url = repo.get("url", "https://github.com/InfiniTensor/InfiniLM.git")
     branch = args.branch or repo.get("branch", "master")
 
     platform = detect_platform()
