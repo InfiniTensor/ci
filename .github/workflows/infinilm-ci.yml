@@ -35,6 +35,8 @@ jobs:
       matrix_json_for_accuracytest: ${{ steps.generate.outputs.matrix_json_for_accuracytest }}
       matrix_json_for_servicetest: ${{ steps.generate.outputs.matrix_json_for_servicetest }}
       job_types_with_jobs: ${{ steps.generate.outputs.job_types_with_jobs }}
+      infinicore_nlohmann_json_sha: ${{ steps.infinicore_third_party.outputs.nlohmann_json_sha }}
+      infinicore_spdlog_sha: ${{ steps.infinicore_third_party.outputs.spdlog_sha }}
     steps:
       - name: Checkout caller repository
         uses: actions/checkout@v4
@@ -83,6 +85,24 @@ jobs:
           echo
           echo "matrix_json_for_servicetest=${{ steps.generate.outputs.matrix_json_for_servicetest }}"
 
+      - name: Resolve InfiniCore third_party SHAs
+        id: infinicore_third_party
+        env:
+          INFINICORE_BRANCH: ${{ inputs.infinicore_branch }}
+        run: |
+          SHA=$(git ls-remote https://github.com/InfiniTensor/InfiniCore.git "refs/heads/${INFINICORE_BRANCH}" | awk '{print $1}')
+          if [ -z "$SHA" ]; then
+            echo "Failed to resolve InfiniCore branch: ${INFINICORE_BRANCH}" >&2
+            exit 1
+          fi
+          tmpdir=$(mktemp -d)
+          git init "$tmpdir/repo"
+          git -C "$tmpdir/repo" remote add origin https://github.com/InfiniTensor/InfiniCore.git
+          git -C "$tmpdir/repo" fetch --depth 1 origin "${SHA}"
+          echo "nlohmann_json_sha=$(git -C "$tmpdir/repo" rev-parse FETCH_HEAD:third_party/nlohmann_json)" >> "$GITHUB_OUTPUT"
+          echo "spdlog_sha=$(git -C "$tmpdir/repo" rev-parse FETCH_HEAD:third_party/spdlog)" >> "$GITHUB_OUTPUT"
+          rm -rf "$tmpdir"
+
   build-deploy-image:
     name: build and package image / ${{ matrix.platform }}
     needs: prepare
@@ -108,7 +128,7 @@ jobs:
           GIT_CONFIG_VALUE_0: '*'
         with:
           path: repo
-          submodules: true
+          submodules: false
 
       - name: Checkout CI tools
         uses: actions/checkout@v4
@@ -137,6 +157,12 @@ jobs:
           echo "INFINICORE_SHA=$SHA" >> "$GITHUB_ENV"
           echo "InfiniCore ${INFINICORE_BRANCH} @ ${SHA}"
 
+      - name: Resolve InfiniLM third_party SHAs
+        working-directory: repo
+        run: |
+          echo "INFINILM_JSON_SHA=$(git rev-parse HEAD:third_party/json)" >> "$GITHUB_ENV"
+          echo "INFINILM_SPDLOG_SHA=$(git rev-parse HEAD:third_party/spdlog)" >> "$GITHUB_ENV"
+
       - name: Build and Package
         working-directory: repo
         env:
@@ -152,6 +178,10 @@ jobs:
           done
           build_arg_flags+=(--build-arg "InfiniCore_BRANCH=${INFINICORE_BRANCH}")
           build_arg_flags+=(--build-arg "InfiniCore_SHA=${INFINICORE_SHA}")
+          build_arg_flags+=(--build-arg "INFINICORE_NLOHMANN_JSON_SHA=${{ needs.prepare.outputs.infinicore_nlohmann_json_sha }}")
+          build_arg_flags+=(--build-arg "INFINICORE_SPDLOG_SHA=${{ needs.prepare.outputs.infinicore_spdlog_sha }}")
+          build_arg_flags+=(--build-arg "INFINILM_JSON_SHA=${INFINILM_JSON_SHA}")
+          build_arg_flags+=(--build-arg "INFINILM_SPDLOG_SHA=${INFINILM_SPDLOG_SHA}")
           docker build -f .ci/${{ matrix.dockerfile }} \
           "${build_arg_flags[@]}" \
           --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \

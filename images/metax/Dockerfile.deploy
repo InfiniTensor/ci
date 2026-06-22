@@ -59,20 +59,34 @@ ENV PYTHONPATH=/workspace/InfiniLM/python:/workspace/InfiniCore/python:${PYTHONP
 WORKDIR /workspace
 
 # Pin third_party deps in a stable cache layer; only rebuilds when SHAs change.
+# json/spdlog are fetched here once (via build proxy); later stages clone locally from cache only.
 ARG FLASH_ATTENTION_SHA=10846960ca0793b993446f6dbaf696479c127a9d
 ARG CUTLASS_SHA=087c84df83d254b5fb295a7a408f1a1d554085cf
+ARG INFINICORE_NLOHMANN_JSON_SHA=55f93686c01528224f448c19128836e7df245f72
+ARG INFINICORE_SPDLOG_SHA=f1d748e5e3edfa4b1778edea003bac94781bc7b7
+ARG INFINILM_JSON_SHA=5ed07097faa6c50199c4a3b66e5ed37d4fbfccc2
+ARG INFINILM_SPDLOG_SHA=88a0e07ad5bb3e2651cd5613530b3f06a15fc400
 RUN mkdir -p /opt/third_party_cache && \
     git clone https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention && \
     git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA} && \
     git clone https://github.com/NVIDIA/cutlass.git /opt/third_party_cache/cutlass && \
-    git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA}
+    git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA} && \
+    git clone https://github.com/nlohmann/json.git /opt/third_party_cache/json && \
+    git clone https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog && \
+    for sha in ${INFINICORE_NLOHMANN_JSON_SHA} ${INFINILM_JSON_SHA}; do \
+      git -C /opt/third_party_cache/json fetch --depth 1 origin "${sha}"; \
+    done && \
+    for sha in ${INFINICORE_SPDLOG_SHA} ${INFINILM_SPDLOG_SHA}; do \
+      git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
+    done
 
 ARG InfiniCore_BRANCH=main
 ARG InfiniCore_SHA
-RUN git clone --recursive https://github.com/InfiniTensor/InfiniCore.git && \
+RUN git clone https://github.com/InfiniTensor/InfiniCore.git && \
     cd InfiniCore && \
     git fetch origin ${InfiniCore_BRANCH} && \
-    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}
+    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}} && \
+    git submodule update --init --recursive submodules
 
 WORKDIR /workspace/InfiniCore
 
@@ -80,6 +94,15 @@ RUN mkdir -p third_party && \
     rm -rf third_party/flash-attention third_party/cutlass && \
     ln -s /opt/third_party_cache/flash-attention third_party/flash-attention && \
     ln -s /opt/third_party_cache/cutlass third_party/cutlass
+
+RUN set -eux; \
+    JSON_SHA="$(git rev-parse HEAD:third_party/nlohmann_json)"; \
+    SPDLOG_SHA="$(git rev-parse HEAD:third_party/spdlog)"; \
+    rm -rf third_party/nlohmann_json third_party/spdlog; \
+    git clone --shared /opt/third_party_cache/json third_party/nlohmann_json; \
+    git -C third_party/nlohmann_json checkout "${JSON_SHA}"; \
+    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog; \
+    git -C third_party/spdlog checkout "${SPDLOG_SHA}"
 
 RUN echo "=== Clean InfiniCore ==="
 RUN xmake clean -a || true
@@ -94,6 +117,15 @@ RUN xmake build -y _infinicore && xmake install -y _infinicore
 WORKDIR /workspace/InfiniLM
 
 COPY . ./
+
+RUN set -eux; \
+    JSON_SHA="$(git rev-parse HEAD:third_party/json)"; \
+    SPDLOG_SHA="$(git rev-parse HEAD:third_party/spdlog)"; \
+    rm -rf third_party/json third_party/spdlog; \
+    git clone --shared /opt/third_party_cache/json third_party/json; \
+    git -C third_party/json checkout "${JSON_SHA}"; \
+    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog; \
+    git -C third_party/spdlog checkout "${SPDLOG_SHA}"
 
 RUN echo "=== Clean InfiniLM ==="
 RUN xmake clean -a || true
