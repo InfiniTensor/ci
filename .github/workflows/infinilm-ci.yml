@@ -120,33 +120,63 @@ jobs:
       - name: Prepare workspace for self-hosted runner
         run: rm -rf repo
 
+      - name: Configure git for flaky networks
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1
+
       - name: Checkout caller repository
-        uses: Wandalen/wretry.action@v3.5.0
         env:
+          GITHUB_TOKEN: ${{ github.token }}
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: safe.directory
           GIT_CONFIG_VALUE_0: '*'
-        with:
-          action: actions/checkout@v4
-          attempt_limit: 5
-          attempt_delay: 30000
-          with: |
-            path: repo
-            submodules: false
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo
+            if git -c protocol.version=2 init repo && \
+               git -C repo remote add origin "$repo_url" && \
+               git -C repo fetch --depth 1 origin "${GITHUB_SHA}" && \
+               git -C repo checkout "${GITHUB_SHA}"; then
+              exit 0
+            fi
+            echo "checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo
+            sleep "$i"
+          done
+          exit 1
 
       - name: Checkout CI tools
-        uses: Wandalen/wretry.action@v3.5.0
-        with:
-          action: actions/checkout@v4
-          attempt_limit: 5
-          attempt_delay: 30000
-          with: |
-            repository: InfiniTensor/ci
-            ref: ${{ inputs.ci_ref }}
-            path: repo/.ci
-            fetch-depth: 1
-            sparse-checkout: |
-              images/${{ matrix.platform }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/InfiniTensor/ci.git"
+          ref="${{ inputs.ci_ref }}"
+          sparse_path="images/${{ matrix.platform }}"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo/.ci
+            if git -c protocol.version=2 clone \
+                 --filter=blob:none \
+                 --no-checkout \
+                 --depth 1 \
+                 "$repo_url" repo/.ci && \
+               git -C repo/.ci fetch --depth 1 origin "${ref}" && \
+               git -C repo/.ci checkout "${ref}" && \
+               git -C repo/.ci sparse-checkout init --cone && \
+               git -C repo/.ci sparse-checkout set "${sparse_path}" && \
+               git -C repo/.ci checkout; then
+              exit 0
+            fi
+            echo "CI tools checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo/.ci
+            sleep "$i"
+          done
+          exit 1
 
       - name: Short SHA for image tags
         run: |
