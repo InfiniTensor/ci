@@ -121,24 +121,32 @@ jobs:
         run: rm -rf repo
 
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: Wandalen/wretry.action@v3.5.0
         env:
           GIT_CONFIG_COUNT: 1
           GIT_CONFIG_KEY_0: safe.directory
           GIT_CONFIG_VALUE_0: '*'
         with:
-          path: repo
-          submodules: false
+          action: actions/checkout@v4
+          attempt_limit: 5
+          attempt_delay: 30000
+          with: |
+            path: repo
+            submodules: false
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
+        uses: Wandalen/wretry.action@v3.5.0
         with:
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
-          fetch-depth: 1
-          sparse-checkout: |
-            images/${{ matrix.platform }}
+          action: actions/checkout@v4
+          attempt_limit: 5
+          attempt_delay: 30000
+          with: |
+            repository: InfiniTensor/ci
+            ref: ${{ inputs.ci_ref }}
+            path: repo/.ci
+            fetch-depth: 1
+            sparse-checkout: |
+              images/${{ matrix.platform }}
 
       - name: Short SHA for image tags
         run: |
@@ -149,13 +157,21 @@ jobs:
         env:
           INFINICORE_BRANCH: ${{ inputs.infinicore_branch }}
         run: |
-          SHA=$(git ls-remote https://github.com/InfiniTensor/InfiniCore.git "refs/heads/${INFINICORE_BRANCH}" | awk '{print $1}')
-          if [ -z "$SHA" ]; then
-            echo "Failed to resolve InfiniCore branch: ${INFINICORE_BRANCH}" >&2
-            exit 1
-          fi
-          echo "INFINICORE_SHA=$SHA" >> "$GITHUB_ENV"
-          echo "InfiniCore ${INFINICORE_BRANCH} @ ${SHA}"
+          attempts=5
+          i=1
+          while [ "$i" -le "$attempts" ]; do
+            SHA=$(git ls-remote https://github.com/InfiniTensor/InfiniCore.git "refs/heads/${INFINICORE_BRANCH}" | awk '{print $1}')
+            if [ -n "$SHA" ]; then
+              echo "INFINICORE_SHA=$SHA" >> "$GITHUB_ENV"
+              echo "InfiniCore ${INFINICORE_BRANCH} @ ${SHA}"
+              exit 0
+            fi
+            echo "git ls-remote failed (attempt ${i}/${attempts})" >&2
+            sleep "$i"
+            i=$((i + 1))
+          done
+          echo "Failed to resolve InfiniCore branch: ${INFINICORE_BRANCH}" >&2
+          exit 1
 
       - name: Resolve InfiniLM third_party SHAs
         working-directory: repo

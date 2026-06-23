@@ -58,27 +58,62 @@ ARG INFINICORE_NLOHMANN_JSON_SHA=55f93686c01528224f448c19128836e7df245f72
 ARG INFINICORE_SPDLOG_SHA=f1d748e5e3edfa4b1778edea003bac94781bc7b7
 ARG INFINILM_JSON_SHA=5ed07097faa6c50199c4a3b66e5ed37d4fbfccc2
 ARG INFINILM_SPDLOG_SHA=88a0e07ad5bb3e2651cd5613530b3f06a15fc400
-RUN mkdir -p /opt/third_party_cache && \
-    git clone https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention && \
-    git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA} && \
-    git clone https://github.com/NVIDIA/cutlass.git /opt/third_party_cache/cutlass && \
-    git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA} && \
-    git clone https://github.com/nlohmann/json.git /opt/third_party_cache/json && \
-    git clone https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog && \
+ARG GIT_NETWORK_RETRIES=5
+RUN set -eux; \
+    git_with_retry() { \
+      attempts="${GIT_NETWORK_RETRIES:-5}"; \
+      i=1; \
+      while [ "$i" -le "$attempts" ]; do \
+        if "$@"; then return 0; fi; \
+        echo "git failed (attempt ${i}/${attempts}): $*" >&2; \
+        sleep "$i"; \
+        i=$((i + 1)); \
+      done; \
+      return 1; \
+    }; \
+    git_clone_with_retry() { \
+      url="$1"; dest="$2"; \
+      rm -rf "$dest"; \
+      git_with_retry git clone "$url" "$dest"; \
+    }; \
+    mkdir -p /opt/third_party_cache; \
+    git_clone_with_retry https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention; \
+    git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA}; \
+    git_clone_with_retry https://github.com/NVIDIA/cutlass.git /opt/third_party_cache/cutlass; \
+    git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA}; \
+    git_clone_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json; \
+    git_clone_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog; \
     for sha in ${INFINICORE_NLOHMANN_JSON_SHA} ${INFINILM_JSON_SHA}; do \
-      git -C /opt/third_party_cache/json fetch --depth 1 origin "${sha}"; \
-    done && \
+      git_with_retry git -C /opt/third_party_cache/json fetch --depth 1 origin "${sha}"; \
+    done; \
     for sha in ${INFINICORE_SPDLOG_SHA} ${INFINILM_SPDLOG_SHA}; do \
-      git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
+      git_with_retry git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
     done
 
 ARG InfiniCore_BRANCH=main
 ARG InfiniCore_SHA
-RUN git clone https://github.com/InfiniTensor/InfiniCore.git && \
-    cd InfiniCore && \
-    git fetch origin ${InfiniCore_BRANCH} && \
-    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}} && \
-    git submodule update --init --recursive submodules
+RUN set -eux; \
+    git_with_retry() { \
+      attempts="${GIT_NETWORK_RETRIES:-5}"; \
+      i=1; \
+      while [ "$i" -le "$attempts" ]; do \
+        if "$@"; then return 0; fi; \
+        echo "git failed (attempt ${i}/${attempts}): $*" >&2; \
+        sleep "$i"; \
+        i=$((i + 1)); \
+      done; \
+      return 1; \
+    }; \
+    git_clone_with_retry() { \
+      url="$1"; dest="$2"; \
+      rm -rf "$dest"; \
+      git_with_retry git clone "$url" "$dest"; \
+    }; \
+    git_clone_with_retry https://github.com/InfiniTensor/InfiniCore.git /workspace/InfiniCore; \
+    cd /workspace/InfiniCore; \
+    git_with_retry git fetch origin ${InfiniCore_BRANCH}; \
+    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}; \
+    git_with_retry git submodule update --init --recursive submodules
 
 WORKDIR /workspace/InfiniCore
 
