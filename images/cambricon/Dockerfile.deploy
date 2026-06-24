@@ -94,9 +94,14 @@ ENV PYTHONPATH="/root/.infini/lib:$PYTHONPATH"
 
 WORKDIR /workspace
 
-RUN git config --global --unset-all url.git@github.com:.insteadof || true && \
-    git config --global http.proxy "${http_proxy}" && \
-    git config --global https.proxy "${https_proxy}"
+RUN git_proxy="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-}}}}"; \
+    git config --global --unset-all url.git@github.com:.insteadof || true; \
+    if [ -n "$git_proxy" ]; then \
+      git config --global http.proxy "$git_proxy"; \
+      git config --global https.proxy "$git_proxy"; \
+    fi; \
+    git config --global http.postBuffer 524288000; \
+    git config --global http.version HTTP/1.1
 
 # Pin third_party deps in a stable cache layer; only rebuilds when SHAs change.
 # json/spdlog/pybind11 are fetched here once (via build proxy); later stages clone locally from cache only.
@@ -115,7 +120,7 @@ RUN set -eux; \
       while [ "$i" -le "$attempts" ]; do \
         if "$@"; then return 0; fi; \
         echo "git failed (attempt ${i}/${attempts}): $*" >&2; \
-        sleep "$i"; \
+        sleep $((i * 10)); \
         i=$((i + 1)); \
       done; \
       return 1; \
@@ -150,7 +155,7 @@ RUN set -eux; \
       while [ "$i" -le "$attempts" ]; do \
         if "$@"; then return 0; fi; \
         echo "git failed (attempt ${i}/${attempts}): $*" >&2; \
-        sleep "$i"; \
+        sleep $((i * 10)); \
         i=$((i + 1)); \
       done; \
       return 1; \

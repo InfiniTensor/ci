@@ -18,4 +18,4 @@ rm -rf "${PKG_DIR}/source/pybind11"
 cp -a "${CACHE_SRC}" "${PKG_DIR}/source/pybind11"
 test -f "${PKG_DIR}/source/pybind11/CMakeLists.txt"
 
-xmake require --install -y pybind11 "${PYBIND11_VERSION}"
+# xmake require --install -y pybind11 "${PYBIND11_VERSION}"
