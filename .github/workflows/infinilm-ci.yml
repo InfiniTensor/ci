@@ -168,7 +168,7 @@ jobs:
                  "$repo_url" repo/.ci && \
                git -C repo/.ci checkout "${ref}" && \
                git -C repo/.ci sparse-checkout init --cone && \
-               git -C repo/.ci sparse-checkout set "${sparse_path}" && \
+               git -C repo/.ci sparse-checkout set "${sparse_path}" images/install_xmake_pybind11.sh && \
                git -C repo/.ci checkout; then
               exit 0
             fi
