@@ -138,7 +138,8 @@ WORKDIR /workspace/InfiniCore
 
 # Docker build has nvcc but no GPU driver/nvidia-smi; set CUDA arch explicitly.
 ARG CUDA_ARCH=sm_80,sm_86,sm_89,sm_90
-RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --cuda_arch=${CUDA_ARCH} --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
+RUN xmake repo -u
+RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --cuda_arch=${CUDA_ARCH} --flash-attn=/workspace/InfiniCore/third_party/flash-attention --boost_cmake=n -cv
 RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
 WORKDIR /workspace/InfiniLM
