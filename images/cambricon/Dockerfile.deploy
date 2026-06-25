@@ -104,7 +104,7 @@ RUN git_proxy="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-}}}}"; 
     git config --global http.version HTTP/1.1
 
 # Pin third_party deps in a stable cache layer; only rebuilds when SHAs change.
-# json/spdlog/pybind11 are fetched here once (via build proxy); later stages clone locally from cache only.
+# json/spdlog are fetched here once (via build proxy); pybind11 zip for xmake is cached here too.
 ARG FLASH_ATTENTION_SHA=10846960ca0793b993446f6dbaf696479c127a9d
 ARG CUTLASS_SHA=087c84df83d254b5fb295a7a408f1a1d554085cf
 ARG PYBIND11_VERSION=v3.0.4
@@ -143,8 +143,9 @@ RUN set -eux; \
     for sha in ${INFINICORE_SPDLOG_SHA} ${INFINILM_SPDLOG_SHA}; do \
       git_with_retry git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
     done; \
-    git_clone_with_retry https://github.com/pybind/pybind11.git /opt/third_party_cache/pybind11; \
-    git -C /opt/third_party_cache/pybind11 checkout ${PYBIND11_VERSION}
+    mkdir -p /opt/third_party_cache/xmake_pkg_search; \
+    curl -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
+      "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
 
 ARG InfiniCore_BRANCH=main
 ARG InfiniCore_SHA
