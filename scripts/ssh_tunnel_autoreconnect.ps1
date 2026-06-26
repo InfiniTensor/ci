@@ -1,9 +1,10 @@
-# 监控 SSH 隧道连接，断开后自动重连。
-# 用法: .\ssh_tunnel_autoreconnect.ps1 [-Host cambricon] [-RetryDelay 5]
-# 示例: .\ssh_tunnel_autoreconnect.ps1 -Host cambricon
+﻿# Monitor SSH tunnel and auto-reconnect on disconnect.
+# Usage:
+#   powershell -ExecutionPolicy Bypass -File .\ssh_tunnel_autoreconnect.ps1 -SshHost nvidia
+#   .\ssh_tunnel_autoreconnect.cmd -SshHost nvidia
 
 param(
-    [string]$Host = "cambricon",
+    [string]$SshHost = "cambricon",
     [int]$RetryDelay = 5,
     [int]$MaxRetryDelay = 60
 )
@@ -20,7 +21,7 @@ $sshArgs = @(
     "-o", "ServerAliveCountMax=3",
     "-o", "ExitOnForwardFailure=yes",
     "-o", "TCPKeepAlive=yes",
-    $Host
+    $SshHost
 )
 
 $running = $true
@@ -31,7 +32,7 @@ Write-Log "按 Ctrl+C 停止"
 
 try {
     while ($running) {
-        Write-Log "正在连接 $Host..."
+        Write-Log "正在连接 $SshHost..."
 
         & ssh @sshArgs
         $exitCode = $LASTEXITCODE
