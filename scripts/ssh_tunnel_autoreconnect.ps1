@@ -27,24 +27,24 @@ $sshArgs = @(
 $running = $true
 $currentDelay = $RetryDelay
 
-Write-Log "开始监控 SSH 隧道: ssh $($sshArgs -join ' ')"
-Write-Log "按 Ctrl+C 停止"
+Write-Log "Monitoring SSH tunnel: ssh $($sshArgs -join ' ')"
+Write-Log "Press Ctrl+C to stop"
 
 try {
     while ($running) {
-        Write-Log "正在连接 $SshHost..."
+        Write-Log "Connecting to $SshHost..."
 
         & ssh @sshArgs
         $exitCode = $LASTEXITCODE
 
         if (-not $running) { break }
 
-        Write-Log "连接断开 (exit=$exitCode)，${currentDelay}s 后重连..."
+        Write-Log "Connection lost (exit=$exitCode), reconnecting in ${currentDelay}s..."
         Start-Sleep -Seconds $currentDelay
 
         $currentDelay = [Math]::Min($currentDelay * 2, $MaxRetryDelay)
     }
 }
 finally {
-    Write-Log "已退出"
+    Write-Log "Exited"
 }
