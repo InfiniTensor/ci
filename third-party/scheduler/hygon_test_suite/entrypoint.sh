@@ -19,7 +19,7 @@ CI_job_id=$6
 test_param=$7
 version=$8
 
-export https_proxy=http://172.24.122.140:18081 http_proxy=http://172.24.122.140:18081
+export https_proxy=http://172.24.122.140:18083 http_proxy=http://172.24.122.140:18083
 
 mkdir -p ~/.ssh/
 cat > ~/.ssh/config <<EOF
