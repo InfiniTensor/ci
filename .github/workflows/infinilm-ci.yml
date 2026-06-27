@@ -230,7 +230,7 @@ jobs:
           build_arg_flags+=(--build-arg "INFINILM_SPDLOG_SHA=${INFINILM_SPDLOG_SHA}")
           docker build -f .ci/${{ matrix.dockerfile }} \
           "${build_arg_flags[@]}" \
-          --network host --build-arg https_proxy=http://localhost:9992 --build-arg http_proxy=http://localhost:9992 --build-arg HTTPS_PROXY=http://localhost:9992 --build-arg HTTP_PROXY=http://localhost:9992 \
+          --network host --build-arg https_proxy=http://172.24.122.140:18081 --build-arg http_proxy=http://172.24.122.140:18081 --build-arg HTTPS_PROXY=http://172.24.122.140:18081 --build-arg HTTP_PROXY=http://172.24.122.140:18081 \
           -t infinilm-ci/${{ matrix.platform }}:${REF_SLUG}-${SHORT_SHA} .
 
   run-inferencetest:

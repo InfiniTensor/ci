@@ -455,7 +455,7 @@ if [ $TEST_TYPE == "Service" ]; then    # Web服务型测试任务
                 # Random
                 ssh -q -o ConnectionAttempts=3 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -p 14735 zkjh@${server_list[0]} "
                     docker exec ${engine_type}_ascend_PerformanceTest_${session_id}_${job_count} /bin/bash -c \"
-                        export https_proxy=http://localhost:9992 http_proxy=http://localhost:9992
+                        export https_proxy=http://172.24.122.140:18081 http_proxy=http://172.24.122.140:18081
                         if [ ${engine_type} == \\\"infiniTensor\\\" ]; then
                             pip3 install dataSets pillow aiohttp
                         elif [ ${engine_type} == \\\"mindie\\\" ]; then
