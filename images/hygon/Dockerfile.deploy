@@ -163,7 +163,7 @@ COPY .ci/images/install_xmake_pybind11.sh /usr/local/bin/install_xmake_pybind11.
 RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh && install_xmake_pybind11.sh
 
 RUN source /opt/dtk-25.04.1/env.sh && source /opt/dtk-25.04.1/cuda/env.sh && \
-    xmake f -y --hygon-dcu=y --ccl=y --graph=y -cv
+    xmake f -y --hygon-dcu=y --hygon-arch=gfx906 --ccl=y --graph=y -cv
 RUN source /opt/dtk-25.04.1/env.sh && source /opt/dtk-25.04.1/cuda/env.sh && \
     xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
 
