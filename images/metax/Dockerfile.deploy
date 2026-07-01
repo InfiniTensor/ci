@@ -113,8 +113,8 @@ RUN set -eux; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
     LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
       "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"; \
-    LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/boost-${BOOST_VERSION}-b2-nodocs.tar.gz \
-      "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-b2-nodocs.tar.gz"
+    LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/boost-${BOOST_VERSION}-cmake.tar.gz \
+      "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-cmake.tar.gz"
 
 ARG InfiniCore_BRANCH=main
 ARG InfiniCore_SHA

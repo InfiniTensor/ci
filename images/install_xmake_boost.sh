@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Point xmake at pre-downloaded boost archives so runtime fetches skip GitHub.
 BOOST_VERSION="${BOOST_VERSION:-1.90.0}"
-TARBALL="boost-${BOOST_VERSION}-b2-nodocs.tar.gz"
+TARBALL="boost-${BOOST_VERSION}-cmake.tar.gz"
 TARBALL_SRC="/opt/third_party_cache/xmake_pkg_search/${TARBALL}"
 SEARCH_DIR="/opt/third_party_cache/xmake_pkg_search"
 
