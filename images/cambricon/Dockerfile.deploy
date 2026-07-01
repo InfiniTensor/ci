@@ -108,10 +108,6 @@ RUN git_proxy="${https_proxy:-${HTTPS_PROXY:-${http_proxy:-${HTTP_PROXY:-}}}}"; 
 ARG FLASH_ATTENTION_SHA=10846960ca0793b993446f6dbaf696479c127a9d
 ARG CUTLASS_SHA=087c84df83d254b5fb295a7a408f1a1d554085cf
 ARG PYBIND11_VERSION=v3.0.4
-ARG INFINICORE_NLOHMANN_JSON_SHA=55f93686c01528224f448c19128836e7df245f72
-ARG INFINICORE_SPDLOG_SHA=f1d748e5e3edfa4b1778edea003bac94781bc7b7
-ARG INFINILM_JSON_SHA=5ed07097faa6c50199c4a3b66e5ed37d4fbfccc2
-ARG INFINILM_SPDLOG_SHA=88a0e07ad5bb3e2651cd5613530b3f06a15fc400
 ARG GIT_NETWORK_RETRIES=5
 RUN set -eux; \
     git_with_retry() { \
@@ -126,23 +122,21 @@ RUN set -eux; \
       return 1; \
     }; \
     git_clone_with_retry() { \
-      url="$1"; dest="$2"; \
+      url="$1"; dest="$2"; depth="${3:-}"; \
       rm -rf "$dest"; \
-      git_with_retry git clone "$url" "$dest"; \
+      if [ -n "$depth" ]; then \
+        git_with_retry git clone --depth "$depth" "$url" "$dest"; \
+      else \
+        git_with_retry git clone "$url" "$dest"; \
+      fi; \
     }; \
     mkdir -p /opt/third_party_cache; \
     git_clone_with_retry https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention; \
     git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA}; \
     git_clone_with_retry https://github.com/NVIDIA/cutlass.git /opt/third_party_cache/cutlass; \
     git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA}; \
-    git_clone_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json; \
-    git_clone_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog; \
-    for sha in ${INFINICORE_NLOHMANN_JSON_SHA} ${INFINILM_JSON_SHA}; do \
-      git_with_retry git -C /opt/third_party_cache/json fetch --depth 1 origin "${sha}"; \
-    done; \
-    for sha in ${INFINICORE_SPDLOG_SHA} ${INFINILM_SPDLOG_SHA}; do \
-      git_with_retry git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
-    done; \
+    git_clone_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json 1; \
+    git_clone_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog 1; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
     curl -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
       "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
@@ -179,14 +173,9 @@ RUN mkdir -p third_party && \
     ln -s /opt/third_party_cache/flash-attention third_party/flash-attention && \
     ln -s /opt/third_party_cache/cutlass third_party/cutlass
 
-RUN set -eux; \
-    JSON_SHA="$(git rev-parse HEAD:third_party/nlohmann_json)"; \
-    SPDLOG_SHA="$(git rev-parse HEAD:third_party/spdlog)"; \
-    rm -rf third_party/nlohmann_json third_party/spdlog; \
-    git clone --shared /opt/third_party_cache/json third_party/nlohmann_json; \
-    git -C third_party/nlohmann_json checkout "${JSON_SHA}"; \
-    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog; \
-    git -C third_party/spdlog checkout "${SPDLOG_SHA}"
+RUN rm -rf third_party/nlohmann_json third_party/spdlog && \
+    git clone --shared /opt/third_party_cache/json third_party/nlohmann_json && \
+    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog
 
 RUN xmake repo -u
 
@@ -201,14 +190,9 @@ WORKDIR /workspace/InfiniLM
 
 COPY . ./
 
-RUN set -eux; \
-    JSON_SHA="$(git rev-parse HEAD:third_party/json)"; \
-    SPDLOG_SHA="$(git rev-parse HEAD:third_party/spdlog)"; \
-    rm -rf third_party/json third_party/spdlog; \
-    git clone --shared /opt/third_party_cache/json third_party/json; \
-    git -C third_party/json checkout "${JSON_SHA}"; \
-    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog; \
-    git -C third_party/spdlog checkout "${SPDLOG_SHA}"
+RUN rm -rf third_party/json third_party/spdlog && \
+    git clone --shared /opt/third_party_cache/json third_party/json && \
+    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e . -i "${PIP_INDEX_URL}"
 
