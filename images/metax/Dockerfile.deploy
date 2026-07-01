@@ -110,7 +110,7 @@ RUN set -eux; \
       git_with_retry git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
     done; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
-    LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
+    curl -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
       "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
 
 ARG InfiniCore_BRANCH=main
