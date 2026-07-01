@@ -28,6 +28,8 @@ RUN if [ -n "$APT_MIRROR" ]; then \
         curl \
         tar \
         unzip \
+        libboost-dev \
+        libboost-stacktrace-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
@@ -72,6 +74,7 @@ RUN git_proxy="${https_proxy:-${HTTPS_PROXY:-}}"; \
 ARG FLASH_ATTENTION_SHA=10846960ca0793b993446f6dbaf696479c127a9d
 ARG CUTLASS_SHA=087c84df83d254b5fb295a7a408f1a1d554085cf
 ARG PYBIND11_VERSION=v3.0.4
+ARG BOOST_VERSION=1.90.0
 ARG INFINICORE_NLOHMANN_JSON_SHA=55f93686c01528224f448c19128836e7df245f72
 ARG INFINICORE_SPDLOG_SHA=f1d748e5e3edfa4b1778edea003bac94781bc7b7
 ARG INFINILM_JSON_SHA=5ed07097faa6c50199c4a3b66e5ed37d4fbfccc2
@@ -108,8 +111,10 @@ RUN set -eux; \
       git_with_retry git -C /opt/third_party_cache/spdlog fetch --depth 1 origin "${sha}"; \
     done; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
-    curl -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
-      "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
+    LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
+      "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"; \
+    LD_LIBRARY_PATH= curl --http1.1 -fsSL -o /opt/third_party_cache/xmake_pkg_search/boost-${BOOST_VERSION}-b2-nodocs.tar.gz \
+      "https://github.com/boostorg/boost/releases/download/boost-${BOOST_VERSION}/boost-${BOOST_VERSION}-b2-nodocs.tar.gz"
 
 ARG InfiniCore_BRANCH=main
 ARG InfiniCore_SHA
@@ -153,7 +158,9 @@ RUN set -eux; \
     git -C third_party/spdlog checkout "${SPDLOG_SHA}"
 
 COPY .ci/images/install_xmake_pybind11.sh /usr/local/bin/install_xmake_pybind11.sh
-RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh && xmake repo -u && install_xmake_pybind11.sh
+COPY .ci/images/install_xmake_boost.sh /usr/local/bin/install_xmake_boost.sh
+RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh /usr/local/bin/install_xmake_boost.sh && \
+    xmake repo -u && install_xmake_pybind11.sh && install_xmake_boost.sh
 
 RUN echo "=== Clean InfiniCore ==="
 RUN xmake clean -a || true
