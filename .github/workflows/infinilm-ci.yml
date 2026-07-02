@@ -253,20 +253,63 @@ jobs:
       - name: Prepare workspace for self-hosted runner
         run: rm -rf repo
 
+      - name: Configure git for flaky networks
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1
+
       - name: Checkout caller repository
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo
-          sparse_paths: .github
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: '*'
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo
+            if git -c protocol.version=2 init repo && \
+               git -C repo remote add origin "$repo_url" && \
+               git -C repo fetch --depth 1 origin "${GITHUB_SHA}" && \
+               git -C repo checkout "${GITHUB_SHA}" && \
+               git -C repo sparse-checkout init --cone && \
+               git -C repo sparse-checkout set .github && \
+               git -C repo checkout; then
+              exit 0
+            fi
+            echo "checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo
+            sleep "$i"
+          done
+          exit 1
 
       - name: Checkout CI tools
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo/.ci
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
-          sparse_cone: "false"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/InfiniTensor/ci.git"
+          ref="${{ inputs.ci_ref }}"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo/.ci
+            if git -c protocol.version=2 init repo/.ci && \
+               git -C repo/.ci remote add origin "$repo_url" && \
+               git -C repo/.ci fetch --depth 1 origin "${ref}" && \
+               git -C repo/.ci checkout "${ref}" && \
+               git -C repo/.ci sparse-checkout init --no-cone && \
+               git -C repo/.ci sparse-checkout set \
+                 ci_resource.py daemon.sh run.py utils.py config_to_matrix.py && \
+               git -C repo/.ci checkout; then
+              exit 0
+            fi
+            echo "CI tools checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo/.ci
+            sleep "$i"
+          done
+          exit 1
 
       - name: Short SHA for image tags
         run: |
@@ -477,20 +520,63 @@ jobs:
       - name: Prepare workspace for self-hosted runner
         run: rm -rf repo
 
+      - name: Configure git for flaky networks
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1
+
       - name: Checkout caller repository
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo
-          sparse_paths: .github
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: '*'
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo
+            if git -c protocol.version=2 init repo && \
+               git -C repo remote add origin "$repo_url" && \
+               git -C repo fetch --depth 1 origin "${GITHUB_SHA}" && \
+               git -C repo checkout "${GITHUB_SHA}" && \
+               git -C repo sparse-checkout init --cone && \
+               git -C repo sparse-checkout set .github && \
+               git -C repo checkout; then
+              exit 0
+            fi
+            echo "checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo
+            sleep "$i"
+          done
+          exit 1
 
       - name: Checkout CI tools
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo/.ci
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
-          sparse_cone: "false"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/InfiniTensor/ci.git"
+          ref="${{ inputs.ci_ref }}"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo/.ci
+            if git -c protocol.version=2 init repo/.ci && \
+               git -C repo/.ci remote add origin "$repo_url" && \
+               git -C repo/.ci fetch --depth 1 origin "${ref}" && \
+               git -C repo/.ci checkout "${ref}" && \
+               git -C repo/.ci sparse-checkout init --no-cone && \
+               git -C repo/.ci sparse-checkout set \
+                 ci_resource.py daemon.sh run.py utils.py config_to_matrix.py && \
+               git -C repo/.ci checkout; then
+              exit 0
+            fi
+            echo "CI tools checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo/.ci
+            sleep "$i"
+          done
+          exit 1
 
       - name: Short SHA for image tags
         run: |
@@ -701,20 +787,63 @@ jobs:
       - name: Prepare workspace for self-hosted runner
         run: rm -rf repo
 
+      - name: Configure git for flaky networks
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1
+
       - name: Checkout caller repository
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo
-          sparse_paths: .github
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: '*'
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo
+            if git -c protocol.version=2 init repo && \
+               git -C repo remote add origin "$repo_url" && \
+               git -C repo fetch --depth 1 origin "${GITHUB_SHA}" && \
+               git -C repo checkout "${GITHUB_SHA}" && \
+               git -C repo sparse-checkout init --cone && \
+               git -C repo sparse-checkout set .github && \
+               git -C repo checkout; then
+              exit 0
+            fi
+            echo "checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo
+            sleep "$i"
+          done
+          exit 1
 
       - name: Checkout CI tools
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo/.ci
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
-          sparse_cone: "false"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/InfiniTensor/ci.git"
+          ref="${{ inputs.ci_ref }}"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo/.ci
+            if git -c protocol.version=2 init repo/.ci && \
+               git -C repo/.ci remote add origin "$repo_url" && \
+               git -C repo/.ci fetch --depth 1 origin "${ref}" && \
+               git -C repo/.ci checkout "${ref}" && \
+               git -C repo/.ci sparse-checkout init --no-cone && \
+               git -C repo/.ci sparse-checkout set \
+                 ci_resource.py daemon.sh run.py utils.py config_to_matrix.py && \
+               git -C repo/.ci checkout; then
+              exit 0
+            fi
+            echo "CI tools checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo/.ci
+            sleep "$i"
+          done
+          exit 1
 
       - name: Short SHA for image tags
         run: |
@@ -925,20 +1054,63 @@ jobs:
       - name: Prepare workspace for self-hosted runner
         run: rm -rf repo
 
+      - name: Configure git for flaky networks
+        run: |
+          git config --global http.postBuffer 524288000
+          git config --global http.version HTTP/1.1
+
       - name: Checkout caller repository
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo
-          sparse_paths: .github
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: safe.directory
+          GIT_CONFIG_VALUE_0: '*'
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo
+            if git -c protocol.version=2 init repo && \
+               git -C repo remote add origin "$repo_url" && \
+               git -C repo fetch --depth 1 origin "${GITHUB_SHA}" && \
+               git -C repo checkout "${GITHUB_SHA}" && \
+               git -C repo sparse-checkout init --cone && \
+               git -C repo sparse-checkout set .github && \
+               git -C repo checkout; then
+              exit 0
+            fi
+            echo "checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo
+            sleep "$i"
+          done
+          exit 1
 
       - name: Checkout CI tools
-        uses: ./.github/actions/resilient-checkout
-        with:
-          path: repo/.ci
-          repository: InfiniTensor/ci
-          ref: ${{ inputs.ci_ref }}
-          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
-          sparse_cone: "false"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -eux
+          attempts=5
+          repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/InfiniTensor/ci.git"
+          ref="${{ inputs.ci_ref }}"
+          for i in $(seq 1 "$attempts"); do
+            rm -rf repo/.ci
+            if git -c protocol.version=2 init repo/.ci && \
+               git -C repo/.ci remote add origin "$repo_url" && \
+               git -C repo/.ci fetch --depth 1 origin "${ref}" && \
+               git -C repo/.ci checkout "${ref}" && \
+               git -C repo/.ci sparse-checkout init --no-cone && \
+               git -C repo/.ci sparse-checkout set \
+                 ci_resource.py daemon.sh run.py utils.py config_to_matrix.py && \
+               git -C repo/.ci checkout; then
+              exit 0
+            fi
+            echo "CI tools checkout failed (attempt ${i}/${attempts})" >&2
+            rm -rf repo/.ci
+            sleep "$i"
+          done
+          exit 1
 
       - name: Short SHA for image tags
         run: |
