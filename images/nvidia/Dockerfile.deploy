@@ -42,7 +42,24 @@ RUN pip install --no-cache-dir --upgrade pip && \
     openai
 
 ENV XMAKE_ROOT=y
-RUN curl -fsSL https://xmake.io/shget.text | bash
+ARG GIT_NETWORK_RETRIES=5
+RUN set -eux; \
+    curl_download_with_retry() { \
+      dest="$1"; url="$2"; \
+      attempts="${GIT_NETWORK_RETRIES:-5}"; \
+      i=1; \
+      while [ "$i" -le "$attempts" ]; do \
+        rm -f "$dest"; \
+        if curl -fsSL -o "$dest" "$url"; then return 0; fi; \
+        echo "curl failed (attempt ${i}/${attempts}): $url -> $dest" >&2; \
+        sleep $((i * 10)); \
+        i=$((i + 1)); \
+      done; \
+      return 1; \
+    }; \
+    curl_download_with_retry /tmp/xmake-install.sh https://xmake.io/shget.text; \
+    bash /tmp/xmake-install.sh; \
+    rm -f /tmp/xmake-install.sh
 ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV CPATH=/usr/local/cuda/include
@@ -88,6 +105,19 @@ RUN set -eux; \
         git_with_retry git clone "$url" "$dest"; \
       fi; \
     }; \
+    curl_download_with_retry() { \
+      dest="$1"; url="$2"; \
+      attempts="${GIT_NETWORK_RETRIES:-5}"; \
+      i=1; \
+      while [ "$i" -le "$attempts" ]; do \
+        rm -f "$dest"; \
+        if curl -fsSL -o "$dest" "$url"; then return 0; fi; \
+        echo "curl failed (attempt ${i}/${attempts}): $url -> $dest" >&2; \
+        sleep $((i * 10)); \
+        i=$((i + 1)); \
+      done; \
+      return 1; \
+    }; \
     mkdir -p /opt/third_party_cache; \
     git_clone_with_retry https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention; \
     git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA}; \
@@ -96,7 +126,7 @@ RUN set -eux; \
     git_clone_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json 1; \
     git_clone_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog 1; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
-    curl -fsSL -o /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
+    curl_download_with_retry /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
       "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
 
 ARG InfiniCore_BRANCH=main
