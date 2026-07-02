@@ -1,0 +1,89 @@
+name: Resilient checkout
+description: Git checkout with retries for flaky self-hosted runner networks
+inputs:
+  path:
+    description: Directory to checkout into
+    required: true
+  repository:
+    description: owner/repo to checkout (defaults to calling repository)
+    required: false
+    default: ""
+  ref:
+    description: Ref to checkout (defaults to GITHUB_SHA for caller repository)
+    required: false
+    default: ""
+  sparse_paths:
+    description: Space-separated sparse checkout paths (empty = no sparse checkout)
+    required: false
+    default: ""
+  sparse_cone:
+    description: Use cone mode for sparse checkout
+    required: false
+    default: "true"
+  attempts:
+    description: Number of retry attempts
+    required: false
+    default: "5"
+runs:
+  using: composite
+  steps:
+    - name: Configure git for flaky networks
+      shell: bash
+      run: |
+        git config --global http.postBuffer 524288000
+        git config --global http.version HTTP/1.1
+
+    - name: Checkout with retries
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        CHECKOUT_PATH: ${{ inputs.path }}
+        CHECKOUT_REPO: ${{ inputs.repository }}
+        CHECKOUT_REF: ${{ inputs.ref }}
+        SPARSE_PATHS: ${{ inputs.sparse_paths }}
+        SPARSE_CONE: ${{ inputs.sparse_cone }}
+        ATTEMPTS: ${{ inputs.attempts }}
+      run: |
+        set -eux
+        attempts="${ATTEMPTS:-5}"
+        path="${CHECKOUT_PATH}"
+        repo="${CHECKOUT_REPO:-${GITHUB_REPOSITORY}}"
+        ref="${CHECKOUT_REF:-${GITHUB_SHA}}"
+        repo_url="https://x-access-token:${GITHUB_TOKEN}@github.com/${repo}.git"
+
+        sparse_init_args=(sparse-checkout init)
+        if [ "${SPARSE_CONE}" = "false" ]; then
+          sparse_init_args+=(--no-cone)
+        fi
+
+        checkout_once() {
+          rm -rf "${path}"
+          if [ -n "${SPARSE_PATHS}" ]; then
+            git -c protocol.version=2 init "${path}"
+            git -C "${path}" remote add origin "${repo_url}"
+            git -C "${path}" fetch --depth 1 origin "${ref}"
+            git -C "${path}" checkout "${ref}"
+            git -C "${path}" "${sparse_init_args[@]}"
+            # shellcheck disable=SC2086
+            git -C "${path}" sparse-checkout set ${SPARSE_PATHS}
+            git -C "${path}" checkout
+          else
+            git -c protocol.version=2 clone \
+              --filter=blob:none \
+              --no-checkout \
+              --depth 1 \
+              --branch "${ref}" \
+              "${repo_url}" "${path}"
+            git -C "${path}" checkout "${ref}"
+          fi
+        }
+
+        for i in $(seq 1 "${attempts}"); do
+          if checkout_once; then
+            exit 0
+          fi
+          echo "checkout failed for ${repo} (attempt ${i}/${attempts})" >&2
+          rm -rf "${path}"
+          sleep "${i}"
+        done
+        exit 1

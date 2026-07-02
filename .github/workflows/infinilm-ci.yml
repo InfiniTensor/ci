@@ -250,28 +250,23 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Prepare workspace for self-hosted runner
+        run: rm -rf repo
+
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
           path: repo
-          submodules: false
-          fetch-depth: 1
-          sparse-checkout: |
-            .github
+          sparse_paths: .github
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
+          path: repo/.ci
           repository: InfiniTensor/ci
           ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
-          fetch-depth: 1
-          sparse-checkout: |
-            /ci_resource.py
-            /daemon.sh
-            /run.py
-            /utils.py
-            /config_to_matrix.py
+          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
+          sparse_cone: "false"
 
       - name: Short SHA for image tags
         run: |
@@ -479,28 +474,23 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Prepare workspace for self-hosted runner
+        run: rm -rf repo
+
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
           path: repo
-          submodules: false
-          fetch-depth: 1
-          sparse-checkout: |
-            .github
+          sparse_paths: .github
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
+          path: repo/.ci
           repository: InfiniTensor/ci
           ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
-          fetch-depth: 1
-          sparse-checkout: |
-            /ci_resource.py
-            /daemon.sh
-            /run.py
-            /utils.py
-            /config_to_matrix.py
+          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
+          sparse_cone: "false"
 
       - name: Short SHA for image tags
         run: |
@@ -708,28 +698,23 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Prepare workspace for self-hosted runner
+        run: rm -rf repo
+
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
           path: repo
-          submodules: false
-          fetch-depth: 1
-          sparse-checkout: |
-            .github
+          sparse_paths: .github
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
+          path: repo/.ci
           repository: InfiniTensor/ci
           ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
-          fetch-depth: 1
-          sparse-checkout: |
-            /ci_resource.py
-            /daemon.sh
-            /run.py
-            /utils.py
-            /config_to_matrix.py
+          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
+          sparse_cone: "false"
 
       - name: Short SHA for image tags
         run: |
@@ -937,28 +922,23 @@ jobs:
       - InfiniLM
     timeout-minutes: ${{ matrix.timeout_minutes }}
     steps:
+      - name: Prepare workspace for self-hosted runner
+        run: rm -rf repo
+
       - name: Checkout caller repository
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
           path: repo
-          submodules: false
-          fetch-depth: 1
-          sparse-checkout: |
-            .github
+          sparse_paths: .github
 
       - name: Checkout CI tools
-        uses: actions/checkout@v4
+        uses: ./.github/actions/resilient-checkout
         with:
+          path: repo/.ci
           repository: InfiniTensor/ci
           ref: ${{ inputs.ci_ref }}
-          path: repo/.ci
-          fetch-depth: 1
-          sparse-checkout: |
-            /ci_resource.py
-            /daemon.sh
-            /run.py
-            /utils.py
-            /config_to_matrix.py
+          sparse_paths: ci_resource.py daemon.sh run.py utils.py config_to_matrix.py
+          sparse_cone: "false"
 
       - name: Short SHA for image tags
         run: |
