@@ -173,7 +173,18 @@ RUN rm -rf third_party/nlohmann_json third_party/spdlog && \
     git clone --shared /opt/third_party_cache/json third_party/nlohmann_json && \
     git clone --shared /opt/third_party_cache/spdlog third_party/spdlog
 
-RUN xmake repo -u
+ARG GIT_NETWORK_RETRIES=5
+RUN set -eux; \
+    attempts="${GIT_NETWORK_RETRIES:-5}"; \
+    i=1; \
+    while [ "$i" -le "$attempts" ]; do \
+      if xmake repo -u; then exit 0; fi; \
+      echo "xmake repo -u failed (attempt ${i}/${attempts})" >&2; \
+      rm -rf /root/.xmake/repositories/xmake-repo; \
+      sleep $((i * 10)); \
+      i=$((i + 1)); \
+    done; \
+    exit 1
 
 COPY .ci/images/install_xmake_pybind11.sh /usr/local/bin/install_xmake_pybind11.sh
 RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh && install_xmake_pybind11.sh
