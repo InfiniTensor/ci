@@ -118,6 +118,21 @@ class NvidiaDeployImageContractTests(unittest.TestCase):
             with self.subTest(contract=contract):
                 self.assertIn(contract, self.dockerfile)
 
+    def test_pybind11_cache_is_installed_from_the_lm_project(self):
+        workdir = self.dockerfile.index("WORKDIR /workspace/InfiniLM")
+        project_copy = self.dockerfile.index(
+            "COPY xmake.lua /workspace/InfiniLM/xmake.lua"
+        )
+        caller_copy = self.dockerfile.index("COPY . /workspace/InfiniLM")
+        cache_install = self.dockerfile.index(
+            "RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh "
+            "&& install_xmake_pybind11.sh"
+        )
+
+        self.assertLess(workdir, cache_install)
+        self.assertLess(project_copy, cache_install)
+        self.assertLess(cache_install, caller_copy)
+
     def test_image_removes_the_legacy_core_build_path(self):
         for legacy in (
             "flash-attention",

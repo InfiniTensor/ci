@@ -171,10 +171,11 @@ RUN set -eux; \
     done; \
     exit 1
 
+WORKDIR /workspace/InfiniLM
+
+COPY xmake.lua /workspace/InfiniLM/xmake.lua
 COPY .ci/images/install_xmake_pybind11.sh /usr/local/bin/install_xmake_pybind11.sh
 RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh && install_xmake_pybind11.sh
-
-WORKDIR /workspace/InfiniLM
 
 COPY . /workspace/InfiniLM
 
