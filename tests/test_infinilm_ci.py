@@ -66,13 +66,13 @@ class NvidiaDeployImageContractTests(unittest.TestCase):
         self.assertEqual(
             submodule_lines,
             [
-                "git_with_retry git submodule update --init --recursive "
+                "git_with_retry git submodule update --init --recursive --depth 1 "
                 "submodules/InfiniRT submodules/InfiniOps submodules/InfiniCCL"
             ],
         )
 
-    def test_each_clone_retry_cleans_destination_before_every_attempt(self):
-        marker = "git_clone_with_retry() {"
+    def test_each_source_fetch_is_shallow_and_cleans_partial_state(self):
+        marker = "git_fetch_commit_with_retry() {"
         sections = self.dockerfile.split(marker)
         self.assertEqual(len(sections) - 1, 2)
         bodies = [section.split("    }; \\", 1)[0] for section in sections[1:]]
@@ -81,29 +81,37 @@ class NvidiaDeployImageContractTests(unittest.TestCase):
             with self.subTest(helper=index):
                 loop = 'while [ "$i" -le "$attempts" ]; do'
                 cleanup = 'rm -rf "$dest";'
-                clone = 'if git clone "$url" "$dest"; then return 0; fi;'
                 for contract in (
+                    'url="$1"; dest="$2"; revision="$3";',
                     'attempts="${GIT_NETWORK_RETRIES:-5}";',
                     "i=1;",
                     loop,
                     cleanup,
-                    clone,
-                    'echo "git clone failed (attempt ${i}/${attempts}): '
-                    '$url -> $dest" >&2;',
+                    'git init "$dest"',
+                    'git -C "$dest" remote add origin "$url"',
+                    'git -C "$dest" fetch --depth 1 origin "$revision"',
+                    'git -C "$dest" checkout --detach FETCH_HEAD',
+                    'echo "git fetch failed (attempt ${i}/${attempts}): '
+                    '$url@$revision -> $dest" >&2;',
                     "sleep $((i * 10));",
                     "i=$((i + 1));",
                     "return 1;",
                 ):
                     self.assertIn(contract, body)
                 self.assertLess(body.index(loop), body.index(cleanup))
-                self.assertLess(body.index(cleanup), body.index(clone))
+                self.assertLess(body.index(cleanup), body.index('git init "$dest"'))
+
+        self.assertNotIn("git_clone_with_retry", self.dockerfile)
+        self.assertNotIn("git clone https://", self.dockerfile)
 
     def test_image_caches_lm_dependencies_at_the_supplied_gitlink_shas(self):
         for contract in (
             "ARG INFINILM_JSON_SHA",
             "ARG INFINILM_SPDLOG_SHA",
-            'git -C /opt/third_party_cache/json checkout "$INFINILM_JSON_SHA"',
-            'git -C /opt/third_party_cache/spdlog checkout "$INFINILM_SPDLOG_SHA"',
+            "git_fetch_commit_with_retry https://github.com/nlohmann/json.git "
+            '/opt/third_party_cache/json "$INFINILM_JSON_SHA"',
+            "git_fetch_commit_with_retry https://github.com/gabime/spdlog.git "
+            '/opt/third_party_cache/spdlog "$INFINILM_SPDLOG_SHA"',
             'git -C third_party/json checkout --detach "$INFINILM_JSON_SHA"',
             'git -C third_party/spdlog checkout --detach "$INFINILM_SPDLOG_SHA"',
         ):
