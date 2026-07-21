@@ -64,9 +64,10 @@ ENV PATH="/root/.local/bin:/root/.xmake/bin:${PATH}"
 
 ENV CPATH=/usr/local/cuda/include
 ENV LIBRARY_PATH=/usr/local/cuda/lib64:$LIBRARY_PATH
-ENV INFINI_ROOT="/root/.infinici"
+ENV INFINI_BUILD_ROOT=/opt/infini-stack \
+    INFINI_ROOT=/opt/infini-stack/prefix
 ENV LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
-ENV PYTHONPATH="/root/.infinici/lib:$PYTHONPATH"
+ENV PYTHONPATH="$INFINI_ROOT/lib:$PYTHONPATH"
 
 WORKDIR /workspace
 
@@ -78,32 +79,27 @@ RUN git_proxy="${https_proxy:-${HTTPS_PROXY:-}}"; \
     git config --global http.postBuffer 524288000; \
     git config --global http.version HTTP/1.1
 
-# Pin third_party deps in a stable cache layer; only rebuilds when SHAs change.
-# json/spdlog are fetched here once (via build proxy); pybind11 zip for xmake is cached here too.
-ARG FLASH_ATTENTION_SHA=10846960ca0793b993446f6dbaf696479c127a9d
-ARG CUTLASS_SHA=087c84df83d254b5fb295a7a408f1a1d554085cf
+# Pin InfiniLM dependencies in a stable cache layer at the caller's gitlink SHAs.
+ARG INFINILM_JSON_SHA
+ARG INFINILM_SPDLOG_SHA
 ARG PYBIND11_VERSION=v3.0.4
 ARG GIT_NETWORK_RETRIES=5
 RUN set -eux; \
-    git_with_retry() { \
+    git_fetch_commit_with_retry() { \
+      url="$1"; dest="$2"; revision="$3"; \
       attempts="${GIT_NETWORK_RETRIES:-5}"; \
       i=1; \
       while [ "$i" -le "$attempts" ]; do \
-        if "$@"; then return 0; fi; \
-        echo "git failed (attempt ${i}/${attempts}): $*" >&2; \
+        rm -rf "$dest"; \
+        if git init "$dest" && \
+           git -C "$dest" remote add origin "$url" && \
+           git -C "$dest" fetch --depth 1 origin "$revision" && \
+           git -C "$dest" checkout --detach FETCH_HEAD; then return 0; fi; \
+        echo "git fetch failed (attempt ${i}/${attempts}): $url@$revision -> $dest" >&2; \
         sleep $((i * 10)); \
         i=$((i + 1)); \
       done; \
       return 1; \
-    }; \
-    git_clone_with_retry() { \
-      url="$1"; dest="$2"; depth="${3:-}"; \
-      rm -rf "$dest"; \
-      if [ -n "$depth" ]; then \
-        git_with_retry git clone --depth "$depth" "$url" "$dest"; \
-      else \
-        git_with_retry git clone "$url" "$dest"; \
-      fi; \
     }; \
     curl_download_with_retry() { \
       dest="$1"; url="$2"; \
@@ -119,12 +115,8 @@ RUN set -eux; \
       return 1; \
     }; \
     mkdir -p /opt/third_party_cache; \
-    git_clone_with_retry https://github.com/Dao-AILab/flash-attention.git /opt/third_party_cache/flash-attention; \
-    git -C /opt/third_party_cache/flash-attention checkout ${FLASH_ATTENTION_SHA}; \
-    git_clone_with_retry https://github.com/NVIDIA/cutlass.git /opt/third_party_cache/cutlass; \
-    git -C /opt/third_party_cache/cutlass checkout ${CUTLASS_SHA}; \
-    git_clone_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json 1; \
-    git_clone_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog 1; \
+    git_fetch_commit_with_retry https://github.com/nlohmann/json.git /opt/third_party_cache/json "$INFINILM_JSON_SHA"; \
+    git_fetch_commit_with_retry https://github.com/gabime/spdlog.git /opt/third_party_cache/spdlog "$INFINILM_SPDLOG_SHA"; \
     mkdir -p /opt/third_party_cache/xmake_pkg_search; \
     curl_download_with_retry /opt/third_party_cache/xmake_pkg_search/${PYBIND11_VERSION}.zip \
       "https://github.com/pybind/pybind11/archive/refs/tags/${PYBIND11_VERSION}.zip"
@@ -143,32 +135,26 @@ RUN set -eux; \
       done; \
       return 1; \
     }; \
-    git_clone_with_retry() { \
-      url="$1"; dest="$2"; \
-      rm -rf "$dest"; \
-      git_with_retry git clone "$url" "$dest"; \
+    git_fetch_commit_with_retry() { \
+      url="$1"; dest="$2"; revision="$3"; \
+      attempts="${GIT_NETWORK_RETRIES:-5}"; \
+      i=1; \
+      while [ "$i" -le "$attempts" ]; do \
+        rm -rf "$dest"; \
+        if git init "$dest" && \
+           git -C "$dest" remote add origin "$url" && \
+           git -C "$dest" fetch --depth 1 origin "$revision" && \
+           git -C "$dest" checkout --detach FETCH_HEAD; then return 0; fi; \
+        echo "git fetch failed (attempt ${i}/${attempts}): $url@$revision -> $dest" >&2; \
+        sleep $((i * 10)); \
+        i=$((i + 1)); \
+      done; \
+      return 1; \
     }; \
-    git_clone_with_retry https://github.com/InfiniTensor/InfiniCore.git /workspace/InfiniCore; \
+    revision="${InfiniCore_SHA:-${InfiniCore_BRANCH}}"; \
+    git_fetch_commit_with_retry https://github.com/InfiniTensor/InfiniCore.git /workspace/InfiniCore "$revision"; \
     cd /workspace/InfiniCore; \
-    git_with_retry git fetch origin ${InfiniCore_BRANCH}; \
-    git checkout ${InfiniCore_SHA:-origin/${InfiniCore_BRANCH}}; \
-    git_with_retry git submodule update --init --recursive submodules
-
-WORKDIR /workspace/InfiniCore
-
-RUN mkdir -p third_party && \
-    rm -rf third_party/flash-attention third_party/cutlass && \
-    ln -s /opt/third_party_cache/flash-attention third_party/flash-attention && \
-    ln -s /opt/third_party_cache/cutlass third_party/cutlass
-
-RUN rm -rf third_party/nlohmann_json third_party/spdlog && \
-    git clone --shared /opt/third_party_cache/json third_party/nlohmann_json && \
-    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog
-
-ENV CUTLASS_HOME=/workspace/InfiniCore/third_party/cutlass/
-ENV PATH=${CUTLASS_HOME}:${PATH}
-
-WORKDIR /workspace/InfiniCore
+    git_with_retry git submodule update --init --recursive --depth 1 submodules/InfiniRT submodules/InfiniOps submodules/InfiniCCL
 
 # Docker build has nvcc but no GPU driver/nvidia-smi; set CUDA arch explicitly.
 ARG CUDA_ARCH=sm_80,sm_86,sm_89,sm_90
@@ -185,19 +171,21 @@ RUN set -eux; \
     done; \
     exit 1
 
+WORKDIR /workspace/InfiniLM
+
+COPY xmake.lua /workspace/InfiniLM/xmake.lua
 COPY .ci/images/install_xmake_pybind11.sh /usr/local/bin/install_xmake_pybind11.sh
 RUN chmod +x /usr/local/bin/install_xmake_pybind11.sh && install_xmake_pybind11.sh
 
-RUN xmake f -y --nv-gpu=y --ccl=y --graph=y --aten=y --cuda_arch=${CUDA_ARCH} --flash-attn=/workspace/InfiniCore/third_party/flash-attention -cv
-RUN xmake build -y && xmake install && xmake build -y _infinicore && xmake install _infinicore && pip install -e .
-
-WORKDIR /workspace/InfiniLM
-
-COPY . ./
+COPY . /workspace/InfiniLM
 
 RUN rm -rf third_party/json third_party/spdlog && \
     git clone --shared /opt/third_party_cache/json third_party/json && \
-    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog
+    git -C third_party/json checkout --detach "$INFINILM_JSON_SHA" && \
+    git clone --shared /opt/third_party_cache/spdlog third_party/spdlog && \
+    git -C third_party/spdlog checkout --detach "$INFINILM_SPDLOG_SHA"
+
+RUN python3 scripts/build_infini_stack.py --infinicore-root /workspace/InfiniCore --build-root "$INFINI_BUILD_ROOT" --cuda-arch "$CUDA_ARCH" --jobs "$(nproc)"
 
 RUN xmake build -y _infinilm && xmake install _infinilm && pip install -e .
 

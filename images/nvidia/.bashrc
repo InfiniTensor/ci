@@ -103,19 +103,7 @@ test -f "/root/.xmake/profile" && source "/root/.xmake/profile"
 
 export XMAKE_ROOT=y
 
-export INFINI_ROOT="/root/.infinici"
-export LD_LIBRARY_PATH="$INFINI_ROOT/lib:$LD_LIBRARY_PATH"
-
-export PYTHONPATH="/root/.infini/lib":$PYTHONPATH
-
 export XMAKE_MAIN_REPO=https://gitee.com/crapromer/xmake-repo.git
-
-# export CUTLASS_HOME=/home/wuwei/lmci/InfiniCore/third_party/cutlass/include/
-# export CUTLASS_ROOT=/home/wuwei/lmci/InfiniCore/third_party/cutlass
-# export PATH=$CUTLASS_HOME:$PATH
-
-export CUTLASS_HOME=/workspace/InfiniCore/third_party/cutlass/
-export PATH=$CUTLASS_HOME:$PATH
 
 export CPLUS_INCLUDE_PATH=/usr/include/python3.12:$CPLUS_INCLUDE_PATH
 export CPLUS_INCLUDE_PATH=$CUDA_HOME/include:$CPLUS_INCLUDE_PATH
