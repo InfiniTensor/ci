@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "infinilm-ci.yml"
 DOCKERFILE = ROOT / "images" / "nvidia" / "Dockerfile.deploy"
+BASHRC = ROOT / "images" / "nvidia" / ".bashrc"
 
 
 class InfiniLMWorkflowContractTests(unittest.TestCase):
@@ -39,6 +40,7 @@ class NvidiaDeployImageContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+        cls.bashrc = BASHRC.read_text(encoding="utf-8")
 
     def test_image_builds_the_shared_stack_from_the_caller_checkout(self):
         self.assertIn("COPY . /workspace/InfiniLM", self.dockerfile)
@@ -154,6 +156,15 @@ class NvidiaDeployImageContractTests(unittest.TestCase):
         self.assertIn("xmake build -y _infinilm", self.dockerfile)
         self.assertIn("xmake install _infinilm", self.dockerfile)
         self.assertIn("pip install -e .", self.dockerfile)
+
+    def test_interactive_shell_preserves_the_image_stack_environment(self):
+        for legacy in (
+            "/root/.infinici",
+            "/root/.infini",
+            "InfiniCore/third_party/cutlass",
+        ):
+            with self.subTest(legacy=legacy):
+                self.assertNotIn(legacy, self.bashrc)
 
 
 if __name__ == "__main__":
