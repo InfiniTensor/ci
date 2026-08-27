@@ -20,11 +20,16 @@ helpers, GitHub Actions matrix converter, reusable workflow, and tests.
 │   ├── metax/
 │   ├── moore/
 │   ├── cambricon/
+│   ├── hygon/
 │   └── ascend/
 └── tests/
 ```
 
 Prerequisites: Docker, Python 3.10+, and `pip install pyyaml`.
+
+Platform development images have separate reproduction guides. See the
+[Hygon development image](images/hygon/README.md) for modern InfiniLM
+integration and the 9G cases 1-13.
 
 ## Configuration
 
