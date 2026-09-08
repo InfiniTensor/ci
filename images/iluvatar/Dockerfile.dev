@@ -1,0 +1,71 @@
+ARG BASE_IMAGE=corex:4.5.0-10.2-ubuntu24.04-llm-py3.10
+FROM ${BASE_IMAGE}
+
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CUDA_HOME=/usr/local/corex
+ENV CUDA_PATH=/usr/local/corex
+ENV PATH=/usr/local/corex/bin:/usr/local/corex/lib64/python3/dist-packages/bin:/usr/local/openmpi/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PYTHONPATH=/usr/local/corex/lib64/python3/dist-packages
+# `/usr/local/corex-host` is the host driver mount documented in README.md.
+ENV LD_LIBRARY_PATH=/usr/local/corex-host/lib64:/usr/local/corex/lib64:/usr/local/corex/lib:/usr/local/openmpi/lib:/usr/local/lib
+ENV XMAKE_ROOT=y
+ENV INFINILM_CXX11_ABI=0
+
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+
+ARG APT_MIRROR
+RUN if [ -n "$APT_MIRROR" ]; then \
+        sed -i "s|http://[^[:space:]]*/ubuntu|${APT_MIRROR}|g" \
+            /etc/apt/sources.list \
+            /etc/apt/sources.list.d/*.sources 2>/dev/null || true; \
+    fi && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends patchelf && \
+    rm -rf /var/lib/apt/lists/*
+
+# Prevent project dependency installation from replacing the CoreX PyTorch
+# supplied by the base image with an upstream CUDA wheel.
+RUN torch_version="$(python3 -m pip show torch | awk '/^Version:/ {print $2}')" && \
+    test -n "$torch_version" && \
+    printf 'torch==%s\n' "$torch_version" > /etc/pip-constraints.txt
+ENV PIP_CONSTRAINT=/etc/pip-constraints.txt
+
+ARG PIP_INDEX_URL=https://pypi.org/simple
+RUN python3 -m pip install --no-cache-dir --index-url "$PIP_INDEX_URL" \
+        janus==2.0.0 \
+        libclang==18.1.1 \
+        regex==2026.9.3 \
+        ruff==0.15.20 \
+        safetensors==0.8.0 \
+        sentencepiece==0.2.1 \
+        tokenizers==0.22.2 \
+        transformers==5.12.1
+
+ARG XMAKE_VERSION=v3.0.5
+ARG XMAKE_SHA256=4075ef1b4cba7f5eb5c55a4451761ef081086bb3142e7d4b130cf9c7484e68f0
+ARG XMAKE_DOWNLOAD_URL=https://github.com/xmake-io/xmake/releases/download/${XMAKE_VERSION}/xmake-bundle-${XMAKE_VERSION}.linux.x86_64
+RUN curl --retry 5 --retry-all-errors -fsSL \
+        "$XMAKE_DOWNLOAD_URL" -o /usr/local/bin/xmake && \
+    printf '%s  %s\n' "$XMAKE_SHA256" /usr/local/bin/xmake \
+        | sha256sum --check - && \
+    chmod +x /usr/local/bin/xmake
+
+# Pin the package recipe and pre-populate the only Xmake package required by
+# the modern InfiniLM build, so source builds do not resolve mutable recipes.
+ARG XMAKE_REPO_URL=https://gitee.com/crapromer/xmake-repo.git
+ARG XMAKE_REPO_COMMIT=674a71c5905870e6e7e162bf689903822bbbf16e
+COPY images/iluvatar/xmake-cache.lua /opt/xmake-cache-project/xmake.lua
+RUN git clone "$XMAKE_REPO_URL" /opt/xmake-repo && \
+    git -C /opt/xmake-repo checkout "$XMAKE_REPO_COMMIT" && \
+    xmake repo --clear --global && \
+    xmake repo --add --global xmake-repo /opt/xmake-repo && \
+    xmake require --build -y -P /opt/xmake-cache-project
+
+WORKDIR /workspace/run

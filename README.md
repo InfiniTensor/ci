@@ -26,6 +26,8 @@ helpers, GitHub Actions matrix converter, reusable workflow, and tests.
 
 Prerequisites: Docker, Python 3.10+, and `pip install pyyaml`.
 
+Development image guide: [Iluvatar CoreX](images/iluvatar/README.md).
+
 ## Configuration
 
 For repository CI, the caller repository owns the project config, usually at
