@@ -511,6 +511,70 @@ def test_detect_gpus_ascend_marks_process_table_busy(monkeypatch):
     assert selected == [1]
 
 
+def test_detect_gpus_ascend_dual_chip_uses_physical_ids(monkeypatch):
+    npu_output = (
+        "+------------------------------------------------------------------------------------------------+\n"
+        "| npu-smi 25.5.5                   Version: 25.5.5                                               |\n"
+        "+---------------------------+---------------+----------------------------------------------------+\n"
+        "| NPU   Name                | Health        | Power(W)    Temp(C)           Hugepages-Usage(page)|\n"
+        "| Chip  Phy-ID              | Bus-Id        | AICore(%)   Memory-Usage(MB)  HBM-Usage(MB)        |\n"
+        "+===========================+===============+====================================================+\n"
+        "| 0     Ascend910           | OK            | 161.3       37                0    / 0             |\n"
+        "| 0     0                   | 0000:9D:00.0  | 0           0    / 0          3128 / 65536         |\n"
+        "| 0     Ascend910           | OK            | -           35                0    / 0             |\n"
+        "| 1     1                   | 0000:9F:00.0  | 2           0    / 0          2873 / 65536         |\n"
+        "| 1     Ascend910           | OK            | 158.7       36                0    / 0             |\n"
+        "| 0     2                   | 0000:99:00.0  | 0           0    / 0          3113 / 65536         |\n"
+        "| 1     Ascend910           | OK            | -           36                0    / 0             |\n"
+        "| 1     3                   | 0000:9B:00.0  | 1           0    / 0          2888 / 65536         |\n"
+        "| 2     Ascend910           | OK            | 163.7       36                0    / 0             |\n"
+        "| 0     4                   | 0000:95:00.0  | 0           0    / 0          3111 / 65536         |\n"
+        "| 2     Ascend910           | OK            | -           37                0    / 0             |\n"
+        "| 1     5                   | 0000:97:00.0  | 0           0    / 0          2885 / 65536         |\n"
+        "| 3     Ascend910           | OK            | 163.1       36                0    / 0             |\n"
+        "| 0     6                   | 0000:91:00.0  | 0           0    / 0          3113 / 65536         |\n"
+        "| 3     Ascend910           | OK            | -           37                0    / 0             |\n"
+        "| 1     7                   | 0000:93:00.0  | 0           0    / 0          2885 / 65536         |\n"
+        "| 4     Ascend910           | OK            | 156.6       37                0    / 0             |\n"
+        "| 0     8                   | 0000:8D:00.0  | 0           0    / 0          3119 / 65536         |\n"
+        "| 4     Ascend910           | OK            | -           36                0    / 0             |\n"
+        "| 1     9                   | 0000:8F:00.0  | 0           0    / 0          2871 / 65536         |\n"
+        "| 5     Ascend910           | OK            | 164.3       38                0    / 0             |\n"
+        "| 0     10                  | 0000:89:00.0  | 0           0    / 0          3110 / 65536         |\n"
+        "| 5     Ascend910           | OK            | -           36                0    / 0             |\n"
+        "| 1     11                  | 0000:8B:00.0  | 0           0    / 0          2887 / 65536         |\n"
+        "| 6     Ascend910           | OK            | 159.0       36                0    / 0             |\n"
+        "| 0     12                  | 0000:85:00.0  | 0           0    / 0          3108 / 65536         |\n"
+        "| 6     Ascend910           | OK            | -           37                0    / 0             |\n"
+        "| 1     13                  | 0000:87:00.0  | 0           0    / 0          2888 / 65536         |\n"
+        "| 7     Ascend910           | OK            | 162.0       37                0    / 0             |\n"
+        "| 0     14                  | 0000:81:00.0  | 0           0    / 0          3109 / 65536         |\n"
+        "| 7     Ascend910           | OK            | -           37                0    / 0             |\n"
+        "| 1     15                  | 0000:83:00.0  | 0           0    / 0          2888 / 65536         |\n"
+        "+---------------------------+---------------+----------------------------------------------------+\n"
+        "| NPU     Chip              | Process id    | Process name             | Process memory(MB)      |\n"
+        "| 1       1                 | 183216        | python                   | 530                     |\n"
+    )
+
+    def mock_run(cmd, **kwargs):
+        class R:
+            returncode = 0
+            stdout = npu_output
+
+        return R()
+
+    monkeypatch.setattr("subprocess.run", mock_run)
+
+    gpus = res.ResourcePool("ascend").detect_gpus()
+
+    assert [gpu.index for gpu in gpus] == list(range(16))
+    assert gpus[0].memory_used_mb == 3128.0
+    assert gpus[1].utilization_pct == 2.0
+    assert gpus[3].process_count == 1
+    assert gpus[3].process_pids == (183216,)
+    assert gpus[1].process_count == 0
+
+
 def test_allocate_ascend_fails_when_all_npus_have_processes(monkeypatch):
     pool = res.ResourcePool("ascend")
 
