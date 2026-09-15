@@ -683,20 +683,7 @@ class ResourcePool:
         gpus = []
         lines = result.stdout.splitlines()
         process_pids: dict[int, list[int]] = {}
-
-        for line in lines:
-            process_m = re.match(r"^\|\s*(\d+)\s+\d+\s*\|\s*(\d+)\s*\|", line)
-
-            if not process_m:
-                continue
-
-            try:
-                npu_index = int(process_m.group(1))
-                pid = int(process_m.group(2))
-            except ValueError:
-                continue
-
-            process_pids.setdefault(npu_index, []).append(pid)
+        device_by_npu_chip: dict[tuple[int, int], int] = {}
 
         i = 0
 
@@ -705,17 +692,26 @@ class ResourcePool:
             if "Process id" in line and "Process name" in line:
                 break
 
-            m1 = re.match(r"^\|\s+(\d+)\s+", line)
+            m1 = re.match(
+                r"^\|\s*(\d+)\s+(?:Ascend)?(?:910|310)\w*\s*\|", line
+            )
 
-            if m1 and i + 1 < len(lines) and re.search(r"\b(910|310)\w*\b", line):
+            if m1 and i + 1 < len(lines):
                 try:
                     npu_index = int(m1.group(1))
                     row2 = lines[i + 1]
                     aicore_m = re.match(
-                        r"^\|\s+\d+\s+\|\s+[\da-f:.]+\s+\|\s*([\d.]+)\s",
+                        r"^\|\s*(\d+)(?:\s+(\d+))?\s*\|\s*[\da-fA-F:.]+\s*\|\s*([\d.]+)\s",
                         row2,
                     )
-                    util_pct = float(aicore_m.group(1)) if aicore_m else 0.0
+                    chip_index = int(aicore_m.group(1)) if aicore_m else 0
+                    physical_id = (
+                        int(aicore_m.group(2))
+                        if aicore_m and aicore_m.group(2) is not None
+                        else npu_index
+                    )
+                    util_pct = float(aicore_m.group(3)) if aicore_m else 0.0
+                    device_by_npu_chip[(npu_index, chip_index)] = physical_id
 
                     # Row 2 contains DDR and HBM pairs; HBM is the final pair.
                     hbm_matches = re.findall(r"([\d.]+)\s*/\s*([\d.]+)", row2)
@@ -728,12 +724,10 @@ class ResourcePool:
 
                     gpus.append(
                         GpuInfo(
-                            index=npu_index,
+                            index=physical_id,
                             memory_used_mb=used_mb,
                             memory_total_mb=total_mb,
                             utilization_pct=util_pct,
-                            process_count=len(process_pids.get(npu_index, [])),
-                            process_pids=tuple(process_pids.get(npu_index, ())),
                         )
                     )
                 except (ValueError, AttributeError):
@@ -744,7 +738,38 @@ class ResourcePool:
 
             i += 1
 
-        return sorted(gpus, key=operator.attrgetter("index"))
+        for line in lines:
+            process_m = re.match(
+                r"^\|\s*(\d+)\s+(\d+)\s*\|\s*(\d+)\s*\|", line
+            )
+
+            if not process_m:
+                continue
+
+            try:
+                npu_index = int(process_m.group(1))
+                chip_index = int(process_m.group(2))
+                pid = int(process_m.group(3))
+            except ValueError:
+                continue
+
+            device_id = device_by_npu_chip.get((npu_index, chip_index), npu_index)
+            process_pids.setdefault(device_id, []).append(pid)
+
+        return sorted(
+            (
+                GpuInfo(
+                    index=gpu.index,
+                    memory_used_mb=gpu.memory_used_mb,
+                    memory_total_mb=gpu.memory_total_mb,
+                    utilization_pct=gpu.utilization_pct,
+                    process_count=len(process_pids.get(gpu.index, [])),
+                    process_pids=tuple(process_pids.get(gpu.index, ())),
+                )
+                for gpu in gpus
+            ),
+            key=operator.attrgetter("index"),
+        )
 
     def detect_system_resources(self) -> SystemResources:
         """Read system memory from /proc/meminfo and CPU count."""
